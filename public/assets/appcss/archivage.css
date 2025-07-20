@@ -1,0 +1,8 @@
+/* Filtres */
+.card .form-label { font-weight: 600; }
+
+/* Tableau */
+#archive-table tbody tr:hover { background: #f1f1f1; }
+
+/* Modal detail */
+#viewArchiveModal dl dt { font-weight: 600; }

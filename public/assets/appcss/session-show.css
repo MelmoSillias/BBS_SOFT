@@ -1,0 +1,28 @@
+/* Toggle button active state */
+#toggleTableView.active,
+#toggleCardView.active {
+  background-color: var(--bs-primary);
+  color: #fff;
+}
+
+/* Card view */
+.user-card .stats span {
+  font-size: 0.9rem;
+}
+.user-card .task-list .list-group-item {
+  display: flex;
+  justify-content: space-between;
+}
+.user-card .task-list .badge {
+  margin-left: 0.5rem;
+}
+
+/* Dark-mode overrides */
+html[data-bs-theme="dark"] .user-card {
+  background: #3a3c41;
+  color: #ddd;
+}
+html[data-bs-theme="dark"] .user-card .task-list .list-group-item {
+  background: #444;
+  border-color: #555;
+}

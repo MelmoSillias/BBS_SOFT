@@ -1,0 +1,3 @@
+html[data-bs-theme="dark"] .card { background: #3a3c41; }
+html[data-bs-theme="dark"] #archive-table tbody tr:hover { background: #444; }
+html[data-bs-theme="dark"] #viewArchiveModal .modal-content { background: #3a3c41; color: #ddd; }

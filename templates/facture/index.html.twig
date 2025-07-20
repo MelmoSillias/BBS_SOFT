@@ -1,0 +1,297 @@
+{% extends 'appbase.html.twig' %}
+
+{% block title %}Gestion des Factures{% endblock %}
+
+{% block main %}
+<div class="container-fluid">
+
+  {# --- 1. Statistiques Factures --- #}
+  <div class="row mb-4" id="invoiceStats">
+    <div class="row gx-2 gy-3">
+    <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+      <div class="info-box">
+        <span class="info-box-icon bg-primary"><i class="bi bi-receipt"></i></span>
+        <div class="info-box-content">
+          <span class="info-box-text">Total</span>
+          <span class="info-box-number">--</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+      <div class="info-box">
+        <span class="info-box-icon bg-info"><i class="bi bi-people-fill"></i></span>
+        <div class="info-box-content">
+          <span class="info-box-text">Intern</span>
+          <span class="info-box-number">--</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+      <div class="info-box">
+        <span class="info-box-icon bg-success"><i class="bi bi-building"></i></span>
+        <div class="info-box-content">
+          <span class="info-box-text">Gesta</span>
+          <span class="info-box-number">--</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+      <div class="info-box">
+        <span class="info-box-icon bg-warning"><i class="bi bi-exclamation-octagon"></i></span>
+        <div class="info-box-content">
+          <span class="info-box-text">Impayées</span>
+          <span class="info-box-number">--</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+      <div class="info-box">
+        <span class="info-box-icon bg-secondary"><i class="bi bi-clock-history"></i></span>
+        <div class="info-box-content">
+          <span class="info-box-text">Nouvelles</span>
+          <span class="info-box-number">--</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  {# --- 2. Liste des Factures --- #}
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h3 class="card-title">Factures</h3>
+      <div>
+        <button id="btnExportExcel" class="btn btn-sm btn-outline-success">
+          <i class="bi bi-file-earmark-excel"></i> Excel
+        </button>
+        <button id="btnExportPDF" class="btn btn-sm btn-outline-danger">
+          <i class="bi bi-file-earmark-pdf"></i> PDF
+        </button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="row g-2 mb-3">
+        <div class="col-md-2">
+          <input type="text" id="filterDate" class="form-control" placeholder="Période">
+        </div>
+        <div class="col-md-2">
+          <select id="filterClientType" class="form-select">
+            <option value="">Tous types</option>
+            <option value="intern">Intern</option>
+            <option value="gesta">Gesta</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <select id="filterClient" class="form-select">
+            <option value="">-- choisir un client --</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <input type="text" id="filterReference" class="form-control" placeholder="Référence">
+        </div>
+        <div class="col-md-2">
+          <select id="filterStatus" class="form-select">
+            <option value="">Tous statuts</option>
+            <option value="Partiellement payé">Partiellement payé</option>
+            <option value="payé">Payé</option>
+            <option value="impayé">Impayées</option>
+          </select>
+        </div>
+      </div>
+      <table id="invoicesTable" class="table table-bordered table-hover table-striped">
+        <thead>
+          <tr>
+            <th>Référence</th>
+            <th>Client</th> 
+            <th>Total</th>
+            <th>Reste</th>
+            <th>Statut</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  {# --- 3. Formulaire d'ajout de facture --- #}
+  <div class="card mt-4">
+    <div class="card-header">
+      <h3 class="card-title">Ajouter une Facture</h3>
+    </div>
+    <div class="card-body">
+      <form id="form-add-invoice">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label>Date</label>
+            <input type="date" name="createdAt" class="form-control" required>
+          </div>
+          <div class="col-md-3">
+            <label>Client</label>
+            <select name="clientId" id="addInvoiceClient" class="form-select" required>
+              <option value=""> -- choisir un client -- </option>
+            </select>
+          </div>
+          <div class="col-md-3">
+              <label>Mois</label>
+              <select type="text" name="month_str" class="form-select form-control" required>
+                <option value=""> -- Sélectionner -- </option>
+                {% for month in ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'] %}
+                  <option value="{{ month }}">{{ month }}</option>
+                {% endfor %}
+              </select>
+           </div>
+        </div>
+        <hr>
+        <h6>Éléments de la facture</h6>
+        <div id="invoiceLines">
+          <div class="row g-2 invoice-line mb-2">
+            <div class="col-md-5">
+              <textarea name="items[0][description]" class="form-control" placeholder="Description" required rows="2"></textarea>
+            </div>
+            <div class="col-md-2">
+              <input type="number" name="items[0][amount]" class="form-control" placeholder="Montant" min="0" step="0.01" required>
+            </div>
+            <div class="col-md-2">
+              <input type="number" name="items[0][quantity]" class="form-control" placeholder="Qté" min="1" required>
+            </div>
+            <div class="col-md-1 text-end">
+              <button type="button" class="btn btn-sm btn-danger btn-remove-line">&times;</button>
+            </div>
+          </div>
+        </div>
+        <button id="btnAddInvoiceLine" type="button" class="btn btn-sm btn-secondary mt-2">
+          <i class="bi bi-plus-lg"></i> Ajouter une ligne
+        </button>
+        <div class="mt-4 text-end">
+          <button type="submit" class="btn btn-primary">Créer la facture</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+{# --- Modals d'Actions --- #}
+ 
+{# Modal Paiement Facture #}
+<div class="modal fade" id="modalInvoicePayment" tabindex="-1" aria-hidden="true" data-id='' data-remain="0">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="form-invoice-payment">
+        <div class="modal-header">
+          <h5 class="modal-title">Paiement de la Facture</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2 text-end">
+            <h5 class="text-primary">Solde compte local : <span id="soldeCompteLocal">--</span></h5>
+          </div>
+
+          <div class="mb-1">
+            <label class="form-label"><strong>Montant à payer</strong></label>
+            <input type="number" name="amount" class="form-control" id="paymentAmount" min="0" step="0.01" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label"><strong>Mode de paiement</strong></label>
+            <select name="paymentMethod" class="form-select" required>
+              <option value=""> -- Sélectionner -- </option>
+              <option value="compte">Compte local</option>
+              <option value="Espèces">Espèces</option>
+              <option value="chèque">Chèque</option>
+              <option value="virement">Virement</option> 
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label"><strong>Référence (optionnel)</strong></label>
+            <input type="text" name="reference" class="form-control" placeholder="Référence du paiement">
+          </div>
+          <div class="mb-2 text-end">
+            <small class="text-muted">Montant restant à payer : <span id="remainingAmount">--</span> FCFA</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-primary">Valider le paiement</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+{# Modal Annulation Facture #}
+<div class="modal fade" id="modalCancelInvoice" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="form-cancel-invoice">
+        <div class="modal-header">
+          <h5 class="modal-title">Annuler la Facture</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="cancelInvoiceId" name="invoiceId">
+          <div class="mb-3">
+            <label>Justification (obligatoire)</label>
+            <textarea name="reason" class="form-control" rows="3" required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-danger">Confirmer annulation</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{# Modal Historique Paiements #}
+<div class="modal fade" id="modalHistoryInvoice" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Historique des Paiements</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <table id="historyTable" class="table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Montant</th>
+              <th>Mode</th>
+              <th>Référence</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="cachetModal" tabindex="-1" aria-labelledby="cachetModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cachetModalLabel">Imprimer la facture</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Voulez-vous imprimer la facture avec le cachet ?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cachetNo">Non</button>
+                <button type="button" class="btn btn-primary" id="cachetYes">Oui</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+  <script src="{{ asset('assets/appjs/facture.js') }}"></script>
+{% endblock %}

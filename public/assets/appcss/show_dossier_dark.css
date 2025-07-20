@@ -1,0 +1,125 @@
+/* Dark-mode overrides */
+body.dark-mode {
+  background: #2b2d31;
+  color: #ccc;
+}
+body.dark-mode .content, 
+body.dark-mode .container-fluid {
+  background: transparent;
+}
+body.dark-mode .card, 
+body.dark-mode .info-box, 
+body.dark-mode .timeline-event {
+  background: #3a3c41;
+  color: #ddd;
+  box-shadow: none;
+}
+body.dark-mode .info-box-icon {
+  background: #6c757d !important;
+}
+body.dark-mode .info-box-content .info-box-text,
+body.dark-mode .info-box-number {
+  color: #f8f9fa;
+}
+body.dark-mode .workflow-step {
+  background: #3a3c41;
+  border-color: #6c757d;
+  color: #ccc;
+}
+body.dark-mode .workflow-step.completed {
+  background: #17a2b8;
+  border-color: #17a2b8;
+}
+body.dark-mode .workflow-container::before {
+  background: #6c757d;
+}
+body.dark-mode .nav-pills .nav-link.active {
+  background: #17a2b8 !important;
+}
+body.dark-mode table.table {
+  background: transparent;
+  color: #ddd;
+}
+body.dark-mode table.table th,
+body.dark-mode table.table td {
+  border-color: #555;
+}
+body.dark-mode .timeline-point::before {
+  background: #17a2b8;
+}
+
+/* assets/dossier/css/show-dossier-dark.css */
+
+/* Dark-mode via BS5 data-bs-theme */
+[data-bs-theme="dark"] .workflow-container::before {
+  background: var(--bs-gray-600);
+}
+[data-bs-theme="dark"] .workflow-step {
+  background: var(--bs-gray-700);
+  border-color: var(--bs-gray-600);
+  color: var(--bs-gray-300);
+}
+[data-bs-theme="dark"] .workflow-step.completed {
+  background: var(--bs-info);
+  border-color: var(--bs-info);
+  color: var(--bs-white);
+}
+
+html[data-bs-theme="dark"] .dossier-workflow .step {
+  background: #3a3c41;
+  border-color: #6c757d;
+  color: #ddd;
+}
+html[data-bs-theme="dark"] .dossier-workflow .step.completed {
+  background: #0dcaf0; /* info */
+  border-color: #0dcaf0;
+}
+html[data-bs-theme="dark"] .dossier-workflow .connector .dot {
+  background: #555;
+}
+
+
+html[data-bs-theme="dark"] .content,
+html[data-bs-theme="dark"] .container-fluid {
+  background: transparent;
+}
+html[data-bs-theme="dark"] .card,
+html[data-bs-theme="dark"] .info-box,
+html[data-bs-theme="dark"] .timeline-event {
+  background: #3a3c41;
+  color: #ddd;
+}
+html[data-bs-theme="dark"] .info-box-icon {
+  background: #6c757d !important;
+}
+html[data-bs-theme="dark"] .info-box-content .info-box-text,
+html[data-bs-theme="dark"] .info-box-content .info-box-number {
+  color: #f8f9fa;
+}
+html[data-bs-theme="dark"] .workflow-container::before {
+  background: #6c757d;
+}
+html[data-bs-theme="dark"] .workflow-step {
+  background: #3a3c41;
+  border-color: #6c757d;
+  color: #ccc;
+}
+html[data-bs-theme="dark"] .workflow-step.completed {
+  background: #17a2b8;
+  border-color: #17a2b8;
+  color: #fff;
+}
+html[data-bs-theme="dark"] .nav-pills .nav-link.active {
+  background: #17a2b8 !important;
+}
+html[data-bs-theme="dark"] table.table {
+  background: transparent;
+  color: #ddd;
+}
+html[data-bs-theme="dark"] table.table th,
+html[data-bs-theme="dark"] table.table td {
+  border-color: #555;
+}
+html[data-bs-theme="dark"] .timeline-point::before {
+  background: #17a2b8;
+}
