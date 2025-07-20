@@ -33,24 +33,15 @@ $(document).ready(function() {
         }
       }
     ],
-    columns: [
-      { data: 'type' },
-      { data: 'companyName' },
+    columns: [ 
+      { data: 'nomComplet' },
       { data: 'phoneNumber' },
       { data: 'balance', render: d => parseFloat(d).toLocaleString() },
       { data: 'id', orderable: false, render: renderActions }
     ],
     language: { url: '/api/datatable_json_fr' },
     order: [[0,'asc']],
-    rowGroup: {
-      dataSrc: 'type',
-      startRender: (rows, group) => {
-        return $('<tr/>')
-          .append(`<td colspan="5" class="bg-secondary text-white">
-                    Liste des clients ${group.charAt(0).toUpperCase()+group.slice(1)}
-                  </td>`);
-      }
-    }
+     
   });
 
   // Render action buttons
@@ -81,19 +72,7 @@ $(document).ready(function() {
             <div class="inner"><h3>${stats.total}</h3><p>Clients au total</p></div>
             <div class="icon"><i class="bi bi-people-fill"></i></div>
           </div>
-        </div>
-        <div class="col-lg-4">
-          <div class="small-box bg-success">
-            <div class="inner"><h3>${stats.gesta}</h3><p>Clients Gesta</p></div>
-            <div class="icon"><i class="bi bi-building"></i></div>
-          </div>
-        </div>
-        <div class="col-lg-4">
-          <div class="small-box bg-warning">
-            <div class="inner"><h3>${stats.intern}</h3><p>Clients Intern</p></div>
-            <div class="icon"><i class="bi bi-briefcase-fill"></i></div>
-          </div>
-        </div>
+        </div> 
       `);
     });
   }
@@ -150,15 +129,9 @@ $(document).ready(function() {
     $.get(`/api/client/${id}/smalldetails`)
       .done(details => {
         $('#editClientId')        .val(details.id);
-        $('#editCompanyName')     .val(details.companyName);
-        $('#editDelagate')        .val(details.delegate||'');
+        $('#editCompanyName')     .val(details.nomComplet); 
         $('#editPhoneNumber')     .val(details.phoneNumber);
-        $('#editAddress')         .val(details.address||'');
-        $('#editTypeClient')      .val(details.type);
-        toggleCommitteeField(details.type);
-        if (details.type==='gesta') {
-          $('#editCommittee').val(details.committee||'');
-        }
+        $('#editAddress')         .val(details.address||'');   
         $('#modalEditClient').modal('show');
       })
       .fail(() => showToastModal({ message:'Erreur chargement client', type:'error' }))
@@ -193,15 +166,7 @@ $(document).ready(function() {
     })
     .always(() => $btn.prop('disabled', false));
   });
-
-  function toggleCommitteeField(type) {
-    $('#editComitediv').toggleClass('d-none', type!=='gesta');
-  }
-
-  $('#editTypeClient').on('change', function(){
-    toggleCommitteeField($(this).val());
-  });
-
+    
   // ─────────────────────────────────────────────────────────────────
   // 6. Accompte modal + submit
   $('#clientsTable tbody').on('click', '.accompte', function(e) {

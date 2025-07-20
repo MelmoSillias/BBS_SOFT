@@ -2,7 +2,7 @@
 <html lang="fr" data-turbo-permanent data-bs-theme="{{ app.user ? app.user.theme : 'light' }}">
 <head>
   <meta charset="UTF-8">
-  <title>{% block title %}StockifyWeb{% endblock %}</title>
+  <title>{% block title %}BSS SOFT{% endblock %}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Stockify - Gestion de Stock Moderne">
   <link rel="icon" type="image/png" href="{{ asset('favicon.ico') }}">
@@ -172,42 +172,15 @@
 
         <hr>
 
-        {% if is_granted('ROLE_SESSIONS') %}
+        {% if is_granted('ROLE_TRANSFERTS') %}
         <li class="nav-item">
-          <a href="{{ path('app_session') }}" class="nav-link {{ controller_name starts with 'Session' ? 'active' : '' }}">
-            <i class="nav-icon bi bi-clock"></i>
-            <p>Taf</p>
+          <a href="{{ path('app_transfert') }}" class="nav-link {{ controller_name starts with 'Transfert' ? 'active' : '' }}">
+            <i class="nav-icon bi bi-arrow-left-right"></i>
+            <p>Transferts</p>
           </a>
         </li>
-        {% endif %}
-
-        {% if is_granted('ROLE_DOSSIERS') %}
-        <li class="nav-item">
-          <a href="{{ path('app_dossier_index') }}" class="nav-link {{ controller_name starts with 'Dossier' ? 'active' : '' }}">
-            <i class="nav-icon bi bi-folder"></i>
-            <p>Dossiers</p>
-          </a>
-        </li>
-        {% endif %}
-
-        {% if is_granted('ROLE_ARCHIVES') %}
-        <li class="nav-item">
-          <a href="{{ path('app_archive') }}" class="nav-link {{ controller_name starts with 'Archive' ? 'active' : '' }}">
-            <i class="nav-icon bi bi-archive"></i>
-            <p>Archives</p>
-          </a>
-        </li>
-        {% endif %}
-
-        {% if is_granted('ROLE_FACTURES') %}
-        <li class="nav-item">
-          <a href="{{ path('app_facture') }}" class="nav-link {{ controller_name starts with 'Facture' ? 'active' : '' }}">
-            <i class="nav-icon bi bi-receipt"></i>
-            <p>Factures</p>
-          </a>
-        </li>
-        {% endif %}
-
+        {% endif %} 
+ 
         {% if is_granted('ROLE_CLIENTS') %}
         <li class="nav-item">
           <a href="{{ path('app_client') }}" class="nav-link {{ controller_name starts with 'Client' ? 'active' : '' }}">
@@ -215,16 +188,7 @@
             <p>Clients</p>
           </a>
         </li>
-        {% endif %}
-
-        {% if is_granted('ROLE_COMMISSIONS') %}
-        <li class="nav-item">
-          <a href="{{ path('app_commission') }}" class="nav-link {{ controller_name starts with 'Commission' ? 'active' : '' }}">
-            <i class="nav-icon bi bi-currency-dollar"></i>
-            <p>Commissions</p>
-          </a>
-        </li>
-        {% endif %}
+        {% endif %} 
 
         {% if is_granted('ROLE_FINANCE') %}
         <li class="nav-item">
@@ -275,7 +239,7 @@
 
   {# --- FOOTER --- #}
   <footer class="app-footer text-center">
-    <div class="float-end d-none d-sm-inline"> <strong>Ofset</strong>Soft -Logiciel de gestion Ofset Consult</div>
+    <div class="float-end d-none d-sm-inline"> <strong>BSS</strong>Soft -Logiciel de gestion Ofset Consult</div>
     <strong>&copy; {{ "now"|date("Y") }} <a href="#">Sim Corp</a>.</strong> Tous droits réservés.
   </footer>
 </div>
@@ -307,7 +271,7 @@
 <script src="{{ asset('assets/js/vfs_fonts.js') }}"></script>
 <script src="{{ asset('assets/js/buttons.html5.min.js') }}"></script>
 <script src="{{ asset('assets/js/buttons.print.min.js') }}"></script>
-<script src="{{ asset("/assets/js/apexcharts.min.js") }}"></script>
+<script src="{{ asset('/assets/js/apexcharts.min.js') }}"></script>
 
 <script>
   function showToastModal({ message, type = 'info', icon, duration = 1500 } = {}) {

@@ -4,14 +4,7 @@ $(document).ready(function(){
   const clientId = extractClientId();
 
   // 1. Charger infos de base & stats
-  loadClientInfo(clientId);
-
-  // 2. Factures renouvelables
-  initRenewables(clientId);
-
-  // 3. Factures ponctuelles
-  initInvoices(clientId);
-
+  loadClientInfo(clientId); 
   // 4. Transactions
   initTransactions(clientId);
 });
@@ -19,9 +12,9 @@ $(document).ready(function(){
 
 /** Extrait l'ID client depuis l'URL : /client/{id}/... */
 function extractClientId() {
-  const parts = window.location.pathname.split('/');
-  const idx = parts.indexOf('client');
-  return (idx >= 0 && parts.length > idx+1) ? parts[idx+1] : null;
+    const parts = window.location.pathname.split('/');
+    const idx = parts.indexOf('client');
+    return (idx >= 0 && parts.length > idx+1) ? parts[idx+1] : null;
 }
 
 

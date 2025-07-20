@@ -40,8 +40,7 @@
         <i class="bi bi-person-circle display-1 text-info mb-3"></i>
     {% endif %}
 
-      <h4 class="mb-1">{{ app.user.fullName }}</h4>
-      <p class="text-muted mb-3">{{ app.user.jobTitle }}</p>
+      <h4 class="mb-1">{{ app.user.FullName }}</h4> 
 
       <div class="rating mb-3">
         {% for i in 1..5 %}
@@ -55,8 +54,7 @@
         <li><i class="bi bi-telephone-fill me-2"></i> -- </li>
       </ul>
     </div>
-
-    {# Colonne droite : formulaire #}
+ 
     {# Colonne droite : formulaire #}
         <div class="col-md-8 p-4">
         <h5 class="mb-4">Profil</h5>
@@ -77,7 +75,7 @@
                 <input type="text"
                     id="inpJob"
                     class="custom-input"
-                    value="{{ app.user.jobTitle }}">
+                    value="">
             </div>
 
             <div class="col-md-6 custom-field">
@@ -157,20 +155,7 @@
         </ul>
       </div>
     </div>
-
-    {# 4. Section Factures (if allowed) #}
-    {% if is_granted('ROLE_FACTURES') %}
-    <div class="card card-outline card-warning mb-4">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="card-title mb-0"><i class="bi bi-receipt me-2"></i>Factures récente</h5>
-      </div>
-      <div class="card-body p-0">
-        <ul class="list-group list-group-flush" id="invoicesList">
-          <li class="list-group-item text-center text-muted">Aucune facture récente</li>
-        </ul>
-      </div>
-    </div>
-    {% endif %}
+ 
 
   </div>
 </div>

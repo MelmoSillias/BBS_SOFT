@@ -26,10 +26,7 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
-
-    App\Controller\DossierApiController:
-        bind:
-            $documentsDirectory: '%documents_directory%'
+ 
  
 
     # add more service definitions when explicit configuration is needed

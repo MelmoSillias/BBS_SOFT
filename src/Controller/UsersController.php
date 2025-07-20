@@ -86,8 +86,7 @@ final class UsersController extends AbstractController
         $user->setFullname($data['nom_complet'] ?? $data['nom_utilisateur']);
         $user->setRoles($data['roles']);
         $user->setIsActif($data['actif'] ?? true);
-        $user->setPassword($hasher->hashPassword($user, $data['password']));
-        $user->setJobTitle($data['job']); 
+        $user->setPassword($hasher->hashPassword($user, $data['password'])); 
 
         $user->addRole('ROLE_DASHBOARD');
 
@@ -145,13 +144,8 @@ final class UsersController extends AbstractController
         $data = json_decode($request->getContent(), true);
         $selected = $data['permissions'] ?? [];
         $map = [
-          'dashboard'  => 'ROLE_DASHBOARD',
-          'sessions'   => 'ROLE_SESSIONS',
-          'dossiers'   => 'ROLE_DOSSIERS',
-          'archives'   => 'ROLE_ARCHIVES',
-          'factures'   => 'ROLE_FACTURES',
-          'clients'    => 'ROLE_CLIENTS',
-          'commissions'=> 'ROLE_COMMISSIONS',
+          'dashboard'  => 'ROLE_DASHBOARD', 
+          'clients'    => 'ROLE_CLIENTS', 
           'finance'    => 'ROLE_FINANCE',
           'users'      => 'ROLE_USERS', 
         ];

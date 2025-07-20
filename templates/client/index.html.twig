@@ -8,8 +8,7 @@
   <!-- Statistiques -->
   <div class="row mb-4" id="stats">
         <div class="col-lg-4"><div class="small-box bg-primary"><div class="inner"><h3>--</h3><p>Clients au total</p></div><div class="icon"><i class="bi bi-people-fill"></i></div></div></div>
-        <div class="col-lg-4"><div class="small-box bg-success"><div class="inner"><h3>--</h3><p>Clients Gesta</p></div><div class="icon"><i class="bi bi-building"></i></div></div></div>
-        <div class="col-lg-4"><div class="small-box bg-warning"><div class="inner"><h3>--</h3><p>Clients Intern</p></div><div class="icon"><i class="bi bi-briefcase-fill"></i></div></div></div>
+      
   </div>
 
   <!-- Tableau des clients -->
@@ -21,12 +20,11 @@
             <div class="table-responsive">
                 <table id="clientsTable" class="table table-bordered table-hover  border-top border-bottom py-0 my-4">
                     <thead>
-                        <tr>
-                        <th>Type</th>
-                        <th>Entreprise</th>
-                        <th>Téléphone</th>
-                        <th>Solde (FCFA)</th>
-                        <th>Actions</th>
+                        <tr> 
+                            <th>Nom Complet</th>
+                            <th>Téléphone</th>
+                            <th>Solde (FCFA)</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -45,13 +43,9 @@
             <form id="form-ajout-client">
                 <div class="row">
                     <div class="col-md-4 mb-3">
-                        <label>Nom entreprise</label>
-                        <input name="companyName" class="form-control" required>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label>Délégué</label>
-                        <input name="delagate" class="form-control">
-                    </div>
+                        <label>Nom Complet</label>
+                        <input name="nomComplet" class="form-control" required>
+                    </div> 
                     <div class="col-md-4 mb-3">
                         <label>Téléphone</label>
                         <input name="phoneNumber" class="form-control" >
@@ -59,25 +53,13 @@
                     <div class="col-md-4 mb-3">
                         <label>Adresse</label>
                         <input name="address" class="form-control">
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label>Type</label>
-                        <select id="typeClient" name="type" class="form-select" required>
-                            <option value="gesta">Gesta</option>
-                            <option value="intern">Intern</option> 
-                        </select>
-                    </div>
-                    <div id="comitediv" class="col-md-4 mb-3">
-                        <label>Commissionnaire (optionnel)</label>
-                        <input name="committee" class="form-control">
-                    </div>
+                    </div> 
                 </div>
                 <button type="submit" class="btn btn-primary">Ajouter Client</button>
             </form>
         </div>
     </div>
-
-  <!-- Modals génériques -->
+ 
     <!-- Modal Modification Client -->
     <div class="modal fade" id="modalEditClient" tabindex="-1" aria-labelledby="modalEditClientLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
@@ -92,12 +74,8 @@
                         <div class="row">
                             <div class="col-md-4 mb-3">
                                 <label>Nom entreprise</label>
-                                <input name="companyName" id="editCompanyName" class="form-control" required>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label>Délégué</label>
-                                <input name="delagate" id="editDelagate" class="form-control">
-                            </div>
+                                <input name="nomComplet" id="editCompanyName" class="form-control" required>
+                            </div> 
                             <div class="col-md-4 mb-3">
                                 <label>Téléphone</label>
                                 <input name="phoneNumber" id="editPhoneNumber" class="form-control" required>
@@ -105,18 +83,7 @@
                             <div class="col-md-4 mb-3">
                                 <label>Adresse</label>
                                 <input name="address" id="editAddress" class="form-control">
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label>Type</label>
-                                <select id="editTypeClient" name="type" class="form-select" required>
-                                    <option value="intern">Intern</option>
-                                    <option value="gesta">Gesta</option>
-                                </select>
-                            </div>
-                            <div id="editComitediv" class="col-md-4 mb-3 d-none">
-                                <label>Commissionnaire (optionnel)</label>
-                                <input name="committee" id="editCommittee" class="form-control">
-                            </div>
+                            </div>  
                         </div>
                     </div>
                     <div class="modal-footer">

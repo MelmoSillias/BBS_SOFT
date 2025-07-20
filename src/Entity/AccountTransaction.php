@@ -44,19 +44,11 @@ class AccountTransaction
     private ?string $paymentRef = null;
 
     #[ORM\ManyToOne(inversedBy: 'accountTransactions')]
-    private ?User $user = null;
+    private ?User $user = null; 
 
     #[ORM\ManyToOne(inversedBy: 'accountTransactions')]
     #[ORM\JoinColumn(nullable: true)]
-    private ?Invoice $invoice = null;
-
-    #[ORM\ManyToOne(inversedBy: 'accountTransactions')]
-    #[ORM\JoinColumn(nullable: true)]
-    private ?Client $client = null;
-
-    #[ORM\OneToOne(inversedBy: 'accountTransaction', cascade: ['persist', 'remove'])]
-    #[ORM\JoinColumn(nullable: true)]
-    private ?Commission $commission = null;
+    private ?Client $client = null; 
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $validate_at = null;
@@ -195,19 +187,7 @@ class AccountTransaction
 
         return $this;
     }
-
-    public function getInvoice(): ?Invoice
-    {
-        return $this->invoice;
-    }
-
-    public function setInvoice(?Invoice $invoice): static
-    {
-        $this->invoice = $invoice;
-
-        return $this;
-    }
-
+  
     public function getClient(): ?Client
     {
         return $this->client;
@@ -219,19 +199,7 @@ class AccountTransaction
 
         return $this;
     }
-
-    public function getCommission(): ?Commission
-    {
-        return $this->commission;
-    }
-
-    public function setCommission(?Commission $commission): static
-    {
-        $this->commission = $commission;
-
-        return $this;
-    }
-
+ 
     public function getValidateAt(): ?\DateTimeImmutable
     {
         return $this->validate_at;

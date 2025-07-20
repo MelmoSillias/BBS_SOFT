@@ -2,22 +2,22 @@
 
 namespace App\Repository;
 
-use App\Entity\TransferFile;
+use App\Entity\Transfert;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<TransferFile>
+ * @extends ServiceEntityRepository<Transfert>
  */
-class TransferFileRepository extends ServiceEntityRepository
+class TransfertRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, TransferFile::class);
+        parent::__construct($registry, Transfert::class);
     }
 
 //    /**
-//     * @return TransferFile[] Returns an array of TransferFile objects
+//     * @return Transfert[] Returns an array of Transfert objects
 //     */
 //    public function findByExampleField($value): array
 //    {
@@ -31,7 +31,7 @@ class TransferFileRepository extends ServiceEntityRepository
 //        ;
 //    }
 
-//    public function findOneBySomeField($value): ?TransferFile
+//    public function findOneBySomeField($value): ?Transfert
 //    {
 //        return $this->createQueryBuilder('t')
 //            ->andWhere('t.exampleField = :val')

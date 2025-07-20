@@ -16,49 +16,33 @@ class Client
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    private ?string $company_name = null;
-
-    #[ORM\Column(length: 255)]
-    private ?string $delegate = null;
-
+    private ?string $nom_complet = null;
+ 
     #[ORM\Column(length: 255)]
     private ?string $address = null;
 
     #[ORM\Column(length: 255)]
     private ?string $phone_number = null;
-
-    #[ORM\Column(length: 255)]
-    private ?string $type = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $committee = null;
- 
+  
     /**
      * @var Collection<int, AccountTransaction>
      */
     #[ORM\OneToMany(targetEntity: AccountTransaction::class, mappedBy: 'client')]
     private Collection $accountTransactions;
-
-    /**
-     * @var Collection<int, RenewableInvoice>
-     */
-    #[ORM\OneToMany(targetEntity: RenewableInvoice::class, mappedBy: 'client', orphanRemoval: true)]
-    private Collection $renewableInvoices;
-
+ 
     #[ORM\Column]
     private ?bool $is_active = null;
 
     /**
-     * @var Collection<int, Invoice>
+     * @var Collection<int, Transfert>
      */
-    #[ORM\OneToMany(targetEntity: Invoice::class, mappedBy: 'client', orphanRemoval: true)]
-    private Collection $invoices;
-
+    #[ORM\OneToMany(targetEntity: Transfert::class, mappedBy: 'client')]
+    private Collection $transferts;
+ 
     public function __construct()
     { 
         $this->accountTransactions = new ArrayCollection();
-        $this->renewableInvoices = new ArrayCollection();
-        $this->invoices = new ArrayCollection();
+        $this->transferts = new ArrayCollection();  
     }
 
     public function getId(): ?int
@@ -66,30 +50,18 @@ class Client
         return $this->id;
     }
 
-    public function getCompanyName(): ?string
+    public function getNomComplet(): ?string
     {
-        return $this->company_name;
+        return $this->nom_complet;
     }
 
-    public function setCompanyName(string $company_name): static
+    public function setNomComplet(string $nom_complet): static
     {
-        $this->company_name = $company_name;
+        $this->nom_complet = $nom_complet;
 
         return $this;
     }
-
-    public function getDelegate(): ?string
-    {
-        return $this->delegate;
-    }
-
-    public function setDelegate(string $delegate): static
-    {
-        $this->delegate = $delegate;
-
-        return $this;
-    }
-
+ 
     public function getAddress(): ?string
     {
         return $this->address;
@@ -113,32 +85,7 @@ class Client
 
         return $this;
     }
-
-    public function getType(): ?string
-    {
-        return $this->type;
-    }
-
-    public function setType(string $type): static
-    {
-        $this->type = $type;
-
-        return $this;
-    }
-
-    public function getCommittee(): ?string
-    {
-        return $this->committee;
-    }
-
-    public function setCommittee(?string $committee): static
-    {
-        $this->committee = $committee;
-
-        return $this;
-    }
-
-     
+ 
     /**
      * @return Collection<int, AccountTransaction>
      */
@@ -168,37 +115,7 @@ class Client
 
         return $this;
     }
-
-    /**
-     * @return Collection<int, RenewableInvoice>
-     */
-    public function getRenewableInvoices(): Collection
-    {
-        return $this->renewableInvoices;
-    }
-
-    public function addRenewableInvoice(RenewableInvoice $renewableInvoice): static
-    {
-        if (!$this->renewableInvoices->contains($renewableInvoice)) {
-            $this->renewableInvoices->add($renewableInvoice);
-            $renewableInvoice->setClient($this);
-        }
-
-        return $this;
-    }
-
-    public function removeRenewableInvoice(RenewableInvoice $renewableInvoice): static
-    {
-        if ($this->renewableInvoices->removeElement($renewableInvoice)) {
-            // set the owning side to null (unless already changed)
-            if ($renewableInvoice->getClient() === $this) {
-                $renewableInvoice->setClient(null);
-            }
-        }
-
-        return $this;
-    }
-
+  
     public function isActive(): ?bool
     {
         return $this->is_active;
@@ -210,37 +127,7 @@ class Client
 
         return $this;
     }
-
-    /**
-     * @return Collection<int, Invoice>
-     */
-    public function getInvoices(): Collection
-    {
-        return $this->invoices;
-    }
-
-    public function addInvoice(Invoice $invoice): static
-    {
-        if (!$this->invoices->contains($invoice)) {
-            $this->invoices->add($invoice);
-            $invoice->setClient($this);
-        }
-
-        return $this;
-    }
-
-    public function removeInvoice(Invoice $invoice): static
-    {
-        if ($this->invoices->removeElement($invoice)) {
-            // set the owning side to null (unless already changed)
-            if ($invoice->getClient() === $this) {
-                $invoice->setClient(null);
-            }
-        }
-
-        return $this;
-    }
-
+ 
     public function getBalance(): float
     {
         $lastTransaction = $this->accountTransactions->last();
@@ -248,5 +135,35 @@ class Client
             return 0.0;
         }
         return $lastTransaction->getBalanceValue();
+    }
+
+    /**
+     * @return Collection<int, Transfert>
+     */
+    public function getTransferts(): Collection
+    {
+        return $this->transferts;
+    }
+
+    public function addTransfert(Transfert $transfert): static
+    {
+        if (!$this->transferts->contains($transfert)) {
+            $this->transferts->add($transfert);
+            $transfert->setClient($this);
+        }
+
+        return $this;
+    }
+
+    public function removeTransfert(Transfert $transfert): static
+    {
+        if ($this->transferts->removeElement($transfert)) {
+            // set the owning side to null (unless already changed)
+            if ($transfert->getClient() === $this) {
+                $transfert->setClient(null);
+            }
+        }
+
+        return $this;
     }
 }

@@ -17,13 +17,9 @@
       <form>
       <div class="row mb-2">
         <div class="col-md-5">
-        <label class="form-label"><strong>Nom de L'entreprise :</strong></label>
-        <input type="text" class="form-control" value="{{ client.companyName }}" disabled>
-        </div>
-        <div class="col-md-4">
-        <label class="form-label"><strong>Représentant :</strong></label>
-        <input type="text" class="form-control" value="{{ client.delegate }}" disabled>
-        </div>
+        <label class="form-label"><strong>Nom complet :</strong></label>
+        <input type="text" class="form-control" value="{{ client.nomComplet }}" disabled>
+        </div> 
         <div class="col-md-3">
         <label class="form-label"><strong>Téléphone :</strong></label>
         <input type="text" class="form-control" value="{{ client.phoneNumber }}" disabled>
@@ -33,11 +29,7 @@
         <div class="col-md-6">
         <label class="form-label"><strong>Adresse :</strong></label>
         <input type="text" class="form-control" value="{{ client.address }}" disabled>
-        </div>
-        <div class="col-md-3">
-        <label class="form-label"><strong>Type de Client :</strong></label>
-        <input type="text" class="form-control" value="{{ client.type }}" disabled>
-        </div>
+        </div> 
         <div class="col-md-3">
         <label class="form-label"><strong>Date d'inscription :</strong></label>
         <input type="text" class="form-control" value="--" disabled>
@@ -170,13 +162,10 @@
   {# Floating Back Button #}
   <button id="btnBack" class="btn btn-secondary btn-lg shadow back-button"  onclick="history.back();" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">
     <i class="bi bi-arrow-left"></i>
-  </button>
-
-
+  </button> 
 </div>
 
-{# --- Modals --- #}
-
+{# --- Modals --- #} 
 <div class="modal fade" id="cachetModal" tabindex="-1" aria-labelledby="cachetModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
