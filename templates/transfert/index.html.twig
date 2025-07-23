@@ -1,417 +1,825 @@
 {% extends 'appbase.html.twig' %}
-{% block title %}Gestion des Transferts{% endblock %}
+{% block title %}Gestion des Transferts
+{% endblock %}
 
 {% block stylesheets %}
-  <style>/* Utilisation des variables Bootstrap */
-.form-select {
-  --bs-form-select-bg: var(--bs-body-bg);
-  --bs-form-select-color: var(--bs-body-color);
-  --bs-form-select-border-color: var(--bs-border-color);
-  --bs-form-select-hover-border-color: var(--bs-primary);
-}
+	<link rel="stylesheet" href="{{ asset('assets/css/select2/select2.min.css') }}">
+	<style>
+		/* Style des cartes de statistiques */
+		.stat-card {
+			border-radius: 10px;
+			box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+			transition: transform 0.3s ease;
+		}
+		.stat-card:hover {
+			transform: translateY(-5px);
+		}
+		.stat-icon {
+			font-size: 1.8rem;
+			margin-bottom: 10px;
+		}
+		.stat-number {
+			font-size: 1.5rem;
+			font-weight: 700;
+		}
+		.stat-text {
+			font-size: 0.9rem;
+			color: #6c757d;
+		}
+ 
 
-/* Style des capitales en gras avec variables Bootstrap */
-.form-select option strong {
-  font-weight: var(--bs-font-weight-bold) !important; /* Utilise la variable Bootstrap pour "bold" */
-  color: var(--bs-emphasis-color) !important; /* Couleur d'accentuation (noir ou blanc selon le thème) */
-}
+		/* Style pour les filtres */
+		.filter-section {
+			background-color: #f8f9fa;
+			padding: 15px;
+			border-radius: 8px;
+			margin-bottom: 20px;
+		}
+		.filter-label {
+			font-weight: 600;
+			margin-bottom: 5px;
+			font-size: 0.9rem;
+		}
 
-/* Améliorations UX avec variables Bootstrap */
-.form-select option:checked {
-  background-color: rgba(var(--bs-primary-rgb), 0.1) !important;
-}
-
-.form-select option:hover {
-  background-color: var(--bs-tertiary-bg) !important;
-}</style>
+    .badge-status {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .badge-completed {
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 1px solid #34d399;
+        }
+        .badge-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+            border: 1px solid #f59e0b;
+        }
+        .badge-cancelled {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+        .badge-processing {
+            background-color: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #3b82f6;
+        }
+        
+        /* Style de la table */
+        .table-transfer {
+            font-size: 0.9rem;
+            border-collapse: separate;
+            border-spacing: 0;
+            min-height: 300px;
+        }
+        .table-transfer thead th {
+            background-color: #f8f9fa;
+            position: sticky;
+            top: 0;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .table-transfer tbody tr:hover {
+            background-color: rgba(0, 123, 255, 0.05);
+        }
+        .table-transfer .text-success {
+            color: #28a745 !important;
+        }
+        .table-transfer .text-danger {
+            color: #dc3545 !important;
+        }
+        .table-transfer .text-warning {
+            color: #fd7e14 !important;
+        }
+        
+        /* Style des filtres */
+        .dataTables_filter input {
+            border-radius: 20px;
+            padding: 5px 15px;
+            border: 1px solid #ced4da;
+        }
+        .dataTables_length select {
+            border-radius: 20px;
+            padding: 5px 15px;
+            border: 1px solid #ced4da;
+        }
+        
+        /* Style des boutons */
+        .btn-table-action {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+            border-radius: 50px;
+        }
+        .dropdown-menu {
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+	</style>
 {% endblock %}
 {% block main %}
-<div class="container-fluid">
-  {# --- 1. Statistiques Transferts --- #}
-  <div class="row mb-4" id="transferStats">
-    <div class="row gx-2 gy-3">
-    <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-      <div class="info-box">
-        <span class="info-box-icon bg-primary"><i class="bi bi-receipt"></i></span>
-        <div class="info-box-content">
-          <span class="info-box-text">Total</span>
-          <span class="info-box-number">--</span>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-      <div class="info-box">
-        <span class="info-box-icon bg-info"><i class="bi bi-people-fill"></i></span>
-        <div class="info-box-content">
-          <span class="info-box-text">Intern</span>
-          <span class="info-box-number">--</span>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-      <div class="info-box">
-        <span class="info-box-icon bg-success"><i class="bi bi-building"></i></span>
-        <div class="info-box-content">
-          <span class="info-box-text">Gesta</span>
-          <span class="info-box-number">--</span>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-      <div class="info-box">
-        <span class="info-box-icon bg-warning"><i class="bi bi-exclamation-octagon"></i></span>
-        <div class="info-box-content">
-          <span class="info-box-text">Impayées</span>
-          <span class="info-box-number">--</span>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-      <div class="info-box">
-        <span class="info-box-icon bg-secondary"><i class="bi bi-clock-history"></i></span>
-        <div class="info-box-content">
-          <span class="info-box-text">Nouveaux</span>
-          <span class="info-box-number">--</span>
-        </div>
-      </div>
-    </div>
-  </div>
-  </div>
-  {# --- 2. Liste des Transferts --- #}
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h3 class="card-title">Historique des Transferts</h3>
-    <div>
-      <button id="btnExportExcel" class="btn btn-sm btn-outline-success me-2">
-        <i class="bi bi-file-earmark-excel"></i> Excel
-      </button>
-      <button id="btnExportPDF" class="btn btn-sm btn-outline-danger">
-        <i class="bi bi-file-earmark-pdf"></i> PDF
-      </button>
-    </div>
-  </div>
-  <div class="card-body">
-    <div class="row g-2 mb-3">
-      <div class="col-md-3">
-        <input type="text" id="filterInvoiceDate" class="form-control" placeholder="Période (ex. 01/01/2025 - 31/01/2025)">
-      </div> 
-      <div class="col-md-3">
-        <select id="filterStatus" class="form-select">
-          <option value="">Tous statuts</option>
-          <option value="completed">Complété</option>
-          <option value="pending">En attente</option>
-          <option value="failed">Échoué</option>
-          <option value="partially_paid">Partiellement payé</option>
-        </select>
-      </div>
-      <div class="col-md-3">
-        <input type="text" id="filterSearch" class="form-control" placeholder="Recherche...">
-      </div>
-    </div>
-    
-    <div class="table-responsive">
-      <table id="transfersTable" class="table table-bordered table-hover">
-        <thead class="table-light">
-          <tr>
-            <th width="120">Réf.</th>
-            <th>Bénéficiaire</th>
-            <th width="150">Montant</th>
-            <th width="150">Frais</th>
-            <th width="150">Total</th>
-            <th width="120">Devise</th>
-            <th width="150">Date</th>
-            <th width="120">Statut</th>
-            <th width="100">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Exemple de ligne -->
-          <tr>
-            <td>TRF-2023-001</td>
-            <td>Jean Dupont (FR)</td>
-            <td class="text-end">1,250.00</td>
-            <td class="text-end">25.00</td>
-            <td class="text-end fw-bold">1,275.00</td>
-            <td>EUR</td>
-            <td>15/06/2023</td>
-            <td><span class="badge bg-success">Complété</span></td>
-            <td class="text-center">
-              <button class="btn btn-sm btn-outline-primary" title="Détails">
-                <i class="bi bi-eye"></i>
-              </button>
-            </td>
-          </tr>
-          <!-- Autres lignes seraient générées dynamiquement -->
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
+	<div class="container-fluid"> 
+		{# --- 1. Statistiques Transferts --- #}
+			<div class="row mb-4" id="transferStats"> <div class="col-md-3 mb-3">
+				<div class="card stat-card border-start border-primary border-4">
+					<div class="card-body">
+						<div class="d-flex justify-content-between align-items-center">
+							<div>
+								<div class="stat-text">Total Transferts</div>
+								<div class="stat-number text-primary">1,245</div>
+							</div>
+							<div class="stat-icon text-primary">
+								<i class="bi bi-arrow-left-right"></i>
+							</div>
+						</div>
+						<hr class="my-2">
+						<div class="d-flex justify-content-between">
+							<small class="text-success">
+								<i class="bi bi-check-circle"></i>
+								1,012</small>
+							<small class="text-warning">
+								<i class="bi bi-hourglass"></i>
+								153</small>
+							<small class="text-danger">
+								<i class="bi bi-x-circle"></i>
+								80</small>
+						</div>
+					</div>
+				</div>
+			</div>
 
-<div class="card mt-4">
-  <div class="card-header bg-primary text-white">
-    <h3 class="card-title mb-0">Ajouter un Transfert</h3>
-  </div>
-  <div class="card-body">
-    <form id="form-add-transfer">
-      <!-- Section Opération -->
-      <div class="section mb-4 p-3 border rounded">
-        <h4 class="text-primary mb-3"><i class="bi bi-gear-fill me-2"></i>Opération</h4>
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-bold">Date <span class="text-danger">*</span></label>
-            <input type="date" name="date" class="form-control shadow-sm" required>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-bold">Type <span class="text-danger">*</span></label>
-            <select name="type" class="form-select shadow-sm" required>
-              <option value="">-- Sélectionner --</option>
-              <option value="Express">Express</option>
-              <option value="Standard">Standard</option>
-              <option value="Urgent">Urgent</option>
-            </select>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-bold">Destination <span class="text-danger">*</span></label>
-            <select name="destination" class="form-select shadow-sm country-select" required>
-              <option value="">-- Sélectionner --</option>
-              <option value="France">🇫🇷 <strong>Paris</strong> - France</option>
-              <option value="USA">🇺🇸 <strong>Washington D.C.</strong> - États-Unis</option>
-              <option value="UK">🇬🇧 <strong>Londres</strong> - Royaume-Uni</option>
-              <!-- Options restantes... -->
-            </select>
-          </div>
-        </div>
-      </div>
+			<div class="col-md-3 mb-3">
+				<div class="card stat-card border-start border-success border-4">
+					<div class="card-body">
+						<div class="d-flex justify-content-between align-items-center">
+							<div>
+								<div class="stat-text">Transferts Internes</div>
+								<div class="stat-number text-success">892</div>
+							</div>
+							<div class="stat-icon text-success">
+								<i class="bi bi-people-fill"></i>
+							</div>
+						</div>
+						<hr class="my-2">
+						<div class="d-flex justify-content-between">
+							<small class="text-success">
+								<i class="bi bi-check-circle"></i>
+								720</small>
+							<small class="text-warning">
+								<i class="bi bi-hourglass"></i>
+								132</small>
+							<small class="text-danger">
+								<i class="bi bi-x-circle"></i>
+								40</small>
+						</div>
+					</div>
+				</div>
+			</div>
 
-        <!-- Section Expéditeur -->
-      <div class="section mb-4">
-        <div class="row g-3"> <!-- Utilisation de g-3 pour un espacement cohérent -->
-          <!-- Section Expéditeur -->
-          <div class="col-lg-6 col-md-12 mb-3 mb-lg-0"> <!-- Responsive columns -->
-            <div class="p-3 border rounded h-100"> <!-- h-100 pour égaliser la hauteur -->
-              <h4 class="text-primary mb-3"><i class="bi bi-person-fill me-2"></i>Expéditeur</h4>
-              <div class="row g-2">
-                <div class="col-12">
-                  <label class="form-label fw-bold">Sélectionner l'expéditeur <span class="text-danger">*</span></label>
-                  <select name="expediteur" class="form-select shadow-sm" required>
-                    <option value="">-- Choisir un expéditeur --</option>
-                    <option value="1">Jean Dupont</option>
-                    <option value="2">Marie Martin</option>
-                    <option value="3">Pierre Durand</option>
-                  </select>
-                </div>
-                <div class="col-12 mt-2">
-                  <div class="p-2 bg-light rounded">
-                    <small class="text-muted">Téléphone :</small>
-                    <div id="expediteur-phone" class="fw-bold">-</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+			<div class="col-md-3 mb-3">
+				<div class="card stat-card border-start border-info border-4">
+					<div class="card-body">
+						<div class="d-flex justify-content-between align-items-center">
+							<div>
+								<div class="stat-text">Transferts Gesta</div>
+								<div class="stat-number text-info">353</div>
+							</div>
+							<div class="stat-icon text-info">
+								<i class="bi bi-building"></i>
+							</div>
+						</div>
+						<hr class="my-2">
+						<div class="d-flex justify-content-between">
+							<small class="text-success">
+								<i class="bi bi-check-circle"></i>
+								292</small>
+							<small class="text-warning">
+								<i class="bi bi-hourglass"></i>
+								21</small>
+							<small class="text-danger">
+								<i class="bi bi-x-circle"></i>
+								40</small>
+						</div>
+					</div>
+				</div>
+			</div>
 
-          <!-- Section Bénéficiaire -->
-          <div class="col-lg-6 col-md-12">
-            <div class="p-3 border rounded h-100">
-              <h4 class="text-primary mb-3"><i class="bi bi-person-check-fill me-2"></i>Bénéficiaire</h4>
-              <div class="row g-2">
-                <div class="col-12">
-                  <label class="form-label fw-bold">Téléphone <span class="text-danger">*</span></label>
-                  <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-phone"></i></span>
-                    <input type="text" name="phoneBeneficiaire" class="form-control shadow-sm" placeholder="+1234567890" required>
-                  </div>
-                </div>
-                <div class="col-12">
-                  <label class="form-label fw-bold">Nom complet</label>
-                  <input type="text" name="nomBeneficiaire" class="form-control shadow-sm">
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- Section Montants -->
-      <div class="section mb-4 p-3 border rounded">
-  <h4 class="text-primary mb-3"><i class="bi bi-cash-stack me-2"></i>Montants et Frais</h4>
-  <div class="row g-3">
-    <!-- Montant Cash -->
-    <div class="col-md-4">
-      <label class="form-label fw-bold">Montant Cash <span class="text-danger">*</span></label>
-      <div class="input-group shadow-sm">
-        <select name="deviseCash" id="deviseCash" class="form-select" style="max-width: 100px;">
-          <option value="CFA">CFA</option>
-          <option value="EUR">EUR</option>
-          <option value="USD">USD</option>
-        </select>
-        <input type="number" id="montantCash" name="montantCash" class="form-control" placeholder="0.00" step="0.01" required>
-      </div>
-    </div>
-    
-    <!-- Frais d'envoi -->
-    <div class="col-md-4">
-      <label class="form-label fw-bold">Frais d'envoi <span class="text-danger">*</span></label>
-      <input type="number" id="fraisEnvoi" name="fraisEnvoi" class="form-control shadow-sm" placeholder="0.00" step="0.01" required>
-    </div>
-    
-    <!-- Taux de change -->
-    <div class="col-md-4">
-      <label class="form-label fw-bold">Taux <span class="text-danger">*</span></label>
-      <div class="input-group shadow-sm">
-        <span class="input-group-text">1</span>
-        <span id="deviseOrigineDisplay" class="input-group-text bg-light">CFA</span>
-        <span class="input-group-text">=</span>
-        <input type="number" id="taux" name="taux" class="form-control" placeholder="0.00" step="0.0001" required>
-        <span id="deviseCibleDisplay" class="input-group-text bg-light">USD</span>
-      </div>
-    </div>
-    
-    <!-- Montant Reçu (calculé automatiquement) -->
-    <div class="col-md-4">
-      <label class="form-label fw-bold">Montant Reçu</label>
-      <div class="input-group shadow-sm">
-        <span id="deviseRecueDisplay" class="input-group-text bg-light">USD</span>
-        <input type="number" id="montantRecu" name="montantRecu" class="form-control" placeholder="0.00" step="0.01" readonly>
-      </div>
-    </div>
-    
-    <!-- Total à payer -->
-    <div class="col-md-8">
-      <div class="p-3 bg-light rounded mt-2">
-        <div class="d-flex justify-content-between">
-          <span class="fw-bold">Total à payer:</span>
-          <span id="totalAPayer" class="fw-bold text-success">0.00 CFA</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
- 
-      <div class="d-flex justify-content-between mt-4">
-        <button type="reset" class="btn btn-outline-secondary">
-          <i class="bi bi-arrow-counterclockwise me-2"></i>Réinitialiser
-        </button>
-        <button type="submit" class="btn btn-primary px-4">
-          <i class="bi bi-save-fill me-2"></i>Créer le transfert
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
+			<div class="col-md-3 mb-3">
+				<div class="card stat-card border-start border-warning border-4">
+					<div class="card-body">
+						<div class="d-flex justify-content-between align-items-center">
+							<div>
+								<div class="stat-text">Montant Total</div>
+								<div class="stat-number text-warning">12.5M CFA</div>
+							</div>
+							<div class="stat-icon text-warning">
+								<i class="bi bi-cash-stack"></i>
+							</div>
+						</div>
+						<hr class="my-2">
+						<div class="d-flex justify-content-between">
+							<small class="text-success">Envoyés: 10.2M</small>
+							<small class="text-danger">Frais: 2.3M</small>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 
-</div>
-{# --- Modals d'Actions --- #}
+		<div class="card mb-4">
+			<div class="card-header bg-light">
+				<h5 class="card-title mb-0">
+					<i class="bi bi-funnel-fill me-2"></i>Filtres</h5>
+			</div>
+			<div class="card-body">
+				<div class="row g-3">
+					<div class="col-md-3">
+						<label class="filter-label">Période</label>
+						<input type="text" id="filterDateRange" class="form-control form-control-sm" placeholder="Sélectionner une période">
+					</div>
+					<div class="col-md-2">
+						<label class="filter-label">Statut</label>
+						<select id="filterStatus" class="form-select form-select-sm">
+							<option value="">Tous statuts</option>
+							<option value="completed">Complétés</option>
+							<option value="pending">En attente</option>
+							<option value="failed">Annulés</option>
+						</select>
+					</div>
+					<div class="col-md-2">
+						<label class="filter-label">Type opération</label>
+						<select id="filterOperationType" class="form-select form-select-sm">
+							<option value="">Tous types</option>
+							<option value="standard">Envoi Cash</option>
+							<option value="byAccount">Retrait compte</option>
+						</select>
+					</div>
+					<div class="col-md-2">
+						<label class="filter-label">Type client</label>
+						<select id="filterClientType" class="form-select form-select-sm">
+							<option value="">Tous clients</option>
+							<option value="regular">Clients enregistrés</option>
+							<option value="ephemeral">Clients éphémères</option>
+						</select>
+					</div>
+					<div class="col-md-3">
+						<label class="filter-label">Recherche</label>
+						<div class="input-group input-group-sm">
+							<input type="text" id="filterSearch" class="form-control" placeholder="Client, bénéficiaire...">
+							<button class="btn btn-outline-secondary" type="button">
+								<i class="bi bi-search"></i>
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		{# --- 2. Liste des Transferts --- #}
+		<div class="card">
+			<div class="card-header bg-secondary text-white bold d-flex justify-content-between align-items-center">
+				<h5 class="card-title mb-0">
+					<i class="bi bi-list-ul me-2"></i>Historique des Transferts</h5>
+				<div>
+					<button id="refreshTable" class="btn btn-sm btn-outline-secondary text-white">
+						<i class="bi bi-arrow-clockwise me-1"></i>
+						Actualiser
+					</button>
+				</div>
+			</div>
+			<div class="card-body p-4">
+				<div class="table-responsive">
+					<table id="transfersTable" class="table table-transfer table-hover table-stripe mb-0 w-100">
+						<thead>
+							<tr>
+								<th width="100">Type</th>
+								<th>Expéditeur</th>
+								<th width="150">Montant</th>
+								<th width="120">Taux</th>
+								<th width="120">Frais</th>
+								<th width="150">Total remis</th>
+								<th width="160">Statut</th>
+								<th width="100">Actions</th>
+							</tr>
+						</thead>
+						<tbody>
+							<!-- Les données seront chargées via DataTables -->
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
 
-{# Modal Paiement Transfert #}
-<div class="modal fade" id="modalTransferPayment" tabindex="-1" aria-hidden="true" data-id='' data-remain="0">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form id="form-transfer-payment">
-        <div class="modal-header">
-          <h5 class="modal-title">Paiement du Transfert</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-2 text-end">
-            <h5 class="text-primary">Solde compte local : <span id="soldeCompteLocal">--</span></h5>
-          </div>
-          <div class="mb-1">
-            <label class="form-label"><strong>Montant à payer</strong></label>
-            <input type="number" name="amount" class="form-control" id="paymentAmount" min="0" step="0.01" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label"><strong>Mode de paiement</strong></label>
-            <select name="paymentMethod" class="form-select" required>
-              <option value=""> -- Sélectionner -- </option>
-              <option value="compte">Compte local</option>
-              <option value="Espèces">Espèces</option>
-              <option value="chèque">Chèque</option>
-              <option value="virement">Virement</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label"><strong>Référence (optionnel)</strong></label>
-            <input type="text" name="reference" class="form-control" placeholder="Référence du paiement">
-          </div>
-          <div class="mb-2 text-end">
-            <small class="text-muted">Montant restant à payer : <span id="remainingAmount">--</span> FCFA</small>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="submit" class="btn btn-primary">Valider le paiement</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-{# Modal Annulation Transfert #}
-<div class="modal fade" id="modalCancelTransfer" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form id="form-cancel-transfer">
-        <div class="modal-header">
-          <h5 class="modal-title">Annuler le Transfert</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <input type="hidden" id="cancelTransferId" name="transferId">
-          <div class="mb-3">
-            <label>Justification (obligatoire)</label>
-            <textarea name="reason" class="form-control" rows="3" required></textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="submit" class="btn btn-danger">Confirmer annulation</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-{# Modal Historique Paiements #}
-<div class="modal fade" id="modalHistoryTransfer" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Historique des Paiements</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <table id="historyTable" class="table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Montant</th>
-              <th>Mode</th>
-              <th>Référence</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
-<div class="modal fade" id="cachetModal" tabindex="-1" aria-labelledby="cachetModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+		<div class="card mt-4">
+			<div class="card-header bg-primary text-white">
+				<h3 class="card-title mb-0">
+					<i class="bi bi-send"></i>
+					Ajouter un Transfert
+				</h3>
+			</div>
+			<div class="card-body">
+				<form
+					id="form-add-transfer">
+					<!-- Section Opération -->
+					<div class="section mb-4 p-3 border rounded">
+						<h4 class="text-primary mb-3">
+							<i class="bi bi-gear-fill me-2"></i>Opération
+						</h4>
+						<div class="row g-3">
+							<div class="col-md-4">
+								<label class="form-label fw-bold">Date
+									<span class="text-danger">*</span>
+								</label>
+								<input type="date" id="dateOps" name="date" class="form-control shadow-sm" required>
+							</div>
+							<div class="col-md-4">
+								<label class="form-label fw-bold">Type
+									<span class="text-danger">*</span>
+								</label>
+								<select id="typeOps" name="type" class="form-select shadow-sm" required>
+									<option value="standard">Envoi Cash</option>
+									<option value="byAccount">Retrait sur compte</option>
+								</select>
+							</div>
+							<div class="col-md-4">
+								<label class="form-label fw-bold">Destination
+									<span class="text-danger">*</span>
+								</label>
+								<select id="destination" name="destination" class="form-select shadow-sm country-select" required>
+									<option value="EAU">🇦🇪
+										<strong>Dubaï</strong>
+										- Emirates-Arabes-Unis</option>
+									<option value="FR">🇫🇷
+										<strong>Paris</strong>
+										- France</option>
+									<option value="USA">🇺🇸
+										<strong>Washington D.C.</strong>
+										- États-Unis</option>
+									<option value="UK">🇬🇧
+										<strong>Londres</strong>
+										- Royaume-Uni</option>
+									<option value="CHI">🇨🇳
+										<strong>Pékin</strong>
+										- Chine</option>
+									<option value="MRC">🇲🇦
+										<strong>Rabat</strong>
+										- Maroc</option>
+									<option value="ALG">🇩🇿
+										<strong>Alger</strong>
+										- Algérie</option>
+								</select>
+							</div>
+						</div>
+					</div>
+					<!-- Section Expéditeur -->
+					<div class="section mb-4">
+						<div
+							class="row g-3">
+							<!-- Section Expéditeur -->
+							<div class="col-lg-6 col-md-12 mb-3 mb-lg-0">
+								<div class="p-3 border rounded h-100">
+									<h4 class="text-primary mb-3">
+										<i class="bi bi-person-fill me-2"></i>Expéditeur
+									</h4>
+									<div class="row g-2">
+										<div class="col-12">
+											<label class="form-label fw-bold">Sélectionner l'expéditeur
+												<span class="text-danger">*</span>
+											</label>
+											<select id="select-expediteur" name="expediteur" class="form-select shadow-sm" required>
+												<option value="">-- Choisir un expéditeur --</option>
+												<option value="vanish">
+													<strong>
+														++ Client éphémère</strong>
+												</option>
+												{% for client in clients %}
+													<option value="{{client.id}}">
+														<strong>
+															{{client.nomComplet}}
+															({{client.phoneNumber}})</strong>
+													</option>
+
+												{% endfor %}
+											</select>
+										</div>
+										<div id="expediteur-phone" class="col-12 mt-2">
+											<div class="p-2 bg-light rounded">
+												<small class="text-muted">Téléphone :</small>
+												<div class="fw-bold">-</div>
+											</div>
+										</div>
+										<!-- Section pour le nouveau client (éphémère) -->
+										<div class="col-12 new-client-section d-none" id="new-client-section">
+											<h5 class="text-primary">Client Éphémère</h5>
+											<div class="mb-3">
+												<label class="form-label fw-bold">Nom complet
+													<span class="text-danger">*</span>
+												</label>
+												<input type="text" id="newExpediteurNom" name="newExpediteurNom" class="form-control shadow-sm" placeholder="Nom du client">
+											</div>
+											<div>
+												<label class="form-label fw-bold">Téléphone
+													<span class="text-danger">*</span>
+												</label>
+												<input type="text" id="newExpediteurPhone" name="newExpediteurPhone" class="form-control shadow-sm" placeholder="Numéro de téléphone">
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- Section Bénéficiaire -->
+							<div class="col-lg-6 col-md-12">
+								<div class="p-3 border rounded h-100">
+									<h4 class="text-primary mb-3">
+										<i class="bi bi-person-check-fill me-2"></i>Bénéficiaire
+									</h4>
+									<div class="row g-2">
+										<div class="col-12">
+											<label class="form-label fw-bold">Nom complet</label>
+											<input type="text" id="nomBeneficiaire" name="nomBeneficiaire" class="form-control shadow-sm" placeholder="Nom du bénéficiaire">
+										</div>
+										<div class="col-12">
+											<label class="form-label fw-bold">Téléphone
+												<span class="text-danger">*</span>
+											</label>
+											<div class="input-group">
+												<span class="input-group-text">
+													<i class="bi bi-phone"></i>
+												</span>
+												<input type="text" id="phoneBeneficiaire" name="phoneBeneficiaire" class="form-control shadow-sm" placeholder="+1234567890" required>
+											</div>
+										</div>
+
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- Section Montants -->
+					<div class="section mb-4 p-3 border rounded">
+						<h4 class="text-primary mb-3">
+							<i class="bi bi-cash-stack me-2"></i>Montants et Frais
+						</h4>
+						<div
+							class="row g-3">
+							<!-- Montant Cash -->
+							<div class="col-md-4">
+								<label class="form-label fw-bold">Montant Cash
+									<span class="text-danger">*</span>
+								</label>
+								<div class="input-group shadow-sm">
+									<span class="input-group-text bg-light">CFA</span>
+									<input type="number" id="montantCash" name="montantCash" class="form-control" placeholder="0.00" step="0.01" required>
+								</div>
+							</div>
+							<!-- Frais d'envoi -->
+							<div class="col-md-4">
+								<label class="form-label fw-bold">Frais d'envoi
+									<span class="text-danger">*</span>
+								</label>
+								<div class="input-group shadow-sm">
+									<input type="number" id="fraisEnvoi" name="fraisEnvoi" class="form-control shadow-sm" placeholder="0.00" step="0.01" required>
+									<span class="input-group-text bg-light">CFA</span>
+								</div>
+							</div>
+							<!-- Taux de change -->
+							<div class="col-md-4">
+								<label class="form-label fw-bold">Taux
+									<span class="text-danger">*</span>
+								</label>
+								<div class="input-group shadow-sm">
+									<span class="input-group-text">1</span>
+									<span class="input-group-text bg-light">USD</span>
+									<span class="input-group-text">=</span>
+									<input type="number" id="taux" name="taux" class="form-control" placeholder="0.00" step="0.0001" value="562.58" required>
+									<span class="input-group-text bg-light">CFA</span>
+								</div>
+							</div>
+							<!-- Montant Reçu (calculé automatiquement) -->
+							<div class="col-md-4">
+								<label class="form-label fw-bold">Montant Reçu</label>
+								<div class="input-group shadow-sm">
+									<span class="input-group-text bg-light">USD</span>
+									<input type="number" id="montantRecu" name="montantRecu" class="form-control" placeholder="0.00" step="0.01" readonly>
+								</div>
+							</div>
+
+
+							<div class="col-md-8">
+								<label class="form-label fw-bold" id="nomDeviseReceptionTaux">Taux de devise reception
+									<span class="text-danger">*</span>
+								</label>
+								<div class="input-group shadow-sm">
+									<span class="input-group-text">1</span>
+									<span id="deviseOrigineDisplay" class="input-group-text bg-light">USD</span>
+									<span class="input-group-text">=</span>
+									<input type="number" id="tauxReception" name="tauxReception" class="form-control" placeholder="0.00" step="0.0001" value="3.67" required>
+									<span class="input-group-text bg-light" id="deviseRecueDisplay">AED</span>
+									<input type="number" id="montantDeviseReception" name="montantDevise" class="form-control bg-info" placeholder="0.00" step="0.01" readonly>
+								</div>
+							</div>
+
+							<!-- Total à payer -->
+							<div class="col-md-12">
+								<div class="p-3 bg-light rounded">
+									<div class="d-flex justify-content-between total-display">
+										<span class="fw-bold">Total à payer:</span>
+										<span id="totalAPayer" class="fw-bold text-success display-6">0.00 CFA</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="d-flex justify-content-between mt-4">
+						<button type="reset" id="resetForm" class="btn btn-outline-secondary">
+							<i class="bi bi-arrow-counterclockwise me-2"></i>Réinitialiser
+						</button>
+						<button type="submit" class="btn btn-primary px-4">
+							<i class="bi bi-save-fill me-2"></i>Créer le transfert
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+	{# --- Modals d'Actions --- #}
+
+	{# Modal Paiement Transfert #}
+	<div class="modal fade" id="modalTransferPayment" tabindex="-1" aria-hidden="true" data-id='' data-remain="0">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<form id="form-transfer-payment">
+					<div class="modal-header">
+						<h5 class="modal-title">Paiement du Transfert</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+					</div>
+					<div class="modal-body">
+						<div class="mb-2 text-end">
+							<h5 class="text-primary">Solde compte local :
+								<span id="soldeCompteLocal">--</span>
+							</h5>
+						</div>
+						<div class="mb-1">
+							<label class="form-label">
+								<strong>Montant à payer</strong>
+							</label>
+							<input type="number" name="amount" class="form-control" id="paymentAmount" min="0" step="0.01" required>
+						</div>
+						<div class="mb-3">
+							<label class="form-label">
+								<strong>Mode de paiement</strong>
+							</label>
+							<select name="paymentMethod" class="form-select" required>
+								<option value="">
+									-- Sélectionner --
+								</option>
+								<option value="compte">Compte local</option>
+								<option value="Espèces">Espèces</option>
+								<option value="chèque">Chèque</option>
+								<option value="virement">Virement</option>
+							</select>
+						</div>
+						<div class="mb-3">
+							<label class="form-label">
+								<strong>Référence (optionnel)</strong>
+							</label>
+							<input type="text" name="reference" class="form-control" placeholder="Référence du paiement">
+						</div>
+						<div class="mb-2 text-end">
+							<small class="text-muted">Montant restant à payer :
+								<span id="remainingAmount">--</span>
+								FCFA</small>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+						<button type="submit" class="btn btn-primary">Valider le paiement</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+	{# Modal Annulation Transfert #}
+	<div class="modal fade" id="modalCancelTransfer" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<form id="form-cancel-transfer">
+					<div class="modal-header">
+						<h5 class="modal-title">Annuler le Transfert</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+					</div>
+					<div class="modal-body">
+						<input type="hidden" id="cancelTransferId" name="transferId">
+						<div class="mb-3">
+							<label>Justification (obligatoire)</label>
+							<textarea name="reason" class="form-control" rows="3" required></textarea>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+						<button type="submit" class="btn btn-danger">Confirmer annulation</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+	{# Modal Historique Paiements #}
+	<div class="modal fade" id="modalHistoryTransfer" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Historique des Paiements</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<table id="historyTable" class="table">
+						<thead>
+							<tr>
+								<th>Date</th>
+								<th>Montant</th>
+								<th>Mode</th>
+								<th>Référence</th>
+							</tr>
+						</thead>
+						<tbody></tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="modal fade" id="cachetModal" tabindex="-1" aria-labelledby="cachetModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="cachetModalLabel">Imprimer le transfert</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					Voulez-vous imprimer le transfert avec le cachet ?
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" id="cachetNo">Non</button>
+					<button type="button" class="btn btn-primary" id="cachetYes">Oui</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Modal View Transfer -->
+<div class="modal fade" id="viewTransferModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="cachetModalLabel">Imprimer le transfert</h5>
+            <div class="modal-header bg-light">
+                <h5 class="modal-title">Détails du Transfert <span id="transferReference" class="badge bg-primary ms-2"></span></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                Voulez-vous imprimer le transfert avec le cachet ?
+                <div class="row">
+                    <!-- Section Informations Générales -->
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Informations Générales</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <small class="text-muted">Date de création:</small>
+                                    <div class="fw-bold" id="transferDate"></div>
+                                </div>
+                                <div class="mb-2">
+                                    <small class="text-muted">Type:</small>
+                                    <div class="fw-bold" id="transferType"></div>
+                                </div>
+                                <div class="mb-2">
+                                    <small class="text-muted">Destination:</small>
+                                    <div class="fw-bold" id="transferDestination"></div>
+                                </div>
+                                <div class="mb-2">
+                                    <small class="text-muted">Statut:</small>
+                                    <div id="transferStatus"></div>
+                                </div> 
+                            </div>
+                        </div>
+                        
+                        <!-- Section Expéditeur -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="bi bi-person-fill me-2"></i>Expéditeur</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <small class="text-muted">Nom complet:</small>
+                                    <div class="fw-bold" id="senderName"></div>
+                                </div>
+                                <div class="mb-2">
+                                    <small class="text-muted">Téléphone:</small>
+                                    <div class="fw-bold" id="senderPhone"></div>
+                                </div>
+                                <div class="mb-2">
+                                    <small class="text-muted">Type client:</small>
+                                    <div class="fw-bold" id="senderType"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Section Bénéficiaire et Montants -->
+                    <div class="col-md-6">
+                        <!-- Section Bénéficiaire -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="bi bi-person-check-fill me-2"></i>Bénéficiaire</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <small class="text-muted">Nom complet:</small>
+                                    <div class="fw-bold" id="beneficiaryName"></div>
+                                </div>
+                                <div class="mb-2">
+                                    <small class="text-muted">Téléphone:</small>
+                                    <div class="fw-bold" id="beneficiaryPhone"></div>
+                                </div>
+                        
+                            </div>
+                        </div>
+                        
+                        <!-- Section Montants -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="bi bi-cash-stack me-2"></i>Montants</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <small class="text-muted">Montant envoyé:</small>
+                                    <div class="fw-bold text-success" id="transferAmount"></div>
+                                </div>
+                                <div class="mb-2">
+                                    <small class="text-muted">Frais d'envoi:</small>
+                                    <div class="fw-bold text-danger" id="transferFees"></div>
+                                </div>
+                                <div class="mb-2">
+                                    <small class="text-muted">Taux de change USD:</small>
+                                    <div class="fw-bold" id="transferRate"></div>
+                                </div>
+								<div class="mb-2">
+                                    <small class="text-muted">Montant envoyé USD:</small>
+                                    <div class="fw-bold text-success" id="transferAmountUSD"></div>
+                                </div>
+								<div class="mb-2">
+                                    <small class="text-muted">Taux de change <span id="deviseDestination"></span>:</small>
+                                    <div class="fw-bold" id="destinationRate"></div>
+                                </div>
+								 <div class="mb-2">
+                                    <small class="text-muted">Montant reception:</small>
+                                    <div class="fw-bold text-success" id="destinationAmount"></div>
+                                </div> 
+                                <hr>
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">Total payer:</small>
+                                    <div class="fw-bold fs-5 text-success" id="transferTotal"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div> 
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" id="cachetNo">Non</button>
-                <button type="button" class="btn btn-primary" id="cachetYes">Oui</button>
+            <div class="modal-footer bg-light">
+                <div class="d-flex justify-content-between w-100">
+                    <div>
+                        <button id="printReceiptBtn" class="btn btn-outline-secondary me-2">
+                            <i class="bi bi-printer me-1"></i> Imprimer
+                        </button>
+                        <button id="downloadReceiptBtn" class="btn btn-outline-secondary">
+                            <i class="bi bi-download me-1"></i> Télécharger
+                        </button>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle me-1"></i> Fermer
+                        </button>
+                        <div class="btn-group">
+                            <button id="validateTransferBtn" class="btn btn-success d-none">
+                                <i class="bi bi-check-circle me-1"></i> Valider
+                            </button>
+                            <button id="cancelTransferBtn" class="btn btn-danger d-none">
+                                <i class="bi bi-x-circle me-1"></i> Annuler
+                            </button>
+                            <button id="deleteTransferBtn" class="btn btn-outline-danger d-none">
+                                <i class="bi bi-trash me-1"></i> Supprimer
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+
+  
 {% endblock %}
 {% block javascripts %}
-  {# <script src="{{ asset('assets/appjs/transfer.js') }}"></script> #}
+	<script src="{{ asset('assets/js/select2/select2.min.js') }}"></script>
+	<script src="{{ asset('assets/appjs/transfer.js') }}"></script>
 {% endblock %}

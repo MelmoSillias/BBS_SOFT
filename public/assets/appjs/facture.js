@@ -446,10 +446,7 @@ function initRowActions() {
       data: JSON.stringify(payload)
     })
     .done(() => {
-      showToastModal({ message:'Paiement enregistré.', type:'success' });
-      invoiceTable.ajax.reload();
-      $('#modalInvoicePayment').modal('hide');
-      reloadStats();
+      
     })
     .fail(() => showToastModal({ message:'Erreur lors du paiement.', type:'error' }))
     .always(() => $btn.prop('disabled', false));

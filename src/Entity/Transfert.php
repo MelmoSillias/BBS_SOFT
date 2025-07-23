@@ -9,6 +9,12 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: TransfertRepository::class)]
 class Transfert
 {
+
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_PROCESSING = 'processing';
+    public const STATUS_COMPLETED = 'completed';
+    public const STATUS_CANCELLED = 'cancelled';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -43,6 +49,30 @@ class Transfert
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 0)]
     private ?string $Frais = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $vanishClientName = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $vanishClientPhone = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $receiverName = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $ReceiverPhone = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 0)]
+    private ?string $TauxDeviseReception = null;
+
+    #[ORM\Column(length: 55)]
+    private ?string $status = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $updatedAt = null;
+
+    #[ORM\Column(length: 10)]
+    private ?string $ref = null;
 
     public function getId(): ?int
     {
@@ -165,6 +195,102 @@ class Transfert
     public function setFrais(string $Frais): static
     {
         $this->Frais = $Frais;
+
+        return $this;
+    }
+
+    public function getVanishClientName(): ?string
+    {
+        return $this->vanishClientName;
+    }
+
+    public function setVanishClientName(?string $vanishClientName): static
+    {
+        $this->vanishClientName = $vanishClientName;
+
+        return $this;
+    }
+
+    public function getVanishClientPhone(): ?string
+    {
+        return $this->vanishClientPhone;
+    }
+
+    public function setVanishClientPhone(?string $vanishClientPhone): static
+    {
+        $this->vanishClientPhone = $vanishClientPhone;
+
+        return $this;
+    }
+
+    public function getReceiverName(): ?string
+    {
+        return $this->receiverName;
+    }
+
+    public function setReceiverName(string $receiverName): static
+    {
+        $this->receiverName = $receiverName;
+
+        return $this;
+    }
+
+    public function getReceiverPhone(): ?string
+    {
+        return $this->ReceiverPhone;
+    }
+
+    public function setReceiverPhone(string $ReceiverPhone): static
+    {
+        $this->ReceiverPhone = $ReceiverPhone;
+
+        return $this;
+    }
+
+    public function getTauxDeviseReception(): ?string
+    {
+        return $this->TauxDeviseReception;
+    }
+
+    public function setTauxDeviseReception(string $TauxDeviseReception): static
+    {
+        $this->TauxDeviseReception = $TauxDeviseReception;
+
+        return $this;
+    }
+
+    public function getStatus(): ?string
+    {
+        return $this->status;
+    }
+
+    public function setStatus(string $status): static
+    {
+        $this->status = $status;
+
+        return $this;
+    }
+
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(?\DateTimeImmutable $updatedAt): static
+    {
+        $this->updatedAt = $updatedAt;
+
+        return $this;
+    }
+
+    public function getRef(): ?string
+    {
+        return $this->ref;
+    }
+
+    public function setRef(string $ref): static
+    {
+        $this->ref = $ref;
 
         return $this;
     }
