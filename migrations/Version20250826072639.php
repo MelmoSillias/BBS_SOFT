@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20250723225854 extends AbstractMigration
+final class Version20250826072639 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -21,7 +21,7 @@ final class Version20250723225854 extends AbstractMigration
     {
         // this up() migration is auto-generated, please modify it to your needs
         $this->addSql(<<<'SQL'
-            ALTER TABLE transfert ADD ref VARCHAR(10) NOT NULL
+            ALTER TABLE transfert CHANGE taux taux NUMERIC(10, 5) NOT NULL
         SQL);
     }
 
@@ -29,7 +29,7 @@ final class Version20250723225854 extends AbstractMigration
     {
         // this down() migration is auto-generated, please modify it to your needs
         $this->addSql(<<<'SQL'
-            ALTER TABLE transfert DROP ref
+            ALTER TABLE transfert CHANGE taux taux NUMERIC(10, 0) NOT NULL
         SQL);
     }
 }

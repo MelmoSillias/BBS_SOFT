@@ -2,8 +2,10 @@
 
 namespace App\Controller;
 
+use App\Entity\AccountTransaction;
 use App\Entity\Client;
 use App\Entity\Transfert;
+use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -30,10 +32,11 @@ final class TransfertController extends AbstractController
     {
         // Récupérer les données du corps de la requête
         $data = json_decode($req->getContent(), true);
-
+        
+        dump($data);
         // Vérifier si les données sont valides
         if (empty($data)) {
-            return new JsonResponse(['error' => 'Invalid request data'], 400);
+            return new JsonResponse(['error' => 'Erreur de données'], 400);
         }
 
         // Créer une nouvelle instance de Transfert
@@ -52,20 +55,54 @@ final class TransfertController extends AbstractController
         $transfert->setReceiverName($data['nomBeneficiaire']);
         $transfert->setReceiverPhone($data['phoneBeneficiaire']);
         $transfert->setTauxDeviseReception($data['tauxReception']);
+        $transfert->setStatus('pending'); 
 
         // Gérer le client éphémère
         if (isset($data['newExpediteurNom']) && isset($data['newExpediteurPhone'])) {
             $transfert->setVanishClientName($data['newExpediteurNom']);
             $transfert->setVanishClientPhone($data['newExpediteurPhone']);
+            $clientName = $data['newExpediteurNom'];
         } else {
             // Si un client existant est sélectionné, vous devez récupérer l'entité Client correspondante
             $clientId = $data['expediteur'];
             $client = $em->getRepository(Client::class)->find($clientId);
+
             if ($client) {
                 $transfert->setClient($client);
+                $clientName = $client->getNomComplet();
+            }
+
+            if ($transfert->getType() === "byAccount") {
+
+                $balance = $client->getbalance("CFA");
+
+                $amount = $data['totalAPayer'];
+
+                if ($balance < $amount) {
+                    return new JsonResponse(['error' => 'le solde est insuffisant'], 400);
+                } 
+
+                $ctx = new AccountTransaction();
+                $ctx->setIncome(0)
+                    ->setOutcome($amount)
+                    ->setAccountType('client')
+                    ->setPaymentMethod('espèce')
+                    ->setPaymentRef('')
+                    ->setDevise('CFA')
+                    ->setReason('Rétrait solde client')
+                    ->setUpdatedAt(new \DateTimeImmutable())
+                    ->setDescrib('Transfert effectué à partir du compte')
+                    ->setClient($client) 
+                    ->setCreatedAt(new \DateTimeImmutable())
+                    ->setStatus('validé');
+
+                $transfert->setTransaction($ctx);
+
+                $em->persist($ctx);
             }
         }
-
+        $ref = $this->generateReference($clientName, $em);
+        $transfert->setRef($ref);
         // Persister et sauvegarder l'entité
         $em->persist($transfert);
         $em->flush();
@@ -78,12 +115,12 @@ final class TransfertController extends AbstractController
     public function listTransferts(EntityManagerInterface $em, Request $req): JsonResponse
     {
         // Récupérer les paramètres de la requête
-        $startDate = $req->query->get('start_date');
-        $endDate = $req->query->get('end_date');
+        $startDate = $req->query->get('dateFrom');
+        $endDate = $req->query->get('dateTo');
         $status = $req->query->get('status');
-        $clientType = $req->query->get('client_type'); // 'vanish' ou 'present'
-        $operationType = $req->query->get('operation_type');
-        $clientName = $req->query->get('client_name');
+        $clientType = $req->query->get('clientType'); // 'vanish' ou 'present'
+        $operationType = $req->query->get('type');
+        $clientName = $req->query->get('clientName');
 
         // Créer une requête de base
         $queryBuilder = $em->getRepository(Transfert::class)->createQueryBuilder('t');
@@ -105,9 +142,9 @@ final class TransfertController extends AbstractController
                 ->setParameter('operationType', $operationType);
         }
 
-        if ($clientType === 'vanish') {
-            $queryBuilder->andWhere('t.vanishClientName IS NOT NULL');
-        } elseif ($clientType === 'present') {
+        if ($clientType === 'ephemeral') {
+            $queryBuilder->andWhere('t.client IS NULL');
+        } elseif ($clientType === 'regular') {
             $queryBuilder->andWhere('t.client IS NOT NULL');
         }
 
@@ -130,6 +167,7 @@ final class TransfertController extends AbstractController
                 'createdAt' => $transfert->getCreatedAt()->format('Y-m-d H:i:s'),
                 'type' => $transfert->getType(),
                 'destination' => $transfert->getDestination(),
+                'typeClient' => !$transfert->getClient() ? 'Client éphémère' : 'Client enregistré',
                 'expediteur' => $nomComplet,
                 'montantCash' => $transfert->getMontantCash(),
                 'deviseCash' => $transfert->getDeviseCash(),
@@ -141,46 +179,130 @@ final class TransfertController extends AbstractController
                 'receiverPhone' => $transfert->getReceiverPhone(),
                 'tauxDeviseReception' => $transfert->getTauxDeviseReception(),
                 'status' => $transfert->getStatus(),
+                'ref' => $transfert->getRef()
             ];
         }, $transferts);
 
         return new JsonResponse($output);
     }
 
-     #[Route('/api/transferts/{transfert}', name: 'api_transfert_details', methods: ['GET'])]
+    #[Route('/api/transferts/stats', name: 'api_transfert_stats', methods: ['GET'])]
+    public function statsTransferts(EntityManagerInterface $em, Request $req): JsonResponse
+    {
+        // Récupération des dates (optionnelles)
+        $startDate = $req->query->get('dateFrom');
+        $endDate = $req->query->get('dateTo');
+
+        $qb = $em->getRepository(Transfert::class)->createQueryBuilder('t');
+
+        // Filtre par période
+        if ($startDate && $endDate) {
+            $qb->andWhere('t.createdAt BETWEEN :start AND :end')
+            ->setParameter('start', new \DateTime($startDate))
+            ->setParameter('end', new \DateTime($endDate));
+        }
+
+        $transferts = $qb->getQuery()->getResult();
+
+        // Initialisation des stats
+        $totalTransferts = count($transferts);
+        $totalMontantCash = 0;
+        $totalMontantReception = 0;
+        $totalFrais = 0;
+
+        $parStatut = [
+            'en_attente' => 0,
+            'valide' => 0,
+            'annule' => 0,
+        ];
+
+        $parTypeClient = [
+            'ephemere' => 0,
+            'enregistre' => 0,
+        ];
+
+        $parTypeOperation = [];
+
+        foreach ($transferts as $transfert) {
+            $totalMontantCash += $transfert->getMontantCash();
+            $totalMontantReception += $transfert->getMontantReception();
+            $totalFrais += $transfert->getFrais();
+
+            // Par statut
+            $statut = $transfert->getStatus();
+            if ($statut === 'pending' || $statut === 0) $parStatut['en_attente']++;
+            elseif ($statut === 'completed' || $statut === 1) $parStatut['valide']++;
+            elseif ($statut === 'cancelled' || $statut === 2) $parStatut['annule']++;
+
+            // Par type de client
+            if ($transfert->getClient() === null) {
+                $parTypeClient['ephemere']++;
+            } else {
+                $parTypeClient['enregistre']++;
+            }
+
+            // Par type d’opération
+            $typeOp = $transfert->getType();
+            if (!isset($parTypeOperation[$typeOp])) {
+                $parTypeOperation[$typeOp] = 1;
+            } else {
+                $parTypeOperation[$typeOp]++;
+            }
+        }
+
+        $stats = [
+            'periode' => $startDate && $endDate ? [
+                'du' => $startDate,
+                'au' => $endDate,
+            ] : 'Toutes périodes',
+            'nombre_total' => $totalTransferts,
+            'montant_total_cash' => $totalMontantCash,
+            'montant_total_reception' => $totalMontantReception,
+            'frais_totaux' => $totalFrais,
+            'par_statut' => $parStatut,
+            'par_type_client' => $parTypeClient,
+            'par_type_operation' => $parTypeOperation,
+        ];
+
+        return new JsonResponse($stats);
+    }
+
+
+    #[Route('/api/transferts/{transfert}', name: 'api_transfert_details', methods: ['GET'])]
     public function DetailsTransfert(Transfert $transfert, EntityManagerInterface $em, Request $req): JsonResponse
     {
-        
+
         if (!$transfert) {
-           return $this->json(['error' => 'Transfert invalide'], 404);
+            return $this->json(['error' => 'Transfert invalide'], 404);
         }
 
         $nomComplet = $transfert->getVanishClientName() ?: ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : '');
         $telephone = $transfert->getVanishClientPhone() ?: ($transfert->getClient() ? $transfert->getClient()->getPhoneNumber() : '');
         // Préparer les données de sortie
         $output =  [
-                'id' => $transfert->getId(),
-                'createdAt' => $transfert->getCreatedAt()->format('Y-m-d H:i:s'),
-                'type' => $transfert->getType(),
-                'destination' => $transfert->getDestination(),
-                'expediteur' => $nomComplet,
-                'phone' => $telephone,
-                'montantCash' => $transfert->getMontantCash(),
-                'deviseCash' => $transfert->getDeviseCash(),
-                'montantReception' => $transfert->getMontantReception(),
-                'deviseReception' => $transfert->getDeviseReception(),
-                'taux' => $transfert->getTaux(),
-                'frais' => $transfert->getFrais(),
-                'receiverName' => $transfert->getReceiverName(),
-                'receiverPhone' => $transfert->getReceiverPhone(),
-                'tauxDeviseReception' => $transfert->getTauxDeviseReception(),
-                'status' => $transfert->getStatus(),
-            ];
+            'id' => $transfert->getId(),
+            'createdAt' => $transfert->getCreatedAt()->format('Y-m-d H:i:s'),
+            'type' => $transfert->getType(),
+            'destination' => $transfert->getDestination(),
+            'expediteur' => $nomComplet,
+            'phone' => $telephone,
+            'montantCash' => $transfert->getMontantCash(),
+            'deviseCash' => $transfert->getDeviseCash(),
+            'montantReception' => $transfert->getMontantReception(),
+            'deviseReception' => $transfert->getDeviseReception(),
+            'taux' => $transfert->getTaux(),
+            'frais' => $transfert->getFrais(),
+            'receiverName' => $transfert->getReceiverName(),
+            'receiverPhone' => $transfert->getReceiverPhone(),
+            'tauxDeviseReception' => $transfert->getTauxDeviseReception(),
+            'status' => $transfert->getStatus(),
+            'ref' => $transfert->getRef()
+        ];
 
         return new JsonResponse($output);
     }
 
-    #[Route('/api/transferts/{transfert}/validate', name: 'api_transfer_validate', methods: ['POST'])]
+    #[Route('/api/transferts/{id}/validate', name: 'api_transfer_validate', methods: ['POST'])]
     public function validateTransfer(Transfert $transfer, EntityManagerInterface $em): JsonResponse
     {
         // Vérifier que le transfert peut être validé (statut pending par exemple)
@@ -190,23 +312,23 @@ final class TransfertController extends AbstractController
                 'message' => 'Le transfert ne peut pas être validé dans son état actuel'
             ], Response::HTTP_BAD_REQUEST);
         }
-        
+
         $transfer->setStatus(Transfert::STATUS_COMPLETED);
-        $transfer->setUpdatedAt(new \DateTimeImmutable()); 
-        
+        $transfer->setUpdatedAt(new \DateTimeImmutable());
+
         $em->flush();
-        
+
         return $this->json([
-                'success' => false,
-                'message' => 'Le transfert a été validé avec succès'
-            ], Response::HTTP_OK);
+            'success' => false,
+            'message' => 'Le transfert a été validé avec succès'
+        ], Response::HTTP_OK);
     }
-    
+
     #[Route('/api/transferts/{id}/cancel', name: 'api_transfer_cancel', methods: ['POST'])]
     public function cancelTransfer(
-        Transfert $transfer, 
-        Request $request
-        , EntityManagerInterface $em
+        Transfert $transfer,
+        Request $request,
+        EntityManagerInterface $em
     ): JsonResponse {
         // Vérifier que le transfert peut être annulé
         if (!in_array($transfer->getStatus(), [Transfert::STATUS_PENDING, Transfert::STATUS_PROCESSING])) {
@@ -215,42 +337,35 @@ final class TransfertController extends AbstractController
                 'message' => 'Le transfert ne peut pas être annulé dans son état actuel'
             ], Response::HTTP_BAD_REQUEST);
         }
-        
-        $data = json_decode($request->getContent(), true); 
-        
+
+        $data = json_decode($request->getContent(), true);
+
         $transfer->setStatus(Transfert::STATUS_CANCELLED);
-        $transfer->setUpdatedAt(new \DateTimeImmutable()); 
-        
+        $transfer->setUpdatedAt(new \DateTimeImmutable());
+
+        $tx = $transfer->getTransaction();
+        if ($tx) $em->remove($tx);
+        $em->remove($transfer);
+
         $em->flush();
-        
+
         return $this->json([
-                'success' => false,
-                'message' => 'Le transfert a été annulé'
-            ], Response::HTTP_OK);
+            'success' => false,
+            'message' => 'Le transfert a été annulé'
+        ], Response::HTTP_OK);
     }
-    
+
     #[Route('/api/transferts/{id}/delete', name: 'api_transfer_delete', methods: ['DELETE'])]
     public function deleteTransfer(Transfert $transfer, EntityManagerInterface $em): JsonResponse
-    {
-        // Vérifier que le transfert peut être supprimé
-        if ($transfer->getStatus() !== Transfert::STATUS_CANCELLED) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Seuls les transferts annulés peuvent être supprimés'
-            ], Response::HTTP_BAD_REQUEST);
-        }
-        
-        // Vérifier les permissions (ex: seulement admin ou manager)
-        if (!$this->isGranted('ROLE_ADMIN') && !$this->isGranted('ROLE_MANAGER')) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Vous n\'avez pas les permissions nécessaires'
-            ], Response::HTTP_FORBIDDEN);
-        }
-        
+    { 
+ 
+        $tx = $transfer->getTransaction();
+
+        if ($tx) $em->remove($tx);
         $em->remove($transfer);
+
         $em->flush();
-        
+
         return $this->json([
             'success' => true,
             'message' => 'Transfert supprimé avec succès'
@@ -261,7 +376,7 @@ final class TransfertController extends AbstractController
     public function generateReceipt(Transfert $transfer): Response
     {
         return $this->render('transfert/print.html.twig', [
-            'transfer' => $transfer,
+            'transfert' => $transfer,
             'company' => [
                 'name' => 'BSS',
                 'full_name' => 'BUREAU DE SERVICES ET DE SOLUTIONS',
@@ -273,4 +388,43 @@ final class TransfertController extends AbstractController
         ]);
     }
 
+    private function generateReference(string $clientName, EntityManagerInterface $em): string
+    {
+        // Obtenir trois lettres du nom du client
+        $threeLetters = strtoupper(substr($clientName, 0, 3));
+
+        // Obtenir les deux derniers chiffres de l'année actuelle
+        $year = date('y');
+
+        // Obtenir les deux chiffres du mois actuel
+        $month = date('m');
+
+        // Obtenir le nombre de transferts effectués dans le mois actuel
+        $transferCount = $this->getTransferCountForCurrentMonth($em);
+
+        // Formater le nombre de transferts sur trois chiffres
+        $formattedTransferCount = str_pad($transferCount, 3, '0', STR_PAD_LEFT);
+
+        // Combiner pour former la référence
+        $ref = $threeLetters . $year . $month . $formattedTransferCount;
+
+        return $ref;
+    }
+
+    private function getTransferCountForCurrentMonth(EntityManagerInterface $em): int
+    {
+        $start = date('Y-m-01');
+        $end = date('Y-m-t');
+
+        $queryBuilder = $em->createQueryBuilder();
+        $queryBuilder->select('COUNT(t.id)')
+            ->from(Transfert::class, 't')
+            ->where('t.createdAt BETWEEN :start AND :end')
+            ->setParameter('start', $start)
+            ->setParameter('end', $end);
+
+        $transferCount = $queryBuilder->getQuery()->getSingleScalarResult();
+
+        return $transferCount + 1; // Increment to account for the current transfer
+    }
 }

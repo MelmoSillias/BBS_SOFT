@@ -1,345 +1,368 @@
 {% extends 'appbase.html.twig' %}
 
-{% block title %}Finances{% endblock %}
+{% block title %}Finances
+{% endblock %}
 
 {% block main %}
-<div class="container-fluid">
+	<div
+		class="container-fluid">
 
-  {# --- Pending validations badge --- #}
-  <div class="card mb-3">
-    <div class="card-header p-2">
-      <button
-        class="btn btn-outline-warning w-100 text-start d-flex justify-content-between align-items-center"
-        type="button"
-        data-bs-toggle="collapse"
-        data-bs-target="#validationCollapse"
-        aria-expanded="false"
-        aria-controls="validationCollapse"
-        id="btnShowPending"
-      >
-        <span>
-          <i class="bi bi-hourglass-split"></i>
-          À valider
-        </span>
-        <span class="badge bg-warning" id="pendingCount">0</span>
-      </button>
-    </div>
-    <div id="validationCollapse" class="collapse">
-      <div class="card-body" id="listValidation">
-        <!-- Les cartes de transactions en attente seront injectées ici -->
-      </div>
-    </div>
-  </div>
+		{# --- Pending validations badge --- #}
+		<div class="card mb-3">
+			<div class="card-header p-2">
+				<button class="btn btn-outline-warning w-100 text-start d-flex justify-content-between align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#validationCollapse" aria-expanded="false" aria-controls="validationCollapse" id="btnShowPending">
+					<span>
+						<i class="bi bi-hourglass-split"></i>
+						À valider
+					</span>
+					<span class="badge bg-warning" id="pendingCount">0</span>
+				</button>
+			</div>
+			<div id="validationCollapse" class="collapse">
+				<div
+					class="card-body" id="listValidation"><!-- Les cartes de transactions en attente seront injectées ici -->
+				</div>
+			</div>
+		</div>
 
-  <div class="row mb-4" id="stats">
-        <div class="col-lg-6"><div class="small-box bg-success"><div class="inner"><h3 id="SoldeAppr">--</h3><p>Solde Approvisionnement</p></div><div class="icon"><i class="bi bi-safe"></i></div></div></div>
-        <div class="col-lg-6"><div class="small-box bg-primary"><div class="inner"><h3 id="SoldeDep">--</h3><p>Solde Depense</p></div><div class="icon"><i class="bi bi-piggy-bank"></i></div></div></div>
-  </div>
+		<div class="row mb-4" id="stats">
+			<div class="col-lg-6">
+				<div class="small-box bg-success">
+					<div class="inner">
+						<h3 id="SoldeAppr">--</h3>
+						<p>Solde Approvisionnement</p>
+					</div>
+					<div class="icon">
+						<i class="bi bi-safe"></i>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-6">
+				<div class="small-box bg-primary">
+					<div class="inner">
+						<h3 id="SoldeDep">--</h3>
+						<p>Solde Depense</p>
+					</div>
+					<div class="icon">
+						<i class="bi bi-piggy-bank"></i>
+					</div>
+				</div>
+			</div>
+		</div>
 
-  {# --- Nav tabs pour Caisse Approvisionnement / Dépenses --- #}
-  <ul class="nav nav-tabs mb-4" id="financesTab" role="tablist">
-    <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="tab-supplier" data-bs-toggle="tab" data-bs-target="#supplier"
-              type="button" role="tab">Caisse Approvisionnement</button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="tab-expense" data-bs-toggle="tab" data-bs-target="#expense"
-              type="button" role="tab">Caisse Dépenses</button>
-    </li>
-  </ul>
+		{# --- Nav tabs pour Caisse Approvisionnement / Dépenses --- #}
+		<ul class="nav nav-tabs mb-4" id="financesTab" role="tablist">
+			<li class="nav-item" role="presentation">
+				<button class="nav-link active" id="tab-supplier" data-bs-toggle="tab" data-bs-target="#supplier" type="button" role="tab">Caisse Approvisionnement</button>
+			</li>
+			<li class="nav-item" role="presentation">
+				<button class="nav-link" id="tab-expense" data-bs-toggle="tab" data-bs-target="#expense" type="button" role="tab">Caisse Dépenses</button>
+			</li>
+		</ul>
 
-  <div class="tab-content" id="financesTabContent">
+		<div
+			class="tab-content" id="financesTabContent">
 
-    {# --- 1. Caisse Approvisionnement --- #}
-    <div class="tab-pane fade show active" id="supplier" role="tabpanel">
-      <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <h5 class="card-title mb-0">Transactions Approvisionnement</h5>
-          <div>
-            <button id="btnExportSupplierExcel" class="btn btn-sm btn-outline-success">
-              <i class="bi bi-file-earmark-excel"></i> Excel
-            </button>
-            <button id="btnExportSupplierPDF" class="btn btn-sm btn-outline-danger">
-              <i class="bi bi-file-earmark-pdf"></i> PDF
-            </button>
-            <button id="btnPrintSupplier" class="btn btn-sm btn-outline-primary">
-              <i class="bi bi-printer"></i> Imprimer liste
-            </button>
-            <button id="btnTransferToExpense" class="btn btn-sm btn-warning">
-              <i class="bi bi-arrow-right-circle"></i> Transférer vers Dépenses
-            </button>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="row g-2 mb-3">
-            <div class="col-md-4">
-              <input type="text" id="filterSupplierPeriod" class="form-control" placeholder="Période">
-            </div>
-            <div class="col-md-4">
-              <select id="filterSupplierStatus" class="form-select">
-                <option value="">Tous</option>
-                <option value="en attente">En attente</option>
-                <option value="Validé">Validé</option>
-              </select>
-            </div>
-            <div class="col-md-4 text-end">
-              <button id="btnClearSupplierFilters" class="btn btn-sm btn-secondary">
-                <i class="bi bi-x-circle"></i> Réinitialiser
-              </button>
-            </div>
-          </div>
-          <table id="supplierTable" class="table table-bordered table-hover table-striped border-top border-bottom my-2">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Sortie</th>
-                <th>Sortie</th>
-                <th>Solde</th>
-                <th>Motif</th>
-                <th>Statut</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
+			{# --- 1. Caisse Approvisionnement --- #}
+			<div class="tab-pane fade show active" id="supplier" role="tabpanel">
+				<div class="card mb-4">
+					<div class="card-header d-flex justify-content-between align-items-center">
+						<h5 class="card-title mb-0">Transactions Approvisionnement</h5>
+						<div>
+							<button id="btnExportSupplierExcel" class="btn btn-sm btn-outline-success">
+								<i class="bi bi-file-earmark-excel"></i>
+								Excel
+							</button>
+							<button id="btnExportSupplierPDF" class="btn btn-sm btn-outline-danger">
+								<i class="bi bi-file-earmark-pdf"></i>
+								PDF
+							</button>
+							<button id="btnPrintSupplier" class="btn btn-sm btn-outline-primary">
+								<i class="bi bi-printer"></i>
+								Imprimer liste
+							</button>
+							<button id="btnTransferToExpense" class="btn btn-sm btn-warning">
+								<i class="bi bi-arrow-right-circle"></i>
+								Transférer vers Dépenses
+							</button>
+						</div>
+					</div>
+					<div class="card-body">
+						<div class="row g-2 mb-3">
+							<div class="col-md-4">
+								<input type="text" id="filterSupplierPeriod" class="form-control" placeholder="Période">
+							</div>
+							<div class="col-md-4">
+								<select id="filterSupplierStatus" class="form-select">
+									<option value="">Tous</option>
+									<option value="en attente">En attente</option>
+									<option value="Validé">Validé</option>
+								</select>
+							</div>
+							<div class="col-md-4 text-end">
+								<button id="btnClearSupplierFilters" class="btn btn-sm btn-secondary">
+									<i class="bi bi-x-circle"></i>
+									Réinitialiser
+								</button>
+							</div>
+						</div>
+						<table id="supplierTable" class="table table-bordered table-hover table-striped border-top border-bottom my-2">
+							<thead>
+								<tr>
+									<th>Date</th>
+									<th>Sortie</th>
+									<th>Sortie</th>
+									<th>Solde</th>
+									<th>Motif</th>
+									<th>Statut</th>
+									<th>Actions</th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+					</div>
+				</div>
 
-      {# Formulaire Ajout Approvisionnement #}
-      <div class="card mb-5">
-        <div class="card-header">
-          <h5 class="card-title mb-0">Nouvelle Transaction (Approvisionnement)</h5>
-        </div>
-        <div class="card-body">
-          <form id="formAddSupplier">
-            <div class="row g-3 align-items-end">
-                <div class="col-md-2">
-                  <label for="supplierDate" class="form-label">Date et heure</label>
-                  <input type="datetime-local" id="supplierDate" name="createdAt" class="form-control" required>
-                </div>
-              <div class="col-md-2">
-                <label for="supplierType" class="form-label">Type</label>
-                <select id="supplierType" name="transactionType" class="form-select" required>
-                  <option value="credit">Crédit</option>
-                  <option value="debit">Débit</option>
-                </select>
-              </div>
-              <div class="col-md-2">
-                <label for="supplierAmount" class="form-label">Montant</label>
-                <input type="number" id="supplierAmount" name="amount" class="form-control" min="0" step="0.01" required>
-              </div>
-              <div class="col-md-2">
-                <label for="supplierMethod" class="form-label">Mode</label>
-                <select id="supplierMethod" name="paymentMethod" class="form-select" required>
-                  <option value="espèces">Espèces</option>
-                  <option value="chèque">Chèque</option>
-                  <option value="virement">Virement</option>
-                </select>
-              </div>
-              <div class="col-md-4">
-                <label for="supplierRef" class="form-label">Réf. paiement</label>
-                <input type="text" id="supplierRef" name="paymentRef" class="form-control" required>
-              </div>
+				{# Formulaire Ajout Approvisionnement #}
+				<div class="card mb-5">
+					<div class="card-header">
+						<h5 class="card-title mb-0">Nouvelle Transaction (Approvisionnement)</h5>
+					</div>
+					<div class="card-body">
+						<form id="formAddSupplier">
+							<div class="row g-3 align-items-end">
+								<div class="col-md-2">
+									<label for="supplierDate" class="form-label">Date et heure</label>
+									<input type="datetime-local" id="supplierDate" name="createdAt" class="form-control" required>
+								</div>
+								<div class="col-md-2">
+									<label for="supplierType" class="form-label">Type</label>
+									<select id="supplierType" name="transactionType" class="form-select" required>
+										<option value="credit">Crédit</option>
+										<option value="debit">Débit</option>
+									</select>
+								</div>
+								<div class="col-md-2">
+									<label for="supplierAmount" class="form-label">Montant</label>
+									<input type="number" id="supplierAmount" name="amount" class="form-control" min="0" step="0.01" required>
+								</div>
+								<div class="col-md-2">
+									<label for="supplierMethod" class="form-label">Mode</label>
+									<select id="supplierMethod" name="paymentMethod" class="form-select" required>
+										<option value="espèces">Espèces</option>
+										<option value="chèque">Chèque</option>
+										<option value="virement">Virement</option>
+									</select>
+								</div>
+								<div class="col-md-4">
+									<label for="supplierRef" class="form-label">Réf. paiement</label>
+									<input type="text" id="supplierRef" name="paymentRef" class="form-control" required>
+								</div>
 
-              <!-- Nouveaux champs -->
-              <div class="col-md-6">
-                <label for="supplierDescrib" class="form-label">Libellé</label>
-                <input type="text" id="supplierDescrib" name="describ" class="form-control" placeholder="Libellé" required>
-              </div>
-              <div class="col-md-6">
-                <label for="supplierReason" class="form-label">Motif</label>
-                <input type="text" id="supplierReason" name="reason" class="form-control" placeholder="Motif">
-              </div>
+								<!-- Nouveaux champs -->
+								<div class="col-md-6">
+									<label for="supplierDescrib" class="form-label">Libellé</label>
+									<input type="text" id="supplierDescrib" name="describ" class="form-control" placeholder="Libellé" required>
+								</div>
+								<div class="col-md-6">
+									<label for="supplierReason" class="form-label">Motif</label>
+									<input type="text" id="supplierReason" name="reason" class="form-control" placeholder="Motif">
+								</div>
 
-              <div class="col-12 text-end">
-                <button type="submit" class="btn btn-success">Ajouter</button>
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
+								<div class="col-12 text-end">
+									<button type="submit" class="btn btn-success">Ajouter</button>
+								</div>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
 
-    {# --- 2. Caisse Dépenses --- #}
-    <div class="tab-pane fade" id="expense" role="tabpanel">
-      <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <h5 class="card-title mb-0">Transactions Dépenses</h5>
-          <div>
-            <button id="btnExportExpenseExcel" class="btn btn-sm btn-outline-success">
-              <i class="bi bi-file-earmark-excel"></i> Excel
-            </button>
-            <button id="btnExportExpensePDF" class="btn btn-sm btn-outline-danger">
-              <i class="bi bi-file-earmark-pdf"></i> PDF
-            </button>
-            <button id="btnPrintExpense" class="btn btn-sm btn-outline-primary">
-              <i class="bi bi-printer"></i> Imprimer liste
-            </button>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="row g-2 mb-3">
-            <div class="col-md-4">
-              <input type="text" id="filterExpensePeriod" class="form-control" placeholder="Période">
-            </div>
-            <div class="col-md-4">
-              <select id="filterExpenseStatus" class="form-select">
-                <option value="">Tous</option>
-                <option value="en attente">En attente</option>
-                <option value="Validé">Validé</option>
-              </select>
-            </div>
-            <div class="col-md-4 text-end">
-              <button id="btnClearExpenseFilters" class="btn btn-sm btn-secondary">
-                <i class="bi bi-x-circle"></i> Réinitialiser
-              </button>
-            </div>
-          </div>
-          <table id="expenseTable" class="table table-bordered table-hover table-striped border-top border-bottom my-2">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Sortie</th>
-                <th>Sortie</th>
-                <th>Solde</th>
-                <th>Motif</th>
-                <th>Statut</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
+			{# --- 2. Caisse Dépenses --- #}
+			<div class="tab-pane fade" id="expense" role="tabpanel">
+				<div class="card mb-4">
+					<div class="card-header d-flex justify-content-between align-items-center">
+						<h5 class="card-title mb-0">Transactions Dépenses</h5>
+						<div>
+							<button id="btnExportExpenseExcel" class="btn btn-sm btn-outline-success">
+								<i class="bi bi-file-earmark-excel"></i>
+								Excel
+							</button>
+							<button id="btnExportExpensePDF" class="btn btn-sm btn-outline-danger">
+								<i class="bi bi-file-earmark-pdf"></i>
+								PDF
+							</button>
+							<button id="btnPrintExpense" class="btn btn-sm btn-outline-primary">
+								<i class="bi bi-printer"></i>
+								Imprimer liste
+							</button>
+						</div>
+					</div>
+					<div class="card-body">
+						<div class="row g-2 mb-3">
+							<div class="col-md-4">
+								<input type="text" id="filterExpensePeriod" class="form-control" placeholder="Période">
+							</div>
+							<div class="col-md-4">
+								<select id="filterExpenseStatus" class="form-select">
+									<option value="">Tous</option>
+									<option value="en attente">En attente</option>
+									<option value="Validé">Validé</option>
+								</select>
+							</div>
+							<div class="col-md-4 text-end">
+								<button id="btnClearExpenseFilters" class="btn btn-sm btn-secondary">
+									<i class="bi bi-x-circle"></i>
+									Réinitialiser
+								</button>
+							</div>
+						</div>
+						<table id="expenseTable" class="table table-bordered table-hover table-striped border-top border-bottom my-2">
+							<thead>
+								<tr>
+									<th>Date</th>
+									<th>Sortie</th>
+									<th>Sortie</th>
+									<th>Solde</th>
+									<th>Motif</th>
+									<th>Statut</th>
+									<th>Actions</th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+					</div>
+				</div>
 
-      {# Formulaire Ajout Dépense #}
-      <div class="card mb-5">
-        <div class="card-header">
-          <h5 class="card-title mb-0">Nouvelle Transaction (Dépense)</h5>
-        </div>
-        <div class="card-body">
-          <form id="formAddExpense">
-            <div class="row g-3 align-items-end">
-              <div class="col-md-2">
-                <label for="expenseDate" class="form-label">Date</label>
-                <input type="datetime-local" id="expenseDate" name="createdAt" class="form-control" required>
-              </div>
-              <div class="col-md-2">
-                <label for="transactionType" class="form-label">Type</label>
-                <select id="transactionType" name="transactionType" class="form-select" required>
-                  <option value="debit">Débit</option>
-                  <option value="credit">Crédit</option>
-                </select>
-              </div>
-              <div class="col-md-3">
-                <label for="expenseAmount" class="form-label">Montant</label>
-                <input type="number" id="expenseAmount" name="amount" class="form-control" min="0" step="0.01" required>
-              </div>
-              <div class="col-md-2">
-                <label for="paymentMethodExpense" class="form-label">Mode</label>
-                <select id="paymentMethodExpense" name="paymentMethod" class="form-select" required>
-                  <option value="espèces">Espèces</option>
-                  <option value="chèque">Chèque</option>
-                  <option value="virement">Virement</option>
-                </select>
-              </div>
-              <div class="col-md-3">
-                <label for="paymentRefExpense" class="form-label">Réf. paiement</label>
-                <input type="text" id="paymentRefExpense" name="paymentRef" class="form-control" required>
-              </div>
+				{# Formulaire Ajout Dépense #}
+				<div class="card mb-5">
+					<div class="card-header">
+						<h5 class="card-title mb-0">Nouvelle Transaction (Dépense)</h5>
+					</div>
+					<div class="card-body">
+						<form id="formAddExpense">
+							<div class="row g-3 align-items-end">
+								<div class="col-md-2">
+									<label for="expenseDate" class="form-label">Date</label>
+									<input type="datetime-local" id="expenseDate" name="createdAt" class="form-control" required>
+								</div>
+								<div class="col-md-2">
+									<label for="transactionType" class="form-label">Type</label>
+									<select id="transactionType" name="transactionType" class="form-select" required>
+										<option value="debit">Débit</option>
+										<option value="credit">Crédit</option>
+									</select>
+								</div>
+								<div class="col-md-3">
+									<label for="expenseAmount" class="form-label">Montant</label>
+									<input type="number" id="expenseAmount" name="amount" class="form-control" min="0" step="0.01" required>
+								</div>
+								<div class="col-md-2">
+									<label for="paymentMethodExpense" class="form-label">Mode</label>
+									<select id="paymentMethodExpense" name="paymentMethod" class="form-select" required>
+										<option value="espèces">Espèces</option>
+										<option value="chèque">Chèque</option>
+										<option value="virement">Virement</option>
+									</select>
+								</div>
+								<div class="col-md-3">
+									<label for="paymentRefExpense" class="form-label">Réf. paiement</label>
+									<input type="text" id="paymentRefExpense" name="paymentRef" class="form-control" required>
+								</div>
 
-              <!-- Nouveaux champs -->
-              <div class="col-md-6">
-                <label for="expenseDescrib" class="form-label">Libellé</label>
-                <input type="text" id="expenseDescrib" name="describ" class="form-control" placeholder="Libellé" required>
-              </div>
-              <div class="col-md-6">
-                <label for="expenseReason" class="form-label">Motif</label>
-                <input type="text" id="expenseReason" name="reason" class="form-control" placeholder="Motif">
-              </div>
+								<!-- Nouveaux champs -->
+								<div class="col-md-6">
+									<label for="expenseDescrib" class="form-label">Libellé</label>
+									<input type="text" id="expenseDescrib" name="describ" class="form-control" placeholder="Libellé" required>
+								</div>
+								<div class="col-md-6">
+									<label for="expenseReason" class="form-label">Motif</label>
+									<input type="text" id="expenseReason" name="reason" class="form-control" placeholder="Motif">
+								</div>
 
-              <div class="col-12 text-end">
-                <button type="submit" class="btn btn-success">Ajouter</button>
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+								<div class="col-12 text-end">
+									<button type="submit" class="btn btn-success">Ajouter</button>
+								</div>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 
-{# --- Modals pour impression de transaction unique et transfert --- #}
+	{# --- Modals pour impression de transaction unique et transfert --- #}
 
-{# Modal Confirmation Validation #}
-<div class="modal fade" id="modalConfirmValidation" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Confirmation</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <p>Êtes-vous sûr de vouloir valider cette Transaction&nbsp;?</p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-        <button type="button" class="btn btn-primary" id="btnConfirmValidation">Valider</button>
-      </div>
-    </div>
-  </div>
-</div>
+	{# Modal Confirmation Validation #}
+	<div class="modal fade" id="modalConfirmValidation" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Confirmation</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<p>Êtes-vous sûr de vouloir valider cette Transaction&nbsp;?</p>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+					<button type="button" class="btn btn-primary" id="btnConfirmValidation">Valider</button>
+				</div>
+			</div>
+		</div>
+	</div>
 
-{# Modal Transférer Appro → Dépenses #}
-<div class="modal fade" id="modalTransfer" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form id="form-transfer">
-        <div class="modal-header">
-          <h5 class="modal-title">Transfert Caisse</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label>Montant à transférer</label>
-            <input type="number" name="amount" class="form-control" min="0" step="0.01" required>
-          </div>
-          <div class="mb-3">
-            <label>Justification (optionnel)</label>
-            <textarea name="reason" class="form-control" rows="2"></textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="submit" class="btn btn-primary">Transférer</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
+	{# Modal Transférer Appro → Dépenses #}
+	<div class="modal fade" id="modalTransfer" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<form id="form-transfer">
+					<div class="modal-header">
+						<h5 class="modal-title">Transfert Caisse</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+					</div>
+					<div class="modal-body">
+						<div class="mb-3">
+							<label>Montant à transférer</label>
+							<input type="number" name="amount" class="form-control" min="0" step="0.01" required>
+						</div>
+						<div class="mb-3">
+							<label>Justification (optionnel)</label>
+							<textarea name="reason" class="form-control" rows="2"></textarea>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+						<button type="submit" class="btn btn-primary">Transférer</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
 
-{# Modal Reçu Transaction #}
-<div class="modal fade" id="modalReceipt" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Reçu de Caisse</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body" id="receiptContent">
-        {# Injecté via AJAX #}
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
-        <button id="btnPrintReceipt" type="button" class="btn btn-primary">
-          <i class="bi bi-printer"></i> Imprimer reçu
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
+	{# Modal Reçu Transaction #}
+	<div class="modal fade" id="modalReceipt" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Reçu de Caisse</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div
+					class="modal-body" id="receiptContent">{# Injecté via AJAX #}
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+					<button id="btnPrintReceipt" type="button" class="btn btn-primary">
+						<i class="bi bi-printer"></i>
+						Imprimer reçu
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
 {% endblock %}
 
 {% block javascripts %}
-  <script src="{{ asset('assets/appjs/finance.js') }}"></script>
+	<script src="{{ asset('assets/appjs/finance.js') }}"></script>
 {% endblock %}

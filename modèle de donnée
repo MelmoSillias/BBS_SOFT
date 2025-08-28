@@ -1,1 +1,16 @@
-Dirhams - dollars 3,67
+id : row.id,
+type : row.type,
+client : row.vanishClientName,
+clientPhone : row.vanishClientTel,
+agence : [
+    id : row.agence.id,
+    name : row.agence.designation,
+    devise : row.agence.devise,
+    // Ajoutez dautres propriétés de lagence nécessaires
+],
+date : row.date ,
+fromAmount : row.fromAmount ,
+toAmount : row.toAmount ,
+taux : row.taux ,
+fromCurrency : row.fromCurrency ,
+toCurrency : row.toCurrency ,

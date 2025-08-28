@@ -1,166 +1,314 @@
 {% extends 'appbase.html.twig' %}
 
-{% block title %}Gestion des Clients{% endblock %}
+{% block title %}Gestion des Clients
+{% endblock %}
 
 {% block main %}
-<div class="container-fluid">
+	<div
+		class="container-fluid">
+		<!-- Statistiques -->
+		<div class="row mb-4" id="stats">
+			<div class="col-lg-4">
+				<div class="small-box bg-primary">
+					<div class="inner">
+						<h3>--</h3>
+						<p>Clients au total</p>
+					</div>
+					<div class="icon">
+						<i class="bi bi-people-fill"></i>
+					</div>
+				</div>
+			</div>
+		</div>
 
-  <!-- Statistiques -->
-  <div class="row mb-4" id="stats">
-        <div class="col-lg-4"><div class="small-box bg-primary"><div class="inner"><h3>--</h3><p>Clients au total</p></div><div class="icon"><i class="bi bi-people-fill"></i></div></div></div>
-      
-  </div>
+		<!-- Tableau des clients -->
+		<div class="card card-primary card-outline">
+			<div class="card-header">
+				<h3 class="card-title">Liste des Clients</h3>
+			</div>
+			<div class="card-body">
+				<div class="table-responsive">
+					<table id="clientsTable" class="table table-bordered table-hover border-top border-bottom py-0 my-4">
+						<thead>
+							<tr>
+								<th>Nom Complet</th>
+								<th>Téléphone</th>
+								<th>Solde (FCFA)</th>
+								<th>Solde (USD)</th>
+								<th>Solde (EUR)</th>
+								<th>Actions</th>
+							</tr>
+						</thead>
+						<tbody></tbody>
+					</table>
+				</div>
+			</div>
+		</div>
 
-  <!-- Tableau des clients -->
-    <div class="card card-primary card-outline">
-        <div class="card-header">
-            <h3 class="card-title">Liste des Clients</h3>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table id="clientsTable" class="table table-bordered table-hover  border-top border-bottom py-0 my-4">
-                    <thead>
-                        <tr> 
-                            <th>Nom Complet</th>
-                            <th>Téléphone</th>
-                            <th>Solde (FCFA)</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+		<!-- Formulaire d'ajout de client -->
+		<div class="card card-secondary mt-4">
+			<div class="card-header">
+				<h3 class="card-title">Ajouter un Client</h3>
+			</div>
+			<div class="card-body">
+				<form id="form-ajout-client">
+					<div class="row">
+						<div class="col-md-4 mb-3">
+							<label>Nom Complet</label>
+							<input name="nomComplet" class="form-control" required>
+						</div>
+						<div class="col-md-4 mb-3">
+							<label>Téléphone</label>
+							<input name="phoneNumber" class="form-control">
+						</div>
+						<div class="col-md-4 mb-3">
+							<label>Adresse</label>
+							<input name="address" class="form-control">
+						</div>
+					</div>
+					<button type="submit" class="btn btn-primary">Ajouter Client</button>
+				</form>
+			</div>
+		</div>
 
-    <!-- Formulaire d'ajout de client -->
-    <div class="card card-secondary mt-4">
-        <div class="card-header">
-            <h3 class="card-title">Ajouter un Client</h3>
-        </div>
-        <div class="card-body">
-            <form id="form-ajout-client">
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label>Nom Complet</label>
-                        <input name="nomComplet" class="form-control" required>
-                    </div> 
-                    <div class="col-md-4 mb-3">
-                        <label>Téléphone</label>
-                        <input name="phoneNumber" class="form-control" >
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label>Adresse</label>
-                        <input name="address" class="form-control">
-                    </div> 
-                </div>
-                <button type="submit" class="btn btn-primary">Ajouter Client</button>
-            </form>
-        </div>
-    </div>
- 
-    <!-- Modal Modification Client -->
-    <div class="modal fade" id="modalEditClient" tabindex="-1" aria-labelledby="modalEditClientLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <form id="form-edit-client">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="modalEditClientLabel">Modifier le Client</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="hidden" name="clientId" id="editClientId">
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label>Nom entreprise</label>
-                                <input name="nomComplet" id="editCompanyName" class="form-control" required>
-                            </div> 
-                            <div class="col-md-4 mb-3">
-                                <label>Téléphone</label>
-                                <input name="phoneNumber" id="editPhoneNumber" class="form-control" required>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label>Adresse</label>
-                                <input name="address" id="editAddress" class="form-control">
-                            </div>  
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+		<!-- Modal Modification Client -->
+		<div class="modal fade" id="modalEditClient" tabindex="-1" aria-labelledby="modalEditClientLabel" aria-hidden="true">
+			<div class="modal-dialog modal-lg">
+				<div class="modal-content">
+					<form id="form-edit-client">
+						<div class="modal-header">
+							<h5 class="modal-title" id="modalEditClientLabel">Modifier le Client</h5>
+							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+						</div>
+						<div class="modal-body">
+							<input type="hidden" name="clientId" id="editClientId">
+							<div class="row">
+								<div class="col-md-4 mb-3">
+									<label>Nom du client</label>
+									<input name="nomComplet" id="editCompanyName" class="form-control" required>
+								</div>
+								<div class="col-md-4 mb-3">
+									<label>Téléphone</label>
+									<input name="phoneNumber" id="editPhoneNumber" class="form-control" required>
+								</div>
+								<div class="col-md-4 mb-3">
+									<label>Adresse</label>
+									<input name="address" id="editAddress" class="form-control">
+								</div>
+							</div>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+							<button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+
+		<!-- Modal Confirmation Suppression -->
+		<div class="modal fade" id="modalConfirmDelete" tabindex="-1" aria-labelledby="modalConfirmDeleteLabel" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="modalConfirmDeleteLabel">Confirmation de la suppression</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+					</div>
+					<div class="modal-body">
+						<p>Êtes-vous sûr de vouloir supprimer ce client ?</p>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Modal Retrait Client -->
+		<div class="modal fade" id="modalWithdrawClient" tabindex="-1" aria-labelledby="modalWithdrawClientLabel" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<form id="form-withdraw-client">
+						<div class="modal-header">
+							<h5 class="modal-title" id="modalWithdrawClientLabel">Effectuer un retrait</h5>
+							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+						</div>
+						<div class="modal-body">
+							<input type="hidden" name="clientId" id="withdrawClientId">
+							<div class="mb-3">
+								<label class="form-label fw-bold">Devise
+									<span class="text-danger">*</span>
+								</label>
+								<select id="deviseW" name="deviseW" class="form-select shadow-sm country-select" required>
+									<option value="CFA">CFA - BECEAO</option>
+									<option value="AED">AED - Dirham des Émirats Arabes Unis</option>
+									<option value="EUR">EUR - Euro</option>
+									<option value="USD">USD - Dollar américain</option>
+									<option value="GBP">GBP - Livre sterling</option>
+									<option value="CNY">CNY - Yuan chinois</option>
+									<option value="MAD">MAD - Dirham marocain</option>
+									<option value="DZD">DZD - Dinar algérien</option>
+								</select>
+								<small>Solde :
+									<span id='soldeDeviseW' class='texteprimary'></span>
+								</small>
+							</div>
+							<div class="mb-3">
+								<label for="withdrawAmount" class="form-label">Montant du retrait</label>
+								<input type="number" class="form-control" id="withdrawAmount" name="amount" min="1" required>
+							</div>
+
+							<div class="mb-3">
+								<label for="withdrawNote" class="form-label">Note (optionnel)</label>
+								<textarea class="form-control" id="withdrawNote" name="note" rows="2"></textarea>
+							</div>
+							<div class="mb-3">
+								<label for="withdrawDate" class="form-label">Date du retrait</label>
+								<input type="date" class="form-control" id="withdrawDate" name="date" required>
+							</div>
+							<div class="mb-3">
+								<label for="withdrawMode" class="form-label">Mode de paiement</label>
+								<select class="form-select" id="withdrawMode" name="mode" required>
+									<option value="Espèces">Espèces</option>
+									<option value="Chèque">Chèque</option>
+									<option value="Virement">Virement</option>
+								</select>
+							</div>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+							<button type="submit" class="btn btn-success">Enregistrer le retrait</button>
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
+	<!-- Modal Échange de Devise -->
+	<div class="modal fade" id="currencyModal" tabindex="-1" aria-labelledby="currencyModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="currencyModalLabel">Échange de Devise</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<input type="hidden" name="clientId" id="exchangeClientId">
+					<div class="row">
+						<div class="col-md-6">
+
+							<div class="mb-3">
+								<label for="fromCurrency" class="form-label">Devise de départ:</label>
+								<select class="form-select" id="fromCurrency" name="fromCurrency">
+									<option value="CFA">CFA - BECEAO</option>
+									<option value="AED">AED - Dirham des Émirats Arabes Unis</option>
+									<option value="EUR">EUR - Euro</option>
+									<option value="USD">USD - Dollar américain</option>
+									<option value="GBP">GBP - Livre sterling</option>
+									<option value="CNY">CNY - Yuan chinois</option>
+									<option value="MAD">MAD - Dirham marocain</option>
+									<option value="DZD">DZD - Dinar algérien</option>
+								</select>
+
+							</div>
+							<div class="mb-3">
+								<label for="fromAmount" class="form-label">Montant:</label>
+								<input type="number" class="form-control" id="fromAmount" name="fromAmount" placeholder="Montant">
+							</div>
+							<div class="mb-3">
+								<label for="exchangeRate" class="form-label">Taux:</label>
+								<input type="number" class="form-control" id="exchangeRate" name="exchangeRate" placeholder="Taux">
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label for="toCurrency" class="form-label">Devise d'arrivée:</label>
+								<select class="form-select" id="toCurrency" name="toCurrency">
+									<option value="CFA">CFA - BECEAO</option>
+									<option value="AED">AED - Dirham des Émirats Arabes Unis</option>
+									<option value="EUR">EUR - Euro</option>
+									<option value="USD">USD - Dollar américain</option>
+									<option value="GBP">GBP - Livre sterling</option>
+									<option value="CNY">CNY - Yuan chinois</option>
+									<option value="MAD">MAD - Dirham marocain</option>
+									<option value="DZD">DZD - Dinar algérien</option>
+								</select>
+							</div>
+							<div class="mb-3">
+								<label for="toAmount" class="form-label">Montant:</label>
+								<input type="number" class="form-control" id="toAmount" name="toAmount" placeholder="Montant" readonly>
+							</div>
+						</div>
+					</div>
+					<div class="mb-3">
+						<label class="form-label">Solde actuel:</label>
+						<span id="currentBalance"></span>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+					<button type="button" class="btn btn-primary" id="exchangeButton">Échanger</button>
+				</div>
+			</div>
+		</div>
+	</div>
 
 
-    <!-- Modal Confirmation Suppression -->
-    <div class="modal fade" id="modalConfirmDelete" tabindex="-1" aria-labelledby="modalConfirmDeleteLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalConfirmDeleteLabel">Confirmation de la suppression</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Êtes-vous sûr de vouloir supprimer ce client ?</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Accompte Client -->
-    <div class="modal fade" id="modalAccompteClient" tabindex="-1" aria-labelledby="modalAccompteClientLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form id="form-accompte-client">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="modalAccompteClientLabel">Effectuer un versement</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="hidden" name="clientId" id="accompteClientId">
-                        <div class="mb-3">
-                            <label for="accompteAmount" class="form-label">Montant du versement (FCFA)</label>
-                            <input type="number" class="form-control" id="accompteAmount" name="amount" min="1" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="accompteNote" class="form-label">Note (optionnel)</label>
-                            <textarea class="form-control" id="accompteNote" name="note" rows="2"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label for="accompteDate" class="form-label">Date du versement</label>
-                            <input type="date" class="form-control" id="accompteDate" name="date" required> 
-                        </div>
-                        <div class="mb-3">
-                            <label for="accompteMode" class="form-label">Mode de paiement</label>
-                            <select class="form-select" id="accompteMode" name="mode" required>
-                                <option value="" disabled selected>Choisir un mode de paiement</option>
-                                <option value="Espèces">Espèces</option>
-                                <option value="Chèque">Chèque</option>
-                                <option value="Virement">Virement</option>
-                            <select>
-                        </div>     
-                        <div class="mb-3">
-                            <label for="accompteReference" class="form-label">Référence de paiement (optionnel)</label>
-                            <input type="text" class="form-control" id="accompteReference" name="reference">
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-success">Enregistrer le versement</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-
-</div>
-{% endblock %}
-
-{% block javascripts %}
-  <script src="{{ asset('assets/appjs/client.js') }}"></script>
-{% endblock %}
+	<!-- Modal Versement Client -->
+	<div class="modal fade" id="modalAccompteClient" tabindex="-1" aria-labelledby="modalAccompteClientLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<form id="form-accompte-client">
+					<div class="modal-header">
+						<h5 class="modal-title" id="modalAccompteClientLabel">Effectuer un versement</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+					</div>
+					<div class="modal-body">
+						<input type="hidden" name="clientId" id="accompteClientId">
+						<div class="mb-3">
+							<label class="form-label fw-bold">Devise
+								<span class="text-danger">*</span>
+							</label>
+							<select id="deviseA" name="deviseA" class="form-select shadow-sm country-select" required>
+								<option value="CFA">CFA - BECEAO</option>
+								<option value="AED">AED - Dirham des Émirats Arabes Unis</option>
+								<option value="EUR">EUR - Euro</option>
+								<option value="USD">USD - Dollar américain</option>
+								<option value="GBP">GBP - Livre sterling</option>
+								<option value="CNY">CNY - Yuan chinois</option>
+								<option value="MAD">MAD - Dirham marocain</option>
+								<option value="DZD">DZD - Dinar algérien</option>
+							</select>
+							<small>Solde :
+								<span id='soldeDeviseA' class='texteprimary'></span>
+							</small>
+						</div>
+						<div class="mb-3">
+							<label for="accompteAmount" class="form-label">Montant du versement</label>
+							<input type="number" class="form-control" id="accompteAmount" name="amount" min="1" required>
+						</div>
+						<div class="mb-3">
+							<label for="accompteNote" class="form-label">Note (optionnel)</label>
+							<textarea class="form-control" id="accompteNote" name="note" rows="2"></textarea>
+						</div>
+						<div class="mb-3">
+							<label for="accompteDate" class="form-label">Date du versement</label>
+							<input type="date" class="form-control" id="accompteDate" name="date" required>
+						</div>
+						<div class="mb-3">
+							<label for="accompteMode" class="form-label">Mode de paiement</label>
+							<select class="form-select" id="accompteMode" name="mode" required>
+								<option value="Espèces">Espèces</option>
+								<option value="Chèque">Chèque</option>
+								<option value="Virement">Virement</option>
+							</select>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+						<button type="submit" class="btn btn-success">Enregistrer le versement</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+</div>{% endblock %}{% block javascripts %}
+<script src="{{ asset('assets/appjs/client.js') }}"></script>{% endblock %}

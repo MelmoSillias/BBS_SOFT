@@ -44,7 +44,7 @@ class Transfert
     #[ORM\Column(length: 8)]
     private ?string $deviseReception = null;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 0)]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 5)]
     private ?string $Taux = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 0)]
@@ -62,7 +62,7 @@ class Transfert
     #[ORM\Column(length: 255)]
     private ?string $ReceiverPhone = null;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 0)]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 3)]
     private ?string $TauxDeviseReception = null;
 
     #[ORM\Column(length: 55)]
@@ -73,6 +73,9 @@ class Transfert
 
     #[ORM\Column(length: 10)]
     private ?string $ref = null;
+
+    #[ORM\OneToOne(inversedBy: 'transfert', cascade: ['persist', 'remove'])]
+    private ?AccountTransaction $transaction = null;
 
     public function getId(): ?int
     {
@@ -291,6 +294,18 @@ class Transfert
     public function setRef(string $ref): static
     {
         $this->ref = $ref;
+
+        return $this;
+    }
+
+    public function getTransaction(): ?AccountTransaction
+    {
+        return $this->transaction;
+    }
+
+    public function setTransaction(?AccountTransaction $transaction): static
+    {
+        $this->transaction = $transaction;
 
         return $this;
     }

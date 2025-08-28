@@ -1,4 +1,4 @@
-{# templates/transfert_receipt.html.twig #}
+{# templates/exchange_receipt.html.twig #}
 <!DOCTYPE html>
 <html lang="fr">
 	<head>
@@ -68,7 +68,7 @@
 			.footer {
 				display: flex;
                 justify-content: space-between;
-				margin-top: 0px;
+				margin-top: 20px;
                 margin-left: 20px; 
                 margin-right: 20px;
 				font-size: 12px;
@@ -90,12 +90,11 @@
 			</div>
 		</div>
 
-        <hr>
 		<!-- Titre -->
 		<div class="title">
-			REÇU DE TRANSFERT D'ARGENT N° {{ transfert.id }}
+			REÇU D'ÉCHANGE DE DEVISES
 			<br>
-			{# <small>{{ transfert.description }}</small> #}
+			<small>{{ exchange.description }}</small>
 		</div>
 
 
@@ -105,45 +104,45 @@
 			<!-- Cadre gauche -->
 			<div class="box">
 				<div>Opération :
-					<span>{{ transfert.type }}</span>
+					<span>{{ exchange.agence ? exchange.type : 'Echange compte client' }}</span>
 				</div>
                 <div>Date :
-                    <span>{{ transfert.createdAt ? transfert.createdAt|date('d/m/Y') : '' }}</span>
+                    <span>{{ exchange.date ? exchange.date|date('d/m/Y') : '' }}</span>
                 </div>
 				<div>Nom Client :
-					<span>{{ transfert.client ? transfert.client.nomComplet }} {{" | "}} {{ transfert.client ? transfert.client.phoneNumber : transfert.vanishClientName }}+ {{' | '  }} {{transfert.vanishClientPhone  }}</span>
-				</div> 
-				<div>Destinataire :
-					<span>{{ transfert.receiverName }} {{" | "}} {{ transfert.receiverPhone }}</span>
+					<span>{{ exchange.client ? exchange.client.nom : exchange.vanishClientName }}</span>
 				</div>
-                <div>Destination :
-					<span>{{ transfert.receiverName }} {{" | "}} + {{ transfert.receiverPhone }}</span>
+				<div>Téléphone :
+					<span>{{ exchange.client ? exchange.client.phone : exchange.vanishClientTel  }}</span>
+				</div>
+				<div>Destination :
+					<span>{{ exchange.agence ? exchange.agence.localite : '--'  }}</span>
 				</div>
 			</div>
 
 			<!-- Cadre droit -->
 			<div class="box">
-				 
-                <div>Montant CFA :
-                    <span>{{ transfert.montantCash }} CFA </span>
-                </div>
-                <div>Montant USD :
-                    <span>{{ transfert.montantReception }} </span>
-                </div>
-                <div>Montant Reception :
-                    <span>{{ transfert.montantReception * transfert.tauxDeviseReception }} {{ transfert.deviseReception }} </span>
-                </div>
-				 
+				{% if exchange.agence %}
+					<div>Montant CFA :
+						<span>{{ exchange.type == "achat" ? exchange.fromAmount : exchange.toAmount }}
+							{{ exchange.type == "achat" ? exchange.fromCurrency : exchange.toCurrency }}</span>
+					</div>
+					<div>Montant Devise :
+						<span>{{ exchange.type == "achat" ? exchange.toAmount : exchange.fromAmount }}
+							{{ exchange.type == "achat" ? exchange.toCurrency : exchange.fromCurrency }}</span>
+					</div>
+				{% else %}
+					<div>Montant Vendu :
+						<span>{{ exchange.fromAmount }}
+							{{ exchange.fromCurrency }}</span>
+					</div>
+					<div>Montant Acheté :
+						<span>{{ exchange.toAmount }}
+							{{ exchange.toCurrency }}</span>
+					</div>
+				{% endif %}
 				<div>Taux appliqué :
-					<span>{{ transfert.taux }}</span>
-				</div>
-
-                <div>Frais de transfert :
-					<span>{{ transfert.frais }}</span>
-				</div>
-
-                <div>Montant Total Rémis :
-					<span>{{ transfert.montantCash + transfert.frais }}</span>
+					<span>{{ exchange.taux }}</span>
 				</div>
 			</div>
 		</div>

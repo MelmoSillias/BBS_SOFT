@@ -38,11 +38,18 @@ class Client
      */
     #[ORM\OneToMany(targetEntity: Transfert::class, mappedBy: 'client')]
     private Collection $transferts;
+
+    /**
+     * @var Collection<int, Exchange>
+     */
+    #[ORM\OneToMany(targetEntity: Exchange::class, mappedBy: 'client', orphanRemoval: true)]
+    private Collection $exchanges;
  
     public function __construct()
     { 
         $this->accountTransactions = new ArrayCollection();
-        $this->transferts = new ArrayCollection();  
+        $this->transferts = new ArrayCollection();
+        $this->exchanges = new ArrayCollection();  
     }
 
     public function getId(): ?int
@@ -127,14 +134,22 @@ class Client
 
         return $this;
     }
- 
-    public function getBalance(): float
+  
+    public function getBalance(string $currency): float
     {
-        $lastTransaction = $this->accountTransactions->last();
-        if ($lastTransaction === false) {
-            return 0.0;
+        $balance = 0.0;
+        
+        foreach ($this->accountTransactions as $transaction) {
+            // Vérifier si la transaction est dans la devise demandée
+            // (Supposons que AccountTransaction a une propriété 'currency')
+            if ($transaction->getDevise() === $currency) {
+                // Ajouter les entrées et soustraire les sorties
+                $balance += (float)$transaction->getIncome();
+                $balance -= (float)$transaction->getOutcome();
+            }
         }
-        return $lastTransaction->getBalanceValue();
+        
+        return $balance;
     }
 
     /**
@@ -161,6 +176,36 @@ class Client
             // set the owning side to null (unless already changed)
             if ($transfert->getClient() === $this) {
                 $transfert->setClient(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Exchange>
+     */
+    public function getExchanges(): Collection
+    {
+        return $this->exchanges;
+    }
+
+    public function addExchange(Exchange $exchange): static
+    {
+        if (!$this->exchanges->contains($exchange)) {
+            $this->exchanges->add($exchange);
+            $exchange->setClient($this);
+        }
+
+        return $this;
+    }
+
+    public function removeExchange(Exchange $exchange): static
+    {
+        if ($this->exchanges->removeElement($exchange)) {
+            // set the owning side to null (unless already changed)
+            if ($exchange->getClient() === $this) {
+                $exchange->setClient(null);
             }
         }
 

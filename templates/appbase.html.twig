@@ -151,9 +151,9 @@
 
   {# --- SIDEBAR --- #}
   <aside class="app-sidebar bg-body-primary shadow" data-bs-theme="light">
-    <div class="sidebar-brand">
+    <div class="sidebar-brand" style="height: 140px;">
       <a href="{{ path('app_dashboard') }}" class="brand-link">
-        <img src="{{ asset('assets/img/logo.png') }}" alt="Logo" class="brand-image opacity-90 h-96"> 
+        <img src="{{ asset('assets/img/logo.png') }}" alt="Logo" style="width: 128px; height: auto;"> 
       </a>
     </div>
 
@@ -190,11 +190,20 @@
         </li>
         {% endif %} 
 
-        {% if is_granted('ROLE_FINANCE') %}
+        {% if is_granted('ROLE_EXCHANGE') %}
         <li class="nav-item">
-          <a href="{{ path('app_finance') }}" class="nav-link {{ controller_name starts with 'Finance' ? 'active' : '' }}">
-            <i class="nav-icon bi bi-bank"></i>
-            <p>Finance</p>
+          <a href="{{ path('app_exchange') }}" class="nav-link {{ controller_name starts with 'Exchange' ? 'active' : '' }}">
+            <i class="nav-icon bi bi-currency-exchange"></i>
+            <p>Echange</p>
+          </a>
+        </li>
+        {% endif %}
+
+         {% if is_granted('ROLE_REPORT') %}
+        <li class="nav-item">
+          <a href="{{ path('app_report') }}" class="nav-link {{ controller_name starts with 'Report' ? 'active' : '' }}">
+            <i class="nav-icon bi bi-clipboard2-data-fill"></i>
+            <p>Rapports</p>
           </a>
         </li>
         {% endif %}

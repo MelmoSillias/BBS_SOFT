@@ -98,8 +98,7 @@ final class FinanceController extends AbstractController
                 'createdAt'     => $t->getCreatedAt()->format('Y-m-d'),
                 'amount' => $t->getIncome() > 0 
                     ? '+' . $t->getIncome() 
-                    : '-' . $t->getOutcome(),
-                'user' =>  $t->getUser()->getFullName(),
+                    : '-' . $t->getOutcome(), 
                 'balanceValue'  => $t->getBalanceValue(),
                 'account_type' => $t->getAccountType(),
                 'paymentMethod' => $t->getPaymentMethod(),
@@ -124,8 +123,7 @@ final class FinanceController extends AbstractController
             'id'            => $t->getId(),
             'createdAt'     => $t->getCreatedAt()->format('Y-m-d'),
             'income'        => $t->getIncome(),
-            'outcome'       => $t->getOutcome(),
-            'balanceValue'  => $t->getBalanceValue(),
+            'outcome'       => $t->getOutcome(), 
             'paymentMethod' => $t->getPaymentMethod(),
             'paymentRef'    => $t->getPaymentRef(),
             'status'        => $t->getStatus(),
@@ -159,14 +157,12 @@ final class FinanceController extends AbstractController
           ->setUpdatedAt(new \DateTimeImmutable())
           ->setIncome((string)$data['income'])
           ->setOutcome((string)$data['outcome'])
-          ->setAccountType($data['accountType'])
-          ->setBalanceValue((string)$newBalance)
+          ->setAccountType($data['accountType']) 
           ->setPaymentMethod($data['paymentMethod'])
           ->setPaymentRef($data['paymentRef'])
           ->setStatus($data['status'])
           ->setDescrib($data['describ'])
-          ->setReason($data['reason']) 
-          ->setUser($this->getUser());
+          ->setReason($data['reason']);
 
         $em->persist($t);
         $em->flush();
@@ -188,8 +184,7 @@ final class FinanceController extends AbstractController
         }
 
         $amount       = (float)$data['amount'];
-        $reason       = $data['reason'] ?? '';
-        $user         = $this->getUser();
+        $reason       = $data['reason'] ?? ''; 
 
         // Supplier outcome
         $balSupPrev   = $this->getLastBalance('supplier', $em);
@@ -199,14 +194,12 @@ final class FinanceController extends AbstractController
            ->setUpdatedAt(new \DateTimeImmutable())
            ->setIncome('0')
            ->setOutcome((string)$amount)
-           ->setAccountType('supplier')
-           ->setBalanceValue((string)$balSupNew)
+           ->setAccountType('supplier') 
            ->setStatus('validé')
            ->setPaymentMethod('inter-compte')
            ->setPaymentRef('to-expense')
            ->setDescrib('Transfert vers dépenses')
-           ->setReason($reason)
-           ->setUser($user);
+           ->setReason($reason);
         $em->persist($t1);
 
         // Expense income
@@ -217,14 +210,12 @@ final class FinanceController extends AbstractController
            ->setUpdatedAt(new \DateTimeImmutable())
            ->setIncome((string)$amount)
            ->setOutcome('0')
-           ->setAccountType('expense')
-           ->setBalanceValue((string)$balExpNew)
+           ->setAccountType('expense') 
            ->setStatus('validé')
            ->setPaymentMethod('transfer')
            ->setPaymentRef('TX' . (new \DateTime())->format('YmdHis'))
            ->setDescrib('Transfert depuis approvisionnement')
-           ->setReason($reason)
-           ->setUser($user);
+           ->setReason($reason);
         $em->persist($t2);
 
         $em->flush();
@@ -244,7 +235,6 @@ final class FinanceController extends AbstractController
 
         $t->setStatus('validé')
           ->setValidateAt(new \DateTimeImmutable())
-          ->setValidationUser($this->getUser())
           ->setUpdatedAt(new \DateTimeImmutable());
 
         $em->flush();

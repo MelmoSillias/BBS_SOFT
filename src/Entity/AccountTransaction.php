@@ -29,10 +29,7 @@ class AccountTransaction
     private ?string $outcome = null;
 
     #[ORM\Column(length: 30)]
-    private ?string $account_type = null;
-
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
-    private ?string $balance_value = null;
+    private ?string $account_type = null; 
 
     #[ORM\Column(length: 30)]
     private ?string $status = null;
@@ -44,24 +41,27 @@ class AccountTransaction
     private ?string $paymentRef = null;
 
     #[ORM\ManyToOne(inversedBy: 'accountTransactions')]
-    private ?User $user = null; 
-
-    #[ORM\ManyToOne(inversedBy: 'accountTransactions')]
     #[ORM\JoinColumn(nullable: true)]
     private ?Client $client = null; 
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $validate_at = null;
-
-    #[ORM\ManyToOne(inversedBy: 'accountTransactions')]
-    #[ORM\JoinColumn(nullable: true)]
-    private ?User $validation_user = null;
-
+ 
     #[ORM\Column(length: 255)]
     private ?string $describ = null;
 
     #[ORM\Column(length: 255)]
     private ?string $reason = null;
+
+    #[ORM\OneToOne(mappedBy: 'transaction', cascade: ['persist', 'remove'])]
+    private ?Transfert $transfert = null;
+
+    #[ORM\Column(length: 5)]
+    private ?string $devise = null;
+
+    #[ORM\ManyToOne(inversedBy: 'transactions')]
+    private ?Exchange $exchange = null;
+    
 
     public function getId(): ?int
     {
@@ -127,18 +127,7 @@ class AccountTransaction
 
         return $this;
     }
-
-    public function getBalanceValue(): ?string
-    {
-        return $this->balance_value;
-    }
-
-    public function setBalanceValue(string $balance_value): static
-    {
-        $this->balance_value = $balance_value;
-
-        return $this;
-    }
+ 
 
     public function getStatus(): ?string
     {
@@ -175,18 +164,7 @@ class AccountTransaction
 
         return $this;
     }
-
-    public function getUser(): ?User
-    {
-        return $this->user;
-    }
-
-    public function setUser(?User $user): static
-    {
-        $this->user = $user;
-
-        return $this;
-    }
+ 
   
     public function getClient(): ?Client
     {
@@ -212,18 +190,6 @@ class AccountTransaction
         return $this;
     }
 
-    public function getValidationUser(): ?User
-    {
-        return $this->validation_user;
-    }
-
-    public function setValidationUser(?User $validation_user): static
-    {
-        $this->validation_user = $validation_user;
-
-        return $this;
-    }
-
     public function getDescrib(): ?string
     {
         return $this->describ;
@@ -244,6 +210,52 @@ class AccountTransaction
     public function setReason(string $reason): static
     {
         $this->reason = $reason;
+
+        return $this;
+    }
+
+    public function getTransfert(): ?Transfert
+    {
+        return $this->transfert;
+    }
+
+    public function setTransfert(?Transfert $transfert): static
+    {
+        // unset the owning side of the relation if necessary
+        if ($transfert === null && $this->transfert !== null) {
+            $this->transfert->setTransaction(null);
+        }
+
+        // set the owning side of the relation if necessary
+        if ($transfert !== null && $transfert->getTransaction() !== $this) {
+            $transfert->setTransaction($this);
+        }
+
+        $this->transfert = $transfert;
+
+        return $this;
+    }
+
+    public function getDevise(): ?string
+    {
+        return $this->devise;
+    }
+
+    public function setDevise(string $devise): static
+    {
+        $this->devise = $devise;
+
+        return $this;
+    }
+
+    public function getExchange(): ?Exchange
+    {
+        return $this->exchange;
+    }
+
+    public function setExchange(?Exchange $exchange): static
+    {
+        $this->exchange = $exchange;
 
         return $this;
     }
