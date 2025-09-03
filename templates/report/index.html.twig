@@ -22,24 +22,7 @@
             color: white;
             border-radius: 10px 10px 0 0 !important;
         }
-        
-        .entree {
-            color: #28a745;
-            font-weight: 600;
-        }
-        
-        .sortie {
-            color: #dc3545;
-            font-weight: 600;
-        }
-        
-        .solde {
-            background-color: #343a40;
-            color: white;
-            font-weight: 700;
-            padding: 5px 10px;
-            border-radius: 4px;
-        }
+         
         
         .daterangepicker-input {
             background-color: white;
@@ -95,6 +78,24 @@
             padding: 15px;
             margin-bottom: 20px;
         }
+
+        .bg-date-header {
+            background-color: #f8f9fa !important;
+            color: #3a7bd5 !important;
+            font-weight: bold !important;
+        }
+        .table-group-cell {
+            font-weight: bold;
+            padding-left: 30px !important;
+        }
+        .btn-export-excel {
+            background-color: #1D6F42;
+            color: white;
+        }
+        .btn-export-pdf {
+            background-color: #B30B00;
+            color: white;
+        }
     </style>
 {% endblock %}
 
@@ -108,13 +109,13 @@
     <div class="row mb-4">
         <div class="col-md-8">
             <div class="agence-selector">
-                <div class="row g-3 align-items-center">
+                <div class="row g-3 align-items-center"> 
                     <div class="col-md-5">
                         <label for="agenceSelect" class="form-label fw-bold">Agence</label>
                         <select id="agenceSelect" class="form-select form-select-lg"> 
                             {% for agence in agences %}
                                 <option value="{{ agence.id }}">  
-                                    {{ agence.nom }} ({{ agence.devise }})
+                                    {{ agence.nom }}
                                 </option>
                             {% endfor %}
                         </select>
@@ -127,7 +128,22 @@
                         <button id="filterBtn" class="btn btn-primary btn-lg w-100">
                             <i class="bi bi-funnel me-2"></i>Filtrer
                         </button>
-                    </div>
+                    </div>   
+                </div>
+                <div class="row">
+                    <div class="col-md-5">
+                        <label for="deviseSelect" class="form-label fw-bold">Devise</label>
+                        <select id="deviseSelect" class="form-select form-select-lg"> 
+                            <option value="CFA">CFA - BECEAO</option>
+                            <option value="USD">USD - Dollar américain</option>
+                            <option value="AED">AED - Dirham des Émirats Arabes Unis</option>
+                            <option value="EUR">EUR - Euro</option> 
+                            <option value="GBP">GBP - Livre sterling</option>
+                            <option value="CNY">CNY - Yuan chinois</option>
+                            <option value="MAD">MAD - Dirham marocain</option>
+                            <option value="DZD">DZD - Dinar algérien</option> 
+                        </select>
+                    </div> 
                 </div>
             </div>
         </div>
@@ -150,7 +166,7 @@
         <div class="col-12">
             <div class="card card-agence">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">Transactions</h5>
+                    <h5 class="card-title mb-0" id="tableDescription">Rapport de -- | periode : ------------------ | devise : </h5>
                     <div class="export-buttons">
                         <button id="exportExcel" class="btn btn-export-excel">
                             <i class="bi bi-file-earmark-excel me-2"></i>Excel
@@ -167,23 +183,15 @@
                                 <tr>
                                     <th>N°</th>
                                     <th>Description</th>
-                                    <th>Date</th>
+                                    <th>Date</th> 
                                     <th>Entrée</th>
                                     <th>Sortie</th>
                                     <th>Solde</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- Les données seront chargées via AJAX -->
-                            </tbody>
-                            <tfoot>
-                                <tr class="bg-light">
-                                    <th colspan="3" class="text-end">Totaux:</th>
-                                    <th id="totalEntree">0 FCFA</th>
-                                    <th id="totalSortie">0 FCFA</th>
-                                    <th id="totalSolde" class="d-none solde">0 FCFA</th>
-                                </tr>
-                            </tfoot>
+                                <!-- Les données seront chargées via AJAX datatables-->
+                            </tbody> 
                         </table>
                     </div>
                 </div>

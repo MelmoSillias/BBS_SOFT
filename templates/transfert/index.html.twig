@@ -295,7 +295,7 @@
 			</div>
 		</div>
 
-		<div class="card mt-4">
+		<div class="card mt-4" id="TransfertFormCard">
 			<div class="card-header bg-primary text-white">
 				<h3 class="card-title mb-0">
 					<i class="bi bi-send"></i>
@@ -331,27 +331,11 @@
 									<span class="text-danger">*</span>
 								</label>
 								<select id="destination" name="destination" class="form-select shadow-sm country-select" required>
-									<option value="EAU">🇦🇪
-										<strong>Dubaï</strong>
-										- Emirates-Arabes-Unis</option>
-									<option value="FR">🇫🇷
-										<strong>Paris</strong>
-										- France</option>
-									<option value="USA">🇺🇸
-										<strong>Washington D.C.</strong>
-										- États-Unis</option>
-									<option value="UK">🇬🇧
-										<strong>Londres</strong>
-										- Royaume-Uni</option>
-									<option value="CHI">🇨🇳
-										<strong>Pékin</strong>
-										- Chine</option>
-									<option value="MRC">🇲🇦
-										<strong>Rabat</strong>
-										- Maroc</option>
-									<option value="ALG">🇩🇿
-										<strong>Alger</strong>
-										- Algérie</option>
+									{% for agence in agences %}
+									    {% if agence.id != 1 %} 
+											<option value="{{ agence.id }}"> <small style="font-weight:bold;  font-size:8px" >{{ agence.abg }}</small> <strong>{{ agence.designation }}</strong> - {{ agence.localite }}</option>
+										{% endif %} 
+									{% endfor %}
 								</select>
 							</div>
 						</div>
@@ -526,6 +510,10 @@
 				</form>
 			</div>
 		</div>
+
+		<a id="btnAddTransfertFloat" href="#TransfertFormCard" class="btn btn-lg btn-outline-primary text-bold" style="position: fixed; bottom: 80px; right: 20px; z-index: 1000;">
+			<i class="bi bi-plus-lg"></i>
+		</a>
 	</div>
 	{# --- Modals d'Actions --- #}
 

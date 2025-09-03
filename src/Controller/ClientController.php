@@ -3,18 +3,12 @@
 namespace App\Controller;
 
 use App\Entity\AccountTransaction;
+use App\Entity\Agence;
 use App\Entity\Client;
 use App\Entity\Exchange;
-use App\Entity\Invoice;
-use App\Entity\InvoiceItem;
-use App\Entity\RenewableInvoice;
-use App\Entity\RenewableInvoiceItem;
 use App\Entity\Transfert;
-use App\Repository\ClientRepository;
 use DateTimeImmutable;
-use Doctrine\Migrations\Tools\TransactionHelper;
 use Doctrine\ORM\EntityManagerInterface;
-use PhpParser\Node\Expr\Cast\Array_;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,13 +16,16 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 final class ClientController extends AbstractController
-{ 
+{
 
     #[Route('/dashboard/client', name: 'app_client')]
-    public function index(): Response
+    public function index(EntityManagerInterface $em): Response
     {
+        $agences = $em->getRepository(Agence::class)->findAll();
+
         return $this->render('client/index.html.twig', [
             'controller_name' => 'ClientController',
+            'agences' => $agences
         ]);
     }
 
@@ -36,26 +33,28 @@ final class ClientController extends AbstractController
     public function modifySubmit(Client $client, Request $request, EntityManagerInterface $em): JsonResponse
     {
         // Récupération des champs
-        $client->setNomComplet($request->request->get('nomComplet')) 
-               ->setPhoneNumber($request->request->get('phoneNumber'))
-               ->setAddress($request->request->get('address')); 
+        $client->setNomComplet($request->request->get('nomComplet'))
+            ->setPhoneNumber($request->request->get('phoneNumber'))
+            ->setAddress($request->request->get('address'));
 
         $em->flush();
         return $this->json(['success' => true]);
     }
 
     #[Route('/dashboard/client/{id}/details', name: 'client_details_modal', methods: ['GET'])]
-    public function ShowClient(Client $client): Response
+    public function ShowClient(Client $client, EntityManagerInterface $em): Response
     {
+        $agences = $em->getRepository(Agence::class)->findAll();
         // On peut récupérer ici factures ou transactions si besoin
         return $this->render('client/client_show.html.twig', [
             'controller_name' => 'ClientController',
             'client' => $client,
+            'agences' => $agences
         ]);
     }
 
     #[Route('/api/client/{id}/smalldetails', name: 'client_small_details', methods: ['GET'])]
-    public function smallDetails(Client $client ,Request $request, EntityManagerInterface $em): JsonResponse
+    public function smallDetails(Client $client, Request $request, EntityManagerInterface $em): JsonResponse
     {
         if (!$client) {
             return $this->json(['error' => 'Client not found'], 404);
@@ -64,8 +63,8 @@ final class ClientController extends AbstractController
         return $this->json([
             'id' => $client->getId(),
             'nomComplet' => $client->getNomComplet(),
-            'phoneNumber' => $client->getPhoneNumber(), 
-            'address' => $client->getAddress(), 
+            'phoneNumber' => $client->getPhoneNumber(),
+            'address' => $client->getAddress(),
         ]);
     }
 
@@ -75,8 +74,10 @@ final class ClientController extends AbstractController
         $amount = (float) $request->request->get('amount', 0);
         $ref_payment = $request->request->get('reference', ''); // Référence de paiement
         $method_payment = $request->request->get('mode', ''); // Méthode de paiement
-        $note = $request->request->get('note', ''); // Note de la transaction
-          $cur = $request->request->get('currency', ''); 
+        $note = $request->request->get('note'); // Note de la transaction
+        $cur = $request->request->get('currency', '');
+
+        $cName = $client->getNomComplet();
 
         if ($amount <= 0) {
             return $this->json(['error' => 'Invalid amount'], 400);
@@ -85,18 +86,21 @@ final class ClientController extends AbstractController
         // 1. Créer un enregistrement de transaction (acompte client)
         $tx = new AccountTransaction();
         $tx->setClient($client)
-           ->setIncome($amount) 
-           ->setDevise($cur)
-           ->setOutcome(0)
-           ->setAccountType('client')
-           ->setUpdatedAt(new \DateTimeImmutable())
-           ->setReason('Versement compte client')
-           ->setPaymentRef($ref_payment)
-           ->setDescrib("Retrait de $cur compte client")
-           ->setStatus('validé')
-           ->setCreatedAt(new \DateTimeImmutable())
-           ->setPaymentMethod($method_payment);
+            ->setAmount($cur, $amount)
+            ->setDescrib($note == '' ? "Depot $amount $cur" : $note)
+            ->setCreatedAt(new \DateTimeImmutable())
+            ->setType("Versement");
+
         $em->persist($tx);
+
+        $local = $em->getRepository(Agence::class)->findOneBy(["id" => 1]);
+
+        $atx = new AccountTransaction();
+        $atx->setAgence($local)
+            ->setAmount($cur, $amount)
+            ->setDescrib($note == '' ? "Depot $amount $cur compte ".$client->getNomComplet() : $note)
+            ->setCreatedAt(new \DateTimeImmutable());
+        $em->persist($atx);
 
         $em->flush();
         return $this->json(['success' => true]);
@@ -108,10 +112,11 @@ final class ClientController extends AbstractController
         $amount = (float) $request->request->get('amount', 0);
         $ref_payment = $request->request->get('reference', ''); // Référence de paiement
         $method_payment = $request->request->get('mode', ''); // Méthode de paiement
-        $note = $request->request->get('note', ''); // Note de la transaction
+        $note = $request->request->get('note'); // Note de la transaction
         $cur = $request->request->get('currency', '');
-        
+
         $balance = $client->getbalance($cur);
+        $cName = $client->getNomComplet();
 
         if ($amount <= 0 or $amount > $balance) {
             return $this->json(['error' => 'Montant invalide'], 400);
@@ -120,23 +125,25 @@ final class ClientController extends AbstractController
         // 1. Créer un enregistrement de transaction (acompte client)
         $tx = new AccountTransaction();
         $tx->setClient($client)
-           ->setIncome(0) 
-           ->setDevise($cur)
-           ->setOutcome($amount)
-           ->setAccountType('client')
-           ->setUpdatedAt(new \DateTimeImmutable())
-           ->setReason("Retrait de $cur compte client")
-           ->setPaymentRef($ref_payment)
-           ->setDescrib("Retrait de $cur compte client")
-           ->setStatus('validé')
-           ->setCreatedAt(new \DateTimeImmutable())
-           ->setPaymentMethod($method_payment);
+            ->setAmount($cur, $amount * -1)
+            ->setDescrib($note == '' ? "Retrait $amount $cur" : $note)
+            ->setCreatedAt(new \DateTimeImmutable())
+            ->setType("Retrait");
         $em->persist($tx);
+
+        $local = $em->getRepository(Agence::class)->findOneBy(["id" => 1]);
+
+        $atx = new AccountTransaction();
+        $atx->setAgence($local)
+            ->setAmount($cur, $amount * -1)
+            ->setDescrib($note == '' ? "Retrait $amount $cur compte ".$client->getNomComplet() : $note)
+            ->setCreatedAt(new \DateTimeImmutable());
+        $em->persist($atx);
 
         $em->flush();
         return $this->json(['success' => true]);
     }
-    
+
 
     #[Route('/api/clients', name: 'api_clients_list', methods: ['GET'])]
     public function clientsList(EntityManagerInterface $em): JsonResponse
@@ -144,9 +151,9 @@ final class ClientController extends AbstractController
         $clients = $em->getRepository(Client::class)->findAll();
         $data = [];
 
-        foreach ($clients as $client) { 
+        foreach ($clients as $client) {
             $data[] = [
-                'id'           => $client->getId(), 
+                'id'           => $client->getId(),
                 'nomComplet'  => $client->getNomComplet(),
                 'phoneNumber'  => $client->getPhoneNumber(),
                 'balanceCFA'      => $client->getbalance("CFA"),
@@ -162,10 +169,10 @@ final class ClientController extends AbstractController
     public function clientsStats(EntityManagerInterface $em): JsonResponse
     {
         $repo = $em->getRepository(Client::class);
-        $total  = count($repo->findAll()); 
+        $total  = count($repo->findAll());
 
         return $this->json([
-            'total'  => $total, 
+            'total'  => $total,
         ]);
     }
 
@@ -173,10 +180,10 @@ final class ClientController extends AbstractController
     public function clientAdd(Request $request, EntityManagerInterface $em): JsonResponse
     {
         $client = new Client();
-        $client->setNomComplet($request->request->get('nomComplet')) 
-               ->setPhoneNumber($request->request->get('phoneNumber'))
-               ->setAddress($request->request->get('address'))  
-               ->setISActive(true); 
+        $client->setNomComplet($request->request->get('nomComplet'))
+            ->setPhoneNumber($request->request->get('phoneNumber'))
+            ->setAddress($request->request->get('address'))
+            ->setISActive(true);
         $em->persist($client);
         $em->flush();
         return $this->json(['success' => true]);
@@ -193,70 +200,61 @@ final class ClientController extends AbstractController
 
     #[Route('/api/client/{id}/stats/{devise}', name: 'client_devise_balance', methods: ['GET'])]
     public function stats(Client $client, EntityManagerInterface $em, Request $req): JsonResponse
-    { 
-           
+    {
+
         $cur = $req->get('devise');
         return $this->json([
             'balance'          => $client->getbalance($cur)
         ]);
-    } 
+    }
 
     #[Route('/api/client/{id}/stats', name: 'client_stats', methods: ['GET'])]
-    public function AllStats(Client $client, EntityManagerInterface $em, Request $req): JsonResponse
-    { 
-        $repo = $em->getRepository(AccountTransaction::class);
-        $devises = $repo->createQueryBuilder('t')
-                    ->select('DISTINCT t.devise')
-                    ->getQuery()
-                    ->getResult();
-        
+    public function AllStats(Client $client, EntityManagerInterface $em): JsonResponse
+    {
+        // Liste manuelle des devises supportées
+        $supportedCurrencies = ['CFA', 'AED', 'EUR', 'USD', 'GBP', 'CNY', 'MAD', 'DZD'];
+
         $data = [];
-        foreach ($devises as $dev) {
-            $cur = $dev['devise'];
-            $data[$cur] = $client->getbalance($cur);
+        foreach ($supportedCurrencies as $currency) {
+            $data[$currency] = $client->getBalance($currency);
         }
-        
+
         return $this->json($data);
-    } 
-   
-    /**
-     * Liste des transactions du client (+ filtre type)
-     */
+    }
+
     #[Route('/api/client/{id}/transactions', name: 'client_transactions', methods: ['GET'])]
     public function listTransactions(Client $client, Request $request, EntityManagerInterface $em): JsonResponse
     {
-        $type = $request->query->get('type');
         $repo = $em->getRepository(AccountTransaction::class);
-
         $qb = $repo->createQueryBuilder('t')
             ->where('t.client = :client')
             ->setParameter('client', $client);
 
-        if ($type === 'Entrée') {
-            $qb->andWhere('t.income > 0');
-        } elseif ($type === 'Sortie') {
-            $qb->andWhere('t.outcome > 0');
-        }
 
         $qb->orderBy('t.createdAt', 'DESC');
         $transactions = $qb->getQuery()->getResult();
 
         $list = [];
         foreach ($transactions as $tx) {
-            // Déterminer le type dynamiquement
-            $txType = $tx->getIncome() > 0 ? 'entrée' : ($tx->getOutcome() > 0 ? 'sortie' : 'autre');
             $list[] = [
-                'date'             => $tx->getCreatedAt()->format('Y-m-d H:i:s'),
-                'type'             => $txType,
-                'devise'           => $tx->getDevise(),
-                'amount'           => $tx->getIncome() - $tx->getOutcome(),
+                'id'          => $tx->getId(),
+                'date'        => $tx->getCreatedAt()->format('Y-m-d H:i:s'),
+                'type'        => $tx->getType(),
                 'description' => $tx->getDescrib(),
-                'paymentMethod'    => $tx->getPaymentMethod(),
-                'paymentReference' => $tx->getPaymentRef(),
+                'amountCFA'   => $tx->getCFA(),
+                'amountAED'   => $tx->getAED(),
+                'amountEUR'   => $tx->getEUR(),
+                'amountUSD'   => $tx->getUSD(),
+                'amountGBP'   => $tx->getGBP(),
+                'amountCNY'   => $tx->getCNY(),
+                'amountMAD'   => $tx->getMAD(),
+                'amountDZD'   => $tx->getDZD(),
             ];
         }
+
         return $this->json(['data' => $list]);
     }
+
 
     #[Route('/api/client/{client}/transferts', name: 'api_client_transfert_list', methods: ['GET'])]
     public function listTransferts(EntityManagerInterface $em, Client $client, Request $req): JsonResponse
@@ -264,14 +262,14 @@ final class ClientController extends AbstractController
         // Récupérer les paramètres de la requête
         $startDate = $req->query->get('dateFrom');
         $endDate = $req->query->get('dateTo');
-        $status = $req->query->get('status'); 
-        $operationType = $req->query->get('type'); 
+        $status = $req->query->get('status');
+        $operationType = $req->query->get('type');
 
         // Créer une requête de base
         $queryBuilder = $em->getRepository(Transfert::class)->createQueryBuilder('t');
 
         $queryBuilder->andWhere('t.client = :client')
-                ->setParameter('client', $client);
+            ->setParameter('client', $client);
 
         // Appliquer les filtres
         if ($startDate && $endDate) {
@@ -288,31 +286,40 @@ final class ClientController extends AbstractController
         if ($operationType) {
             $queryBuilder->andWhere('t.Type = :operationType')
                 ->setParameter('operationType', $operationType);
-        } 
+        }
 
         // Récupérer les résultats sans le filtre de nom pour pouvoir filtrer sur le nom complet
         $transferts = $queryBuilder->getQuery()->getResult();
- 
+
 
         // Préparer les données de sortie
+        // Préparer les données de sortie
         $output = array_map(function ($transfert) {
-            $nomComplet = $transfert->getVanishClientName() ?: ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : '');
+            $nomComplet = $transfert->getSenderName() ?: ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : '');
+            $telephone = $transfert->getSenderPhone() ?: ($transfert->getClient() ? $transfert->getClient()->getPhoneNumber() : '');
+
             return [
                 'id' => $transfert->getId(),
                 'createdAt' => $transfert->getCreatedAt()->format('Y-m-d H:i:s'),
                 'type' => $transfert->getType(),
-                'destination' => $transfert->getDestination(),
-                'typeClient' => !$transfert->getClient() ? 'Client éphémère' : 'Client enregistré',
+                'clientType' => $transfert->getClient() ? "registered" : "ephemeral",
+                'destination' => [
+                    'id' => $transfert->getAgence()->getId(),
+                    'name' => $transfert->getAgence()->getDesignation(),
+                    'localite' => $transfert->getAgence()->getLocalite(),
+                    'devise' => $transfert->getAgence()->getDeviseLocal(),
+                    'abg' => $transfert->getAgence()->getAbg(),
+                    'isActive' => $transfert->getAgence()->IsActive(),
+                ],
                 'expediteur' => $nomComplet,
-                'montantCash' => $transfert->getMontantCash(),
-                'deviseCash' => $transfert->getDeviseCash(),
+                'exp-phone' => $telephone,
+                'montantCFA' => $transfert->getMontantCFA(),
+                'montantUSD' => $transfert->getMontantUSD(),
                 'montantReception' => $transfert->getMontantReception(),
-                'deviseReception' => $transfert->getDeviseReception(),
                 'taux' => $transfert->getTaux(),
                 'frais' => $transfert->getFrais(),
                 'receiverName' => $transfert->getReceiverName(),
                 'receiverPhone' => $transfert->getReceiverPhone(),
-                'tauxDeviseReception' => $transfert->getTauxDeviseReception(),
                 'status' => $transfert->getStatus(),
                 'ref' => $transfert->getRef()
             ];
@@ -321,7 +328,7 @@ final class ClientController extends AbstractController
         return new JsonResponse($output);
     }
 
-     #[Route('/api/client/{client}/transferts/stats', name: 'api_client_transfert_stats', methods: ['GET'])]
+    #[Route('/api/client/{client}/transferts/stats', name: 'api_client_transfert_stats', methods: ['GET'])]
     public function statsTransferts(EntityManagerInterface $em, Client $client, Request $req): JsonResponse
     {
         // Récupération des dates (optionnelles)
@@ -332,9 +339,9 @@ final class ClientController extends AbstractController
 
         // Filtre par période
         if ($startDate && $endDate) {
-            $qb->andWhere('t.createdAt BETWEEN :start AND :end') 
-            ->setParameter('start', new \DateTime($startDate))
-            ->setParameter('end', new \DateTime($endDate)) ;
+            $qb->andWhere('t.createdAt BETWEEN :start AND :end')
+                ->setParameter('start', new \DateTime($startDate))
+                ->setParameter('end', new \DateTime($endDate));
         }
 
         $transferts = $qb->getQuery()->getResult();
@@ -350,13 +357,13 @@ final class ClientController extends AbstractController
             'valide' => 0,
             'annule' => 0,
         ];
- 
+
 
         $parTypeOperation = [];
 
         foreach ($transferts as $transfert) {
-            $totalMontantCash += $transfert->getMontantCash();
-            $totalMontantReception += $transfert->getMontantReception();
+            $totalMontantCash += $transfert->getMontantCFA();
+            $totalMontantReception += $transfert->getMontantUSD();
             $totalFrais += $transfert->getFrais();
 
             // Par statut
@@ -364,7 +371,7 @@ final class ClientController extends AbstractController
             if ($statut === 'pending' || $statut === 0) $parStatut['en_attente']++;
             elseif ($statut === 'completed' || $statut === 1) $parStatut['valide']++;
             elseif ($statut === 'cancelled' || $statut === 2) $parStatut['annule']++;
- 
+
             // Par type d’opération
             $typeOp = $transfert->getType();
             if (!isset($parTypeOperation[$typeOp])) {
@@ -383,7 +390,7 @@ final class ClientController extends AbstractController
             'montant_total_cash' => $totalMontantCash,
             'montant_total_reception' => $totalMontantReception,
             'frais_totaux' => $totalFrais,
-            'par_statut' => $parStatut, 
+            'par_statut' => $parStatut,
             'par_type_operation' => $parTypeOperation,
         ];
 
@@ -393,77 +400,64 @@ final class ClientController extends AbstractController
     #[Route('/api/client/{id}/exchange', name: 'client_exchange_submit', methods: ['POST'])]
     public function exchangeSubmit(Client $client, Request $request, EntityManagerInterface $em): JsonResponse
     {
-        // Récupérer les données de la requête
-        $fromAmount = (float) $request->request->get('fromAmount', 0);
-        $toAmount = (float) $request->request->get('toAmount', 0);
-        $fromCurrency = $request->request->get('fromCurrency', '');
-        $toCurrency = $request->request->get('toCurrency', '');
-        $note = $request->request->get('note', ''); // Note de la transaction
-        $exchangeRate = (float) $request->request->get('exchangeRate', 0); // Taux de change utilisé
-        $ref_payment = $request->request->get('reference', ''); // Référence de paiement
+        // Récupérer les données de la requête  
+        $type = $request->request->get('type', '');
+        $montantdevise = (float) $request->request->get('montant', 0);
+        $devise = $request->request->get('deviseExchange', '');
 
-        // Vérifier que les montants et les devises sont valides
-        if ($fromAmount <= 0 || $toAmount <= 0 || $fromCurrency === '' || $toCurrency === '' || $fromCurrency === $toCurrency) {
-            return $this->json(['error' => 'Invalid exchange details'], 400);
-        }
+        $date = $request->request->get('date'); // Note de la transaction
+        $taux = (float) $request->request->get('taux', 0); // Taux de change utilisé
+        $agence = $em->getRepository(Agence::class)->findOneBy(['id' => $request->request->get('destination')]); // Agence de destination 
 
+        $montantCfa = $montantdevise * $taux; // Montant en CFA
         // Vérifier que le client a un solde suffisant dans la devise de départ
-        $balance = $client->getBalance($fromCurrency);
-        if ($fromAmount > $balance) {
-            return $this->json(['error' => 'Insufficient balance for this exchange'], 400);
-        }
 
-        
         // 0 - créer l'échange pour l'opération
         $exchange = new Exchange();
-        $exchange->setFromAmount($fromAmount);
-        $exchange->setFromCurrency($fromCurrency);
-        $exchange->setToCurrency($toCurrency);
-        $exchange->setType('client');
-        $exchange->setToAmount($toAmount);
-        $exchange->setTaux($toAmount / $fromAmount);
+        $exchange->setMontantCFA($montantCfa);
+        $exchange->setMontantDevise($montantdevise);
+        $exchange->setDevise($devise);
+        $exchange->setType($type);
+        $exchange->setTaux($taux);
         $exchange->setClient($client);
-        $exchange->setDescription("Achat de ". $fromCurrency ." Avec ". $toCurrency ."");
-        $exchange->setDate(New DateTimeImmutable("now"));
-        
+        $exchange->setDescription($type . " de " . $devise . " à " . $agence->getDesignation() . " sur compte");
+        $exchange->setDate(!$date ? new DateTimeImmutable("now") : new DateTimeImmutable($date));
+
+        // 1. Créer un enregistrement de transaction pour le client
+        $clientTx = new AccountTransaction();
+        $clientTx->setClient($client)
+            ->setAmount('CFA', $type === "achat" ? $montantCfa * -1 : $montantCfa)
+            ->setDescrib($type . " de " . $devise . " à " . $agence->getDesignation())
+            ->setCreatedAt(!$date ? new DateTimeImmutable("now") : new DateTimeImmutable($date))
+            ->setExchange($exchange)
+            ->setDescrib($type . " de " . $devise . " à " . $agence->getDesignation() . " sur compte");;
 
 
-        // 1. Créer un enregistrement de transaction pour le retrait de la devise de départ
-        $withdrawalTx = new AccountTransaction();
-        $withdrawalTx->setClient($client)
-            ->setIncome(0)
-            ->setOutcome($fromAmount)
-            ->setDevise($fromCurrency)
-            ->setAccountType('client')
-            ->setUpdatedAt(new \DateTimeImmutable())
-            ->setReason("Échange de $fromCurrency à $toCurrency")
-            ->setDescrib("Vente de $fromCurrency")
-            ->setPaymentRef($ref_payment)
-            ->setStatus('validé')
-            ->setCreatedAt(new \DateTimeImmutable())
-            ->setPaymentMethod('Exchange')
-            ->setExchange($exchange);
+        // 2. Créer un enregistrement pour l'agence
+        if ($agence->getId() === 1) {
+            $agenceTx = new AccountTransaction();
+            $agenceTx->setAgence($agence);
+            $agenceTx->setExchange($exchange);
+            $agenceTx->setDescrib($type . " de " . $devise .  " sur compte ".$client->getNomComplet());
+            $agenceTx->setCreatedAt(!$date ? new DateTimeImmutable("now") : new DateTimeImmutable($date));
 
-        // 2. Créer un enregistrement de transaction pour le dépôt de la devise d'arrivée
-        $depositTx = new AccountTransaction();
-        $depositTx->setClient($client)
-            ->setIncome($toAmount)
-            ->setOutcome(0)
-            ->setDevise($toCurrency)
-            ->setAccountType('client')
-            ->setPaymentRef($ref_payment)
-            ->setUpdatedAt(new \DateTimeImmutable())
-            ->setReason("Échange de $fromCurrency à $toCurrency")
-            ->setDescrib("Achat de $toCurrency")
-            ->setStatus('validé')
-            ->setCreatedAt(new \DateTimeImmutable())
-            ->setPaymentMethod('Exchange')
-            ->setExchange($exchange);
+            if ($type === "achat") {
+                $agenceTx->setAmount($devise, $montantdevise * -1);
+            } else {
+                $agenceTx->setAmount($devise, $montantdevise); 
+            }   
+        } else {
+            $agenceTx = new AccountTransaction();
+            $agenceTx->setAgence($agence)
+                ->setUSD($montantdevise)
+                ->setDescrib($type . " de " . $devise . " sur compte ".$client->getNomComplet())
+                ->setCreatedAt(!$date ? new DateTimeImmutable("now") : new DateTimeImmutable($date));
+        }
 
         // Persister les transactions dans la base de données
         $em->persist($exchange);
-        $em->persist($withdrawalTx);
-        $em->persist($depositTx);
+        $em->persist($clientTx);
+        $em->persist($agenceTx);
         $em->flush();
 
         return $this->json(['success' => true]);
@@ -472,20 +466,35 @@ final class ClientController extends AbstractController
     #[Route('/api/client/{id}/exchanges', name: 'client_exchange_list', methods: ['GET'])]
     public function clientExchangeList(Client $client, Request $request, EntityManagerInterface $em): JsonResponse
     {
-        $exchanges = $em->getRepository(Exchange::class)->findBy(['client'=> $client]); 
+        $exchanges = $em->getRepository(Exchange::class)->findBy(['client' => $client]);
 
-        return $this->json(array_map(function($ex){
+        return $this->json(array_map(function ($ex) {
             return [
                 'id' => $ex->getId(),
-                'date' => $ex->getDate()->format('Y-m-d H:i:s'),
-                'note' => $ex->getDescription(),
-                'fromAmount' => $ex->getFromAmount(),
-                'fromCurrency' => $ex->getFromCurrency(),
-                'toAmount' => $ex->getToAmount(),
-                'toCurrency' => $ex->getToCurrency(),
+                'date' => $ex->getDate()->format('Y-m-d'),
+                'type' => $ex->getType(),
+                'description' => $ex->getDescription(),
+                'montantCFA' => $ex->getMontantCFA(),
+                'montantDevise' => $ex->getMontantDevise(),
+                'devise' => $ex->getDevise(),
                 'taux' => $ex->getTaux(),
             ];
         }, $exchanges));
     }
 
+    #[Route('/api/transaction/{id}/receipt', name: 'transaction_receipt')]
+    public function generateReceipt(AccountTransaction $transaction): Response
+    {
+        return $this->render('client/print.html.twig', [
+            'transaction' => $transaction,
+            'company' => [
+                'name' => 'BSS',
+                'full_name' => 'BUREAU DE SERVICES ET DE SOLUTIONS',
+                'address' => '123 Avenue de la République, Dakar, Sénégal',
+                'phone' => '+221 33 123 45 67',
+                'email' => 'contact@bss.sn',
+                'website' => 'www.bss.sn'
+            ]
+        ]);
+    }
 }

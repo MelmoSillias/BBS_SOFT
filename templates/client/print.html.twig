@@ -1,4 +1,4 @@
-{# templates/exchange_receipt.html.twig #}
+{# templates/transaction_receipt.html.twig #}
 <!DOCTYPE html>
 <html lang="fr">
 	<head>
@@ -33,6 +33,8 @@
 				font-size: 12px;
 			}
 
+		
+
 			/* Titre centré */
 			.title {
 				text-align: center;
@@ -41,7 +43,6 @@
 				margin: 10px 0 20px;
 				text-transform: uppercase;
 			}
-
 
 			.title small {
 				font-size: 14px;
@@ -64,7 +65,7 @@
 				flex-direction: column;
 				justify-content: space-evenly;
 				font-size: 18px;
-                height: 200px;
+				height: 240px;
 			}
 
 			.box span {
@@ -74,10 +75,10 @@
 			/* Footer */
 			.footer {
 				display: flex;
-                justify-content: space-between;
+				justify-content: space-between;
 				margin-top: 5px;
-                margin-left: 20px; 
-                margin-right: 20px;
+				margin-left: 20px;
+				margin-right: 20px;
 				font-size: 12px;
 			}
 		</style>
@@ -99,7 +100,7 @@
 
 		<!-- Titre -->
 		<div class="title">
-			REÇU N° {{ exchange.id }}
+			REÇU D'ÉCHANGE DE DEVISES
 			<br>
 			<small class='text-normal' >{{ "now"|date("d/m/Y H:i") }}</small>
 		</div>
@@ -111,47 +112,50 @@
 			<!-- Cadre gauche -->
 			<div class="box">
 				<div>Opération :
-					<span>{{ exchange.type }} {{ exchange.client ? "client" : ""}} </span>
+					<span>{{ transaction.reason }}</span>
 				</div>
-                <div>Date :
-                    <span>{{ exchange.date ? exchange.date|date('d/m/Y') : '' }}</span>
-                </div> 
-				<div>Description :
-                    <span>{{ exchange.description }}</span>
-                </div> 
+				<div>Date :
+					<span>{{ transaction.createdAt ? transaction.createdAt|date('d/m/Y') : '' }}</span>
+				</div>
+				<div>Nom Client :
+					<span>{{ transaction.client ? transaction.client.nomComplet }}</span>
+				</div>
+				<div>Téléphone :
+					<span>{{ transaction.client ? transaction.client.phoneNumber}}</span>
+				</div> 
 			</div>
 
 			<!-- Cadre droit -->
 			<div class="box"> 
-				<div>Montant CFA :
-					<span>{{ exchange.montantCFA }} CFA</span>
+				<div>Devise :
+					<span>{{ transaction.devise }} </span>
 				</div>
-				<div>Montant Devise :
-					<span>{{ exchange.montantDevise }}
-						{{ exchange.devise }}</span>
+				<div>Montant :
+					<span>{{ transaction.reason == "Versement" ? transaction.income : transaction.outcome }} </span>
 				</div> 
-				<div>Taux appliqué :
-					<span>{{ exchange.taux }}</span>
-				</div>
 			</div>
 		</div>
 
 		<!-- Footer -->
 		<div class="footer">
-            <span>Signature Client</span>
-            <small>Merci pour votre confiance !</small>
+			<span>Signature Client</span>
+			<small>Merci pour votre confiance !</small>
 			<span>Délivré par : MOUSSA TIGANA</span>
-            
+
 		</div>
 
 		<script>
-			window.addEventListener('load', function() {
-            setTimeout(function() {
-                window.print();
-                // Fermer après impression si dans un nouvel onglet
-                setTimeout(function() { window.close(); }, 500);
-            }, 500);
-        });
+			window.addEventListener('load', function () {
+				setTimeout(function () {
+					window.print();
+					// Fermer après impression si dans un nouvel onglet
+					setTimeout(function () {
+						window.close();
+					}
+					, 500);
+				}
+				, 500);
+			});
 		</script>
 	</body>
 </html>

@@ -138,17 +138,26 @@ class Client
     public function getBalance(string $currency): float
     {
         $balance = 0.0;
-        
+        $currency = strtoupper($currency);
+
         foreach ($this->accountTransactions as $transaction) {
-            // Vérifier si la transaction est dans la devise demandée
-            // (Supposons que AccountTransaction a une propriété 'currency')
-            if ($transaction->getDevise() === $currency) {
-                // Ajouter les entrées et soustraire les sorties
-                $balance += (float)$transaction->getIncome();
-                $balance -= (float)$transaction->getOutcome();
+            $amount = match ($currency) {
+                'CFA' => $transaction->getCFA(),
+                'AED' => $transaction->getAED(),
+                'EUR' => $transaction->getEUR(),
+                'USD' => $transaction->getUSD(),
+                'GBP' => $transaction->getGBP(),
+                'CNY' => $transaction->getCNY(),
+                'MAD' => $transaction->getMAD(),
+                'DZD' => $transaction->getDZD(),
+                default => throw new \InvalidArgumentException(sprintf('La devise "%s" n\'est pas supportée.', $currency)),
+            };
+
+            if ($amount !== null) {
+                $balance += (float) $amount;
             }
         }
-        
+
         return $balance;
     }
 

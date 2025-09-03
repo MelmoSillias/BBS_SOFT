@@ -16,53 +16,59 @@ class AccountTransaction
     private ?int $id = null;
 
     #[ORM\Column]
-    private ?\DateTimeImmutable $createdAt = null;
-
-    #[ORM\Column]
-    #[JoinColumn(nullable: true)]
-    private ?\DateTimeImmutable $updatedAt = null;
-
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
-    private ?string $income = null;
-
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
-    private ?string $outcome = null;
-
-    #[ORM\Column(length: 30)]
-    private ?string $account_type = null; 
-
-    #[ORM\Column(length: 30)]
-    private ?string $status = null;
+    private ?\DateTimeImmutable $createdAt = null; 
 
     #[ORM\Column(length: 255)]
-    private ?string $paymentMethod = null;
+    private ?string $describ = null; 
 
-    #[ORM\Column(length: 255)]
-    private ?string $paymentRef = null;
+     // Montant en CFA
+    #[ORM\Column(type: 'decimal', precision: 15, scale: 2, nullable: true)]
+    private ?string $CFA = null;
+
+    // Montant en AED
+    #[ORM\Column(type: 'decimal', precision: 15, scale: 2, nullable: true)]
+    private ?string $AED = null;
+
+    // Montant en EUR
+    #[ORM\Column(type: 'decimal', precision: 15, scale: 2, nullable: true)]
+    private ?string $EUR = null;
+
+    // Montant en USD
+    #[ORM\Column(type: 'decimal', precision: 15, scale: 2, nullable: true)]
+    private ?string $USD = null;
+
+    // Montant en GBP
+    #[ORM\Column(type: 'decimal', precision: 15, scale: 2, nullable: true)]
+    private ?string $GBP = null;
+
+    // Montant en CNY
+    #[ORM\Column(type: 'decimal', precision: 15, scale: 2, nullable: true)]
+    private ?string $CNY = null;
+
+    // Montant en MAD
+    #[ORM\Column(type: 'decimal', precision: 15, scale: 2, nullable: true)]
+    private ?string $MAD = null;
+
+    // Montant en DZD
+    #[ORM\Column(type: 'decimal', precision: 15, scale: 2, nullable: true)]
+    private ?string $DZD = null;
 
     #[ORM\ManyToOne(inversedBy: 'accountTransactions')]
     #[ORM\JoinColumn(nullable: true)]
     private ?Client $client = null; 
 
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
-    private ?\DateTimeImmutable $validate_at = null;
- 
-    #[ORM\Column(length: 255)]
-    private ?string $describ = null;
-
-    #[ORM\Column(length: 255)]
-    private ?string $reason = null;
-
-    #[ORM\OneToOne(mappedBy: 'transaction', cascade: ['persist', 'remove'])]
-    private ?Transfert $transfert = null;
-
-    #[ORM\Column(length: 5)]
-    private ?string $devise = null;
-
     #[ORM\ManyToOne(inversedBy: 'transactions')]
     private ?Exchange $exchange = null;
-    
 
+    #[ORM\ManyToOne(inversedBy: 'accountTransactions')]
+    private ?Agence $agence = null;
+
+    #[ORM\ManyToOne(inversedBy: 'accountTransactions')]
+    private ?Transfert $transfert = null;
+
+    #[ORM\Column(length: 10, nullable: true)]
+    private ?string $type = null; 
+     
     public function getId(): ?int
     {
         return $this->id;
@@ -78,94 +84,9 @@ class AccountTransaction
         $this->createdAt = $createdAt;
 
         return $this;
-    }
+    } 
+    
 
-    public function getUpdatedAt(): ?\DateTimeImmutable
-    {
-        return $this->updatedAt;
-    }
-
-    public function setUpdatedAt(\DateTimeImmutable $updatedAt): static
-    {
-        $this->updatedAt = $updatedAt;
-
-        return $this;
-    }
-
-    public function getIncome(): ?string
-    {
-        return $this->income;
-    }
-
-    public function setIncome(string $income): static
-    {
-        $this->income = $income;
-
-        return $this;
-    }
-
-    public function getOutcome(): ?string
-    {
-        return $this->outcome;
-    }
-
-    public function setOutcome(string $outcome): static
-    {
-        $this->outcome = $outcome;
-
-        return $this;
-    }
-
-    public function getAccountType(): ?string
-    {
-        return $this->account_type;
-    }
-
-    public function setAccountType(string $account_type): static
-    {
-        $this->account_type = $account_type;
-
-        return $this;
-    }
- 
-
-    public function getStatus(): ?string
-    {
-        return $this->status;
-    }
-
-    public function setStatus(string $status): static
-    {
-        $this->status = $status;
-
-        return $this;
-    }
-
-    public function getPaymentMethod(): ?string
-    {
-        return $this->paymentMethod;
-    }
-
-    public function setPaymentMethod(string $paymentMethod): static
-    {
-        $this->paymentMethod = $paymentMethod;
-
-        return $this;
-    }
-
-    public function getPaymentRef(): ?string
-    {
-        return $this->paymentRef;
-    }
-
-    public function setPaymentRef(string $paymentRef): static
-    {
-        $this->paymentRef = $paymentRef;
-
-        return $this;
-    }
- 
-  
     public function getClient(): ?Client
     {
         return $this->client;
@@ -178,17 +99,6 @@ class AccountTransaction
         return $this;
     }
  
-    public function getValidateAt(): ?\DateTimeImmutable
-    {
-        return $this->validate_at;
-    }
-
-    public function setValidateAt(?\DateTimeImmutable $validate_at): static
-    {
-        $this->validate_at = $validate_at;
-
-        return $this;
-    }
 
     public function getDescrib(): ?string
     {
@@ -200,51 +110,94 @@ class AccountTransaction
         $this->describ = $describ;
 
         return $this;
+    } 
+    
+     // Getters et Setters
+    public function getCFA(): ?string
+    {
+        return $this->CFA;
     }
 
-    public function getReason(): ?string
+    public function setCFA(?string $CFA): static
     {
-        return $this->reason;
-    }
-
-    public function setReason(string $reason): static
-    {
-        $this->reason = $reason;
-
+        $this->CFA = $CFA;
         return $this;
     }
 
-    public function getTransfert(): ?Transfert
+    public function getAED(): ?string
     {
-        return $this->transfert;
+        return $this->AED;
     }
 
-    public function setTransfert(?Transfert $transfert): static
+    public function setAED(?string $AED): static
     {
-        // unset the owning side of the relation if necessary
-        if ($transfert === null && $this->transfert !== null) {
-            $this->transfert->setTransaction(null);
-        }
-
-        // set the owning side of the relation if necessary
-        if ($transfert !== null && $transfert->getTransaction() !== $this) {
-            $transfert->setTransaction($this);
-        }
-
-        $this->transfert = $transfert;
-
+        $this->AED = $AED;
         return $this;
     }
 
-    public function getDevise(): ?string
+    public function getEUR(): ?string
     {
-        return $this->devise;
+        return $this->EUR;
     }
 
-    public function setDevise(string $devise): static
+    public function setEUR(?string $EUR): static
     {
-        $this->devise = $devise;
+        $this->EUR = $EUR;
+        return $this;
+    }
 
+    public function getUSD(): ?string
+    {
+        return $this->USD;
+    }
+
+    public function setUSD(?string $USD): static
+    {
+        $this->USD = $USD;
+        return $this;
+    }
+
+    public function getGBP(): ?string
+    {
+        return $this->GBP;
+    }
+
+    public function setGBP(?string $GBP): static
+    {
+        $this->GBP = $GBP;
+        return $this;
+    }
+
+    public function getCNY(): ?string
+    {
+        return $this->CNY;
+    }
+
+    public function setCNY(?string $CNY): static
+    {
+        $this->CNY = $CNY;
+        return $this;
+    }
+
+    public function getMAD(): ?string
+    {
+        return $this->MAD;
+    }
+
+    public function setMAD(?string $MAD): static
+    {
+        $this->MAD = $MAD;
+        return $this;
+    }
+
+    public function getDZD(): ?string
+    {
+        return $this->DZD;
+    }
+
+    public function setDZD(?string $DZD): static
+    {
+        $this->DZD = $DZD;
         return $this;
     }
 
@@ -259,4 +212,75 @@ class AccountTransaction
 
         return $this;
     }
+
+    public function getAgence(): ?Agence
+    {
+        return $this->agence;
+    }
+
+    public function setAgence(?Agence $agence): static
+    {
+        $this->agence = $agence;
+
+        return $this;
+    }
+
+    public function getTransfert(): ?Transfert
+    {
+        return $this->transfert;
+    }
+
+    public function setTransfert(?Transfert $transfert): static
+    {
+        $this->transfert = $transfert;
+
+        return $this;
+    }
+
+    public function getType(): ?string
+    {
+        return $this->type;
+    }
+
+    public function setType(?string $type): static
+    {
+        $this->type = $type;
+
+        return $this;
+    }
+
+     public function setAmount(string $currency, string $amount): static
+    {
+        switch (strtoupper($currency)) {
+            case 'CFA':
+                $this->setCFA($amount);
+                break;
+            case 'AED':
+                $this->setAED($amount);
+                break;
+            case 'EUR':
+                $this->setEUR($amount);
+                break;
+            case 'USD':
+                $this->setUSD($amount);
+                break;
+            case 'GBP':
+                $this->setGBP($amount);
+                break;
+            case 'CNY':
+                $this->setCNY($amount);
+                break;
+            case 'MAD':
+                $this->setMAD($amount);
+                break;
+            case 'DZD':
+                $this->setDZD($amount);
+                break;
+            default:
+                throw new \InvalidArgumentException(sprintf('La devise "%s" n\'est pas supportée.', $currency));
+        }
+
+        return $this;
+    }
+ 
 }

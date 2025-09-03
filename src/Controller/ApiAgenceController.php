@@ -23,7 +23,7 @@ final class ApiAgenceController extends AbstractController
             return [
                 'id' => $agence->getId(),
                 'nom' => $agence->getDesignation(),
-                'devise' => $agence->getDevise(),
+                'devise' => $agence->getDeviseLocal(),
                 'localite' => $agence->getLocalite(),
                 'isActive' => $agence->IsActive(),
                 // Ajoutez d'autres propriétés nécessaires
@@ -39,6 +39,9 @@ final class ApiAgenceController extends AbstractController
         $data = [
             'id' => $agence->getId(),
             'name' => $agence->getDesignation(),
+            'localite' => $agence->getLocalite(),
+            'devise' => $agence->getDeviseLocal(),
+            'abg' => $agence->getAbg(),
             'isActive' => $agence->IsActive(),
             // Ajoutez d'autres propriétés nécessaires
         ];
@@ -51,7 +54,7 @@ final class ApiAgenceController extends AbstractController
     { 
         $agence = new Agence();
         $agence->setDesignation($request->request->get('nom'));
-        $agence->setDevise($request->request->get('devise'));
+        $agence->setDeviseLocal($request->request->get('devise'));
         $agence->setLocalite($request->request->get('localite'));
         $agence->setCreatedAt(new \DateTimeImmutable());
         $agence->setIsActive(true);

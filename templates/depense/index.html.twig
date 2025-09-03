@@ -1,0 +1,380 @@
+{% extends 'appbase.html.twig' %}
+{% block title %}Gestion des Dépenses
+{% endblock %}
+
+{% block stylesheets %}
+	<link rel="stylesheet" href="{{ asset('assets/css/select2/select2.min.css') }}">
+	<style>
+		/* Style des cartes de statistiques */
+		.stat-card {
+			border-radius: 10px;
+			box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+			transition: transform 0.3s ease;
+		}
+		.stat-card:hover {
+			transform: translateY(-5px);
+		}
+		.stat-icon {
+			font-size: 1.8rem;
+			margin-bottom: 10px;
+		}
+		.stat-number {
+			font-size: 1.5rem;
+			font-weight: 700;
+		}
+		.stat-text {
+			font-size: 0.9rem;
+			color: #6c757d;
+		}
+
+		/* Style pour les filtres */
+		.filter-section {
+			background-color: #f8f9fa;
+			padding: 15px;
+			border-radius: 8px;
+			margin-bottom: 20px;
+		}
+		.filter-label {
+			font-weight: 600;
+			margin-bottom: 5px;
+			font-size: 0.9rem;
+		}
+
+		/* Style de la table */
+		.table-expenses {
+			font-size: 0.9rem;
+			border-collapse: separate;
+			border-spacing: 0;
+			min-height: 200px;
+		}
+		.table-expenses thead th {
+			background-color: #f8f9fa;
+			position: sticky;
+			top: 0;
+			border-bottom: 2px solid #dee2e6;
+		}
+		.table-expenses tbody tr:hover {
+			background-color: rgba(0, 123, 255, 0.05);
+		}
+
+		/* Style des boutons */
+		.btn-table-action {
+			padding: 0.25rem 0.5rem;
+			font-size: 0.8rem;
+			border-radius: 50px;
+		}
+		.dropdown-menu {
+			border-radius: 8px;
+			box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+		}
+		
+		/* Badge pour les types de dépenses */
+		.badge-type {
+			padding: 5px 10px;
+			border-radius: 20px;
+			font-size: 0.8rem;
+			font-weight: 600;
+			text-transform: uppercase;
+		}
+		.badge-operation {
+			background-color: #d1fae5;
+			color: #065f46;
+			border: 1px solid #34d399;
+		}
+		.badge-administratif {
+			background-color: #dbeafe;
+			color: #1e40af;
+			border: 1px solid #3b82f6;
+		}
+		.badge-divers {
+			background-color: #fef3c7;
+			color: #92400e;
+			border: 1px solid #f59e0b;
+		}
+	</style>
+{% endblock %}
+
+{% block main %}
+	<div class="container-fluid">
+		{# --- 1. Filtres et Total des Dépenses --- #}
+		<div class="row mb-4">
+			<div class="col-md-8">
+				<div class="card h-100">
+					<div class="card-header bg-light">
+						<h5 class="card-title mb-0">
+							<i class="bi bi-funnel-fill me-2"></i>Filtres</h5>
+					</div>
+					<div class="card-body">
+						<div class="row g-3">
+							<div class="col-md-6">
+								<label class="filter-label">Période</label>
+								<div class="input-group">
+									<span class="input-group-text">
+										<i class="bi bi-calendar"></i>
+									</span>
+									<input type="text" id="filterDateRange" class="form-control form-control-sm" placeholder="Sélectionner une période">
+								</div>
+							</div>
+							<div class="col-md-6">
+								<label class="filter-label">Type de dépense</label>
+								<select id="filterType" class="form-select form-select-sm">
+									<option value="">Tous types</option>
+									<option value="fournitures">Fournitures de bureau</option>
+                                    <option value="loyer">Loyer</option>
+                                    <option value="salaires">Salaires et charges</option>
+                                    <option value="entretien">Entretien et réparation</option>
+                                    <option value="transport">Transport et déplacement</option>
+                                    <option value="communication">Communication</option>
+                                    <option value="formation">Formation</option>
+                                    <option value="autres">Autres dépenses</option>
+								</select>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<div class="col-md-4">
+				<div class="card stat-card border-start border-danger border-4 h-100">
+					<div class="card-body">
+						<div class="d-flex justify-content-between align-items-center">
+							<div>
+								<div class="stat-text">Total des Dépenses</div>
+								<div class="stat-number text-danger" id="stat-total">0 FCFA</div>
+							</div>
+							<div class="stat-icon text-danger">
+								<i class="bi bi-currency-exchange"></i>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		{# --- 2. Liste des Dépenses --- #}
+		<div class="card">
+			<div class="card-header bg-secondary text-white bold d-flex justify-content-between align-items-center">
+				<h5 class="card-title mb-0">
+					<i class="bi bi-list-ul me-2"></i>Historique des Dépenses</h5>
+				<div>
+					<button id="refreshTable" class="btn btn-sm btn-outline-secondary text-white">
+						<i class="bi bi-arrow-clockwise me-1"></i>
+						Actualiser
+					</button>
+				</div>
+			</div>
+			<div class="card-body p-4">
+				<div class="table-responsive">
+					<table id="expensesTable" class="table table-expenses table-hover table-stripe mb-0 w-100">
+						<thead>
+							<tr>
+								<th width="120">Date</th>
+								<th>Motif</th>
+								<th width="150">Type</th>
+								<th width="150">Montant</th>
+								<th width="100">Actions</th>
+							</tr>
+						</thead>
+						<tbody>
+							<!-- Les données seront chargées via DataTables -->
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+
+		{# --- 3. Formulaire d'ajout de dépense --- #}
+		<div class="card mt-4" id="expenseFormCard">
+			<div class="card-header bg-primary text-white">
+				<h3 class="card-title mb-0">
+					<i class="bi bi-cash-coin"></i>
+					Enregistrer une Dépense
+				</h3>
+			</div>
+			<div class="card-body">
+				<form id="form-add-expense">
+					<div class="row g-3">
+						<div class="col-md-4">
+							<label class="form-label fw-bold">Date
+								<span class="text-danger">*</span>
+							</label>
+							<input type="date" id="dateExpense" name="date" class="form-control shadow-sm" required>
+						</div>
+						
+						 
+						
+						<div class="col-md-4">
+							<label class="form-label fw-bold">Catégorie
+								<span class="text-danger">*</span>
+							</label>
+							<select id="typeExpense" name="type" class="form-select shadow-sm" required>
+								<option value="">-- Sélectionner une catégorie --</option>
+								<option value="fournitures">Fournitures de bureau</option>
+								<option value="loyer">Loyer</option>
+								<option value="salaires">Salaires et charges</option>
+								<option value="entretien">Entretien et réparation</option>
+								<option value="transport">Transport et déplacement</option>
+								<option value="communication">Communication</option>
+								<option value="formation">Formation</option>
+								<option value="autres">Autres dépenses</option>
+							</select>
+						</div>
+						
+						<div class="col-12">
+							<label class="form-label fw-bold">Motif
+								<span class="text-danger">*</span>
+							</label>
+							<input type="text" id="motifExpense" name="motif" class="form-control shadow-sm" placeholder="Détail de la dépense" required>
+						</div>
+						
+						<div class="col-md-6">
+							<label class="form-label fw-bold">Montant
+								<span class="text-danger">*</span>
+							</label>
+							<div class="input-group shadow-sm">
+								<span class="input-group-text bg-light">FCFA</span>
+								<input type="number" id="montantExpense" name="montant" class="form-control" placeholder="0.00" step="0.01" required>
+							</div>
+						</div>
+						
+						 
+						
+						<div class="col-12">
+							<label class="form-label fw-bold">Notes (optionnel)</label>
+							<textarea id="notesExpense" name="notes" class="form-control shadow-sm" rows="2" placeholder="Informations complémentaires"></textarea>
+						</div>
+					</div>
+					
+					<div class="d-flex justify-content-between mt-4">
+						<button type="reset" id="resetForm" class="btn btn-outline-secondary">
+							<i class="bi bi-arrow-counterclockwise me-2"></i>Réinitialiser
+						</button>
+						<button type="submit" class="btn btn-primary px-4">
+							<i class="bi bi-save-fill me-2"></i>Enregistrer la dépense
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+
+		{# Bouton flottant pour accéder au formulaire #}
+		<a id="btnAddExpenseFloat" href="#expenseFormCard" class="btn btn-lg btn-outline-primary text-bold" style="position: fixed; bottom: 80px; right: 20px; z-index: 1000;">
+			<i class="bi bi-plus-lg"></i>
+		</a>
+	</div>
+
+	{# --- Modals d'Actions --- #}
+	
+	{# Modal Modification Dépense #}
+	<div class="modal fade" id="modalEditExpense" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<form id="form-edit-expense">
+					<div class="modal-header">
+						<h5 class="modal-title">Modifier la Dépense</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+					</div>
+					<div class="modal-body">
+						<input type="hidden" id="editExpenseId" name="id">
+						<div class="mb-3">
+							<label class="form-label">Motif</label>
+							<input type="text" name="motif" class="form-control" required>
+						</div>
+						<div class="mb-3">
+							<label class="form-label">Type</label>
+							<select name="type" class="form-select" required>
+								<option value="operationnel">Opérationnel</option>
+								<option value="administratif">Administratif</option>
+								<option value="divers">Divers</option>
+							</select>
+						</div>
+						<div class="mb-3">
+							<label class="form-label">Montant (FCFA)</label>
+							<input type="number" name="montant" class="form-control" step="0.01" required>
+						</div>
+						<div class="mb-3">
+							<label class="form-label">Date</label>
+							<input type="date" name="date" class="form-control" required>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+						<button type="submit" class="btn btn-primary">Enregistrer</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+	
+	{# Modal Suppression Dépense #}
+	<div class="modal fade" id="modalDeleteExpense" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<form id="form-delete-expense">
+					<div class="modal-header">
+						<h5 class="modal-title">Supprimer la Dépense</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+					</div>
+					<div class="modal-body">
+						<input type="hidden" id="deleteExpenseId" name="id">
+						<p>Êtes-vous sûr de vouloir supprimer cette dépense? Cette action est irréversible.</p>
+						<div class="mb-3">
+							<label class="form-label">Motif de suppression (optionnel)</label>
+							<textarea name="raison" class="form-control" rows="2"></textarea>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+						<button type="submit" class="btn btn-danger">Supprimer</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+	
+	{# Modal Détails Dépense #}
+	<div class="modal fade" id="modalViewExpense" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Détails de la Dépense</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<div class="mb-2">
+						<small class="text-muted">Date:</small>
+						<div class="fw-bold" id="viewDate"></div>
+					</div>
+					<div class="mb-2">
+						<small class="text-muted">Motif:</small>
+						<div class="fw-bold" id="viewMotif"></div>
+					</div>
+					<div class="mb-2">
+						<small class="text-muted">Type:</small>
+						<div class="fw-bold" id="viewType"></div>
+					</div> 
+					<div class="mb-2">
+						<small class="text-muted">Montant:</small>
+						<div class="fw-bold text-danger" id="viewMontant"></div>
+					</div>
+					<div class="mb-2">
+						<small class="text-muted">Mode de paiement:</small>
+						<div class="fw-bold" id="viewPaiement"></div>
+					</div>
+					<div class="mb-2">
+						<small class="text-muted">Notes:</small>
+						<div class="fw-bold" id="viewNotes"></div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+				</div>
+			</div>
+		</div>
+	</div>
+{% endblock %}
+
+{% block javascripts %}
+	<script src="{{ asset('assets/js/select2/select2.min.js') }}"></script>
+	<script src="{{ asset('assets/appjs/expenses.js') }}"></script>
+{% endblock %}

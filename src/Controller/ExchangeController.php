@@ -7,6 +7,7 @@ use App\Entity\Agence;
 use App\Entity\Exchange;
 use App\Repository\AgenceRepository;
 use App\Repository\ExchangeRepository;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -17,176 +18,138 @@ use Symfony\Component\Routing\Attribute\Route;
 final class ExchangeController extends AbstractController
 {
     #[Route('/dashboard/exchange', name: 'app_exchange')]
-    public function index(): Response
+    public function index(AgenceRepository $agenceRepository): Response
     {
         return $this->render('exchange/index.html.twig', [
             'controller_name' => 'ExchangeController',
-            'agences' => [],
+            'agences' => $agenceRepository->findAll(),
             'clients' => [],
         ]);
     }
 
     #[Route('/api/exchanges', name: 'api_exchange_index', methods: ['GET'])]
-    public function APIindex(Request $request, ExchangeRepository $repository, AgenceRepository  $agenceRepository): JsonResponse
+    public function APIindex(Request $request, ExchangeRepository $repository, AgenceRepository $agenceRepository): JsonResponse
     {
 
-        $agenceId = $request->request->get('agence');
-        $agence = $agenceRepository->findOneBy(['id' => $agenceId]);
 
-        $filters = [
-            'type' => $request->query->get('type'),
-            'agence' => $agence,
-            'startDate' => $request->query->get('startDate'),
-            'endDate' => $request->query->get('endDate'),
-        ];
+        $type = $request->query->get('type');
+        $startDate = $request->query->get('startDate');
+        $endDate = $request->query->get('endDate');
 
-        $exchanges = $repository->findByFilters($filters);
+        // 🔹 On construit la requête directement ici
+        $qb = $repository->createQueryBuilder('e');
 
-        $data = array_map(function ($exchange) {
+        if ($type) {
+            $qb->andWhere('e.type = :type')
+                ->setParameter('type', $type);
+        }
+
+        if ($startDate) {
+            $qb->andWhere('e.date >= :startDate')
+                ->setParameter('startDate', new \DateTime($startDate));
+        }
+
+        if ($endDate) {
+            $qb->andWhere('e.date <= :endDate')
+                ->setParameter('endDate', new \DateTime($endDate));
+        }
+
+        $exchanges = $qb->getQuery()->getResult();
+
+        $data = array_map(function ($ex) {
             return [
-                'id' => $exchange->getId(),
-                'type' => $exchange->getType(),
-                'client' => $exchange->getVanishClientName(),
-                'clientPhone' => $exchange->getVanishClientTel(),
-                'agence' => [
-                    'id' => $exchange->getAgence()->getId(),
-                    'name' => $exchange->getAgence()->getDesignation(),
-                    'devise' => $exchange->getAgence()->getDevise(),
-                    // Ajoutez d'autres propriétés de l'agence nécessaires
-                ],
-                'date' => $exchange->getDate()->format('Y-m-d'),
-                'fromAmount' => ($exchange->getType() == "achat") ? $exchange->getFromAmount() : $exchange->getToAmount(),
-                'toAmount' => ($exchange->getType() == "achat") ? $exchange->getToAmount() : $exchange->getFromAmount(),
-                'taux' => $exchange->getTaux(),
-                'fromCurrency' => ($exchange->getType() == "achat") ? $exchange->getFromCurrency() : $exchange->getToCurrency(),
-                'toCurrency' => ($exchange->getType() == "achat") ? $exchange->getToCurrency() : $exchange->getFromCurrency(),
-                // Ajoutez d'autres propriétés de l'échange nécessaires
+                'id' => $ex->getId(),
+                'date' => $ex->getDate()->format('Y-m-d'),
+                'type' => $ex->getType(),
+                'description' => $ex->getDescription(),
+                'montantCFA' => $ex->getMontantCFA(),
+                'montantDevise' => $ex->getMontantDevise(),
+                'devise' => $ex->getDevise(),
+                'taux' => $ex->getTaux(),
             ];
         }, $exchanges);
 
         return new JsonResponse(['data' => $data]);
     }
 
+
     #[Route('/api/exchanges', name: 'api_exchange_create', methods: ['POST'])]
     public function create(Request $request, EntityManagerInterface $em): JsonResponse
     {
-        // 1. Récupérer et valider l'agence
-        $agenceId = $request->request->get('agence');
-        $agence = $em->getRepository(Agence::class)->find($agenceId);
+        // 1. Récupérer le contenu JSON de la requête
+        $data = json_decode($request->getContent(), true);
+
+        // 2. Valider et extraire les données
+        $agenceId = isset($data['agence']) ? (int) $data['agence'] : null;
+        $agence = $em->getRepository(Agence::class)->findOneBy(['id' => $agenceId]);
+        $local = $em->getRepository(Agence::class)->findOneBy(['id' => 1]);
+
         if (!$agence) {
             return new JsonResponse(['error' => 'Agence introuvable'], Response::HTTP_BAD_REQUEST);
         }
 
-        // 2. Récupérer les données de la requête
-        $clientNom = $request->request->get('clientNom');
-        $clientPhone = $request->request->get('clientPhone');
-        $date = $request->request->get('date');
-        $montant = (float) $request->request->get('montant');
-        $taux = (float) $request->request->get('taux');
-        $type = $request->request->get('type');
+        $type = $data['type'] ?? '';
+        $montantdevise = isset($data['montant']) ? (float) $data['montant'] : 0.0;
+        $devise = $data['deviseExchange'] ?? '';
+        $description = $data['description'] ?? '';
+        $date = $data['date'] ?? null; // Date de la transaction
+        $taux = isset($data['taux']) ? (float) $data['taux'] : 0.0; // Taux de change utilisé
 
-        // 3. Déterminer les devises selon le type d'échange
-        $fromCurrency = ($type === 'achat') ? 'CFA' : $agence->getDevise();
-        $toCurrency = ($type === 'achat') ? $agence->getDevise() : 'CFA';
+        // 3. Calculer le montant en CFA
+        $montantCfa = $montantdevise * $taux;
 
-        $fromAmount = ($type === 'achat') ?  $montant * $taux : $montant; 
-        $toAmount = ($type === 'achat') ? $montant : $montant * $taux ; 
 
         // 4. Créer l'échange
         $exchange = new Exchange();
-        $exchange->setAgence($agence);
-        $exchange->setVanishClientName($clientNom);
-        $exchange->setVanishClientTel($clientPhone);
-        $exchange->setDate(new \DateTimeImmutable($date));
-        $exchange->setFromAmount($fromAmount);
-        $exchange->setFromCurrency($fromCurrency);
-        $exchange->setToCurrency($toCurrency);
-        $exchange->setToAmount($toAmount);
-        $exchange->setTaux($taux);
+        $exchange->setMontantCFA($montantCfa);
+        $exchange->setMontantDevise($montantdevise);
+        $exchange->setDevise($devise);
         $exchange->setType($type);
-        $exchange->setDescription('');
+        $exchange->setTaux($taux);
+        $exchange->setDescription($description != "" ? $description : $type . " de " . $devise . " à " . $agence->getDesignation());
+        $exchange->setDate(!$date ? new DateTimeImmutable("now") : new DateTimeImmutable($date));
 
         // 5. Générer une référence de paiement unique
         $ref_payment = uniqid('EXCH_', false);
 
-        // 6. Créer les transactions associées
-        // Transaction de retrait
-        $withdrawalTx = new AccountTransaction();
-        $withdrawalTx->setClient(null) // À remplacer par la logique pour récupérer le client si nécessaire
-            ->setIncome(0)
-            ->setOutcome($fromAmount)
-            ->setDevise($fromCurrency)
-            ->setAccountType('local')
-            ->setUpdatedAt(new \DateTimeImmutable())
-            ->setReason("Échange de $fromCurrency à $toCurrency")
-            ->setDescrib("Achat de $toCurrency")
-            ->setPaymentRef($ref_payment)
-            ->setStatus('validé')
-            ->setCreatedAt(new \DateTimeImmutable())
-            ->setPaymentMethod('Exchange')
-            ->setExchange($exchange);
+        if ($agence->getId() == 1) {
 
-        // Transaction de dépôt
-        $depositTx = new AccountTransaction();
-        $depositTx->setClient(null) // À remplacer par la logique pour récupérer le client si nécessaire
-            ->setIncome($toAmount)
-            ->setOutcome(0)
-            ->setDevise($toCurrency)
-            ->setAccountType('local')
-            ->setUpdatedAt(new \DateTimeImmutable())
-            ->setReason("Échange de $fromCurrency à $toCurrency")
-            ->setDescrib("Vente de $fromCurrency")
-            ->setPaymentRef($ref_payment)
-            ->setStatus('validé')
-            ->setCreatedAt(new \DateTimeImmutable())
-            ->setPaymentMethod('Exchange')
-            ->setExchange($exchange);
+            $tx = new AccountTransaction();
+            $tx->setAgence($agence);
+            $tx->setCFA($type === "achat" ? $montantCfa * -1 : $montantCfa);
+            $tx->setAmount($devise, $type === "achat" ? $montantdevise : $montantdevise * -1);
+            $tx->setDescrib($description != "" ? $description : $type . " de " . $devise . " à " . $agence->getDesignation());
+            $tx->setExchange($exchange);
+            $tx->setCreatedAt(!$date ? new DateTimeImmutable("now") : new DateTimeImmutable($date));
+
+            $em->persist($tx);
+        } else {
+            $localtx = new AccountTransaction();
+            $localtx->setAgence($local);
+            $localtx->setCFA($type === "achat" ? $montantCfa * -1 : $montantCfa);
+            $localtx->setDescrib($description != "" ? $description : $type . " de " . $devise . " à " . $agence->getDesignation());
+            $localtx->setExchange($exchange);
+            $localtx->setCreatedAt(!$date ? new DateTimeImmutable("now") : new DateTimeImmutable($date));
+            $em->persist($localtx);
+
+            $agencetx = new AccountTransaction();
+            $agencetx->setAgence($agence);
+            $agencetx->setAmount($devise, $type === "achat" ? $montantdevise : $montantdevise * -1);
+            $agencetx->setDescrib($description != "" ? $description : $type . " de " . $devise . " à " . $agence->getDesignation());
+            $agencetx->setExchange($exchange);
+            $em->persist($localtx);
+        }
 
         // 7. Persister et sauvegarder en base de données
         $em->persist($exchange);
-        $em->persist($withdrawalTx);
-        $em->persist($depositTx);
+        // $em->persist($withdrawalTx);
+        // $em->persist($depositTx);
         $em->flush();
 
         // 8. Retourner la réponse
         return new JsonResponse([
             'id' => $exchange->getId(),
-            'type' => $exchange->getType(),
-            'agence' => $exchange->getAgence()->getId(),
-            'date' => $exchange->getDate()->format('Y-m-d H:i:s'),
-            'fromAmount' => $exchange->getFromAmount(),
-            'fromCurrency' => $exchange->getFromCurrency(),
-            'toAmount' => $exchange->getToAmount(),
-            'toCurrency' => $exchange->getToCurrency(),
-            'taux' => $exchange->getTaux(),
         ], Response::HTTP_CREATED);
-    }
-
-
-    #[Route('/api/exchanges/{id}/validate', name: 'api_exchange_validate', methods: ['PUT'])]
-    public function validate(Exchange $exchange, EntityManagerInterface $em): JsonResponse
-    {
-        foreach ($exchange->getTransactions() as $transaction) {
-            $transaction->setStatus('completed');
-            $transaction->setValidateAt(new \DateTimeImmutable());
-        }
-
-        $em->flush();
-        return new JsonResponse(['status' => 'Échange validé'], Response::HTTP_OK);
-    }
-
-    #[Route('/api/exchanges/{id}/cancel', name: 'api_exchange_cancel', methods: ['PUT'])]
-    public function cancel(Exchange $exchange, Request $request, EntityManagerInterface $em): JsonResponse
-    {
-        $reason = $request->request->get('reason', 'Annulé par l\'utilisateur');
-
-        foreach ($exchange->getTransactions() as $transaction) {
-            $transaction->setStatus('cancelled');
-            $transaction->setReason($reason);
-        }
-
-        $em->flush();
-        return new JsonResponse(['status' => 'Échange annulé'], Response::HTTP_OK);
     }
 
     #[Route('/api/exchanges/{id}', name: 'api_exchange_delete', methods: ['DELETE'])]
@@ -233,8 +196,8 @@ final class ExchangeController extends AbstractController
         $tauxSum = 0;
 
         foreach ($exchanges as $exchange) {
-                    $completed++;
-            
+            $completed++;
+
 
             if ($exchange->getType() === 'achat') {
                 $achat++;

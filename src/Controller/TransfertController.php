@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\AccountTransaction;
+use App\Entity\Agence;
 use App\Entity\Client;
 use App\Entity\Transfert;
 use Doctrine\ORM\EntityManager;
@@ -16,14 +17,16 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class TransfertController extends AbstractController
 {
-    #[Route('/transfert', name: 'app_transfert')]
+    #[Route('/dashboard/transfert', name: 'app_transfert')]
     public function index(EntityManagerInterface $em): Response
     {
         $clients = $em->getRepository(Client::class)->findAll();
+        $agences = $em->getRepository(Agence::class)->findAll();
 
         return $this->render('transfert/index.html.twig', [
             'controller_name' => 'TransfertController',
-            'clients' => $clients
+            'clients' => $clients,
+            'agences' => $agences
         ]);
     }
 
@@ -32,36 +35,46 @@ final class TransfertController extends AbstractController
     {
         // Récupérer les données du corps de la requête
         $data = json_decode($req->getContent(), true);
-        
-        dump($data);
+ 
         // Vérifier si les données sont valides
         if (empty($data)) {
             return new JsonResponse(['error' => 'Erreur de données'], 400);
         }
 
+        $agence = $em->getRepository(Agence::class)->findOneBy(['id' => $data['destination']]);
+        $local = $em->getRepository(Agence::class)->findOneBy(['id' => 1]);
+        $amount = $data['totalAPayer'];
+
         // Créer une nouvelle instance de Transfert
         $transfert = new Transfert();
 
         // Définir les propriétés de l'entité Transfert
-        $transfert->setCreatedAt(new \DateTimeImmutable());
+        $transfert->setCreatedAt(new \DateTimeImmutable($data['date']));
         $transfert->setType($data['type']);
-        $transfert->setDestination($data['destination']);
-        $transfert->setMontantCash($data['montantCash']);
-        $transfert->setDeviseCash('CFA'); // Exemple de devise
-        $transfert->setMontantReception($data['montantRecu']);
-        $transfert->setDeviseReception('USD'); // Exemple de devise
+        $transfert->setAgence($agence);
+        $transfert->setMontantCFA($data['montantCash']);
+        $transfert->setMontantUSD($data['montantUSD']);
+        $transfert->setMontantReception($data['montantDeviseReception']);
         $transfert->setTaux($data['taux']);
         $transfert->setFrais($data['fraisEnvoi']);
         $transfert->setReceiverName($data['nomBeneficiaire']);
         $transfert->setReceiverPhone($data['phoneBeneficiaire']);
-        $transfert->setTauxDeviseReception($data['tauxReception']);
-        $transfert->setStatus('pending'); 
+        $transfert->setStatus('pending');
 
         // Gérer le client éphémère
         if (isset($data['newExpediteurNom']) && isset($data['newExpediteurPhone'])) {
-            $transfert->setVanishClientName($data['newExpediteurNom']);
-            $transfert->setVanishClientPhone($data['newExpediteurPhone']);
+            $transfert->setSenderName($data['newExpediteurNom']);
+            $transfert->setSenderPhone($data['newExpediteurPhone']);
             $clientName = $data['newExpediteurNom'];
+
+            $ctx = new AccountTransaction();
+            $ctx->setCFA($amount)
+                ->setDescrib('Transfert effectué par cash')
+                ->setAgence($local)
+                ->setCreatedAt(new \DateTimeImmutable($data['date']));
+
+            $ctx->setTransfert($transfert);
+            $em->persist($ctx);
         } else {
             // Si un client existant est sélectionné, vous devez récupérer l'entité Client correspondante
             $clientId = $data['expediteur'];
@@ -76,31 +89,42 @@ final class TransfertController extends AbstractController
 
                 $balance = $client->getbalance("CFA");
 
-                $amount = $data['totalAPayer'];
-
                 if ($balance < $amount) {
                     return new JsonResponse(['error' => 'le solde est insuffisant'], 400);
-                } 
+                }
 
                 $ctx = new AccountTransaction();
-                $ctx->setIncome(0)
-                    ->setOutcome($amount)
-                    ->setAccountType('client')
-                    ->setPaymentMethod('espèce')
-                    ->setPaymentRef('')
-                    ->setDevise('CFA')
-                    ->setReason('Rétrait solde client')
-                    ->setUpdatedAt(new \DateTimeImmutable())
+                $ctx->setCFA($amount * -1) 
                     ->setDescrib('Transfert effectué à partir du compte')
-                    ->setClient($client) 
-                    ->setCreatedAt(new \DateTimeImmutable())
-                    ->setStatus('validé');
+                    ->setClient($client)
+                    ->setCreatedAt(new \DateTimeImmutable($data['date']));
 
-                $transfert->setTransaction($ctx);
+                $ctx->setTransfert($transfert);
 
                 $em->persist($ctx);
+            } else {
+                $ctx = new AccountTransaction();
+                $ctx->setCFA($amount) 
+                    ->setDescrib('Transfert effectué par cash')
+                    ->setAgence($local)
+                    ->setCreatedAt(new \DateTimeImmutable($data['date']));
+
+                $ctx->setTransfert($transfert);
+
+                $em->persist($ctx);
+
             }
         }
+
+        $atx = new AccountTransaction();
+        $atx->setUSD($data['montantUSD'] * -1)
+            ->setDescrib('Transfert de '. $data['montantUSD'] . ' USD')
+            ->setAgence($agence)
+            ->setCreatedAt(new \DateTimeImmutable($data['date']));
+
+        $atx->setTransfert($transfert);
+        $em->persist($atx);
+
         $ref = $this->generateReference($clientName, $em);
         $transfert->setRef($ref);
         // Persister et sauvegarder l'entité
@@ -138,7 +162,7 @@ final class TransfertController extends AbstractController
         }
 
         if ($operationType) {
-            $queryBuilder->andWhere('t.Type = :operationType')
+            $queryBuilder->andWhere('t.type = :operationType')
                 ->setParameter('operationType', $operationType);
         }
 
@@ -154,30 +178,39 @@ final class TransfertController extends AbstractController
         // Filtrer les résultats par nom de client
         if ($clientName) {
             $transferts = array_filter($transferts, function ($transfert) use ($clientName) {
-                $nomComplet = $transfert->getVanishClientName() ?: ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : '');
+                $nomComplet = $transfert->getSenderName() ?: ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : '');
                 return stripos($nomComplet, $clientName) !== false;
             });
         }
 
+
         // Préparer les données de sortie
         $output = array_map(function ($transfert) {
-            $nomComplet = $transfert->getVanishClientName() ?: ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : '');
+            $nomComplet = $transfert->getSenderName() ?: ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : '');
+            $telephone = $transfert->getSenderPhone() ?: ($transfert->getClient() ? $transfert->getClient()->getPhoneNumber() : '');
+
             return [
                 'id' => $transfert->getId(),
                 'createdAt' => $transfert->getCreatedAt()->format('Y-m-d H:i:s'),
                 'type' => $transfert->getType(),
-                'destination' => $transfert->getDestination(),
-                'typeClient' => !$transfert->getClient() ? 'Client éphémère' : 'Client enregistré',
+                'clientType' => $transfert->getClient() ? "registered" : "ephemeral",
+                'destination' => [
+                    'id' => $transfert->getAgence()->getId(),
+                    'name' => $transfert->getAgence()->getDesignation(),
+                    'localite' => $transfert->getAgence()->getLocalite(),
+                    'devise' => $transfert->getAgence()->getDeviseLocal(),
+                    'abg' => $transfert->getAgence()->getAbg(),
+                    'isActive' => $transfert->getAgence()->IsActive(),
+                ],
                 'expediteur' => $nomComplet,
-                'montantCash' => $transfert->getMontantCash(),
-                'deviseCash' => $transfert->getDeviseCash(),
+                'exp-phone' => $telephone,
+                'montantCFA' => $transfert->getMontantCFA(),
+                'montantUSD' => $transfert->getMontantUSD(),
                 'montantReception' => $transfert->getMontantReception(),
-                'deviseReception' => $transfert->getDeviseReception(),
                 'taux' => $transfert->getTaux(),
                 'frais' => $transfert->getFrais(),
                 'receiverName' => $transfert->getReceiverName(),
                 'receiverPhone' => $transfert->getReceiverPhone(),
-                'tauxDeviseReception' => $transfert->getTauxDeviseReception(),
                 'status' => $transfert->getStatus(),
                 'ref' => $transfert->getRef()
             ];
@@ -198,8 +231,8 @@ final class TransfertController extends AbstractController
         // Filtre par période
         if ($startDate && $endDate) {
             $qb->andWhere('t.createdAt BETWEEN :start AND :end')
-            ->setParameter('start', new \DateTime($startDate))
-            ->setParameter('end', new \DateTime($endDate));
+                ->setParameter('start', new \DateTime($startDate))
+                ->setParameter('end', new \DateTime($endDate));
         }
 
         $transferts = $qb->getQuery()->getResult();
@@ -224,8 +257,8 @@ final class TransfertController extends AbstractController
         $parTypeOperation = [];
 
         foreach ($transferts as $transfert) {
-            $totalMontantCash += $transfert->getMontantCash();
-            $totalMontantReception += $transfert->getMontantReception();
+            $totalMontantCash += $transfert->getMontantCFA();
+            $totalMontantReception += $transfert->getMontantUSD();
             $totalFrais += $transfert->getFrais();
 
             // Par statut
@@ -276,25 +309,30 @@ final class TransfertController extends AbstractController
             return $this->json(['error' => 'Transfert invalide'], 404);
         }
 
-        $nomComplet = $transfert->getVanishClientName() ?: ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : '');
-        $telephone = $transfert->getVanishClientPhone() ?: ($transfert->getClient() ? $transfert->getClient()->getPhoneNumber() : '');
+        $nomComplet = $transfert->getSenderName() ?: ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : '');
+        $telephone = $transfert->getSenderPhone() ?: ($transfert->getClient() ? $transfert->getClient()->getPhoneNumber() : '');
         // Préparer les données de sortie
         $output =  [
             'id' => $transfert->getId(),
             'createdAt' => $transfert->getCreatedAt()->format('Y-m-d H:i:s'),
             'type' => $transfert->getType(),
-            'destination' => $transfert->getDestination(),
+            'destination' => [
+                    'id' => $transfert->getAgence()->getId(),
+                    'name' => $transfert->getAgence()->getDesignation(),
+                    'localite' => $transfert->getAgence()->getLocalite(),
+                    'devise' => $transfert->getAgence()->getDeviseLocal(),
+                    'abg' => $transfert->getAgence()->getAbg(),
+                    'isActive' => $transfert->getAgence()->IsActive(),
+                ],
             'expediteur' => $nomComplet,
             'phone' => $telephone,
-            'montantCash' => $transfert->getMontantCash(),
-            'deviseCash' => $transfert->getDeviseCash(),
+            'montantCFA' => $transfert->getMontantCFA(),
+            'montantUSD' => $transfert->getMontantUSD(),
             'montantReception' => $transfert->getMontantReception(),
-            'deviseReception' => $transfert->getDeviseReception(),
             'taux' => $transfert->getTaux(),
             'frais' => $transfert->getFrais(),
             'receiverName' => $transfert->getReceiverName(),
             'receiverPhone' => $transfert->getReceiverPhone(),
-            'tauxDeviseReception' => $transfert->getTauxDeviseReception(),
             'status' => $transfert->getStatus(),
             'ref' => $transfert->getRef()
         ];
@@ -331,7 +369,7 @@ final class TransfertController extends AbstractController
         EntityManagerInterface $em
     ): JsonResponse {
         // Vérifier que le transfert peut être annulé
-        if (!in_array($transfer->getStatus(), [Transfert::STATUS_PENDING, Transfert::STATUS_PROCESSING])) {
+        if (!in_array($transfer->getStatus(), [Transfert::STATUS_PENDING])) {
             return $this->json([
                 'success' => false,
                 'message' => 'Le transfert ne peut pas être annulé dans son état actuel'
@@ -343,9 +381,8 @@ final class TransfertController extends AbstractController
         $transfer->setStatus(Transfert::STATUS_CANCELLED);
         $transfer->setUpdatedAt(new \DateTimeImmutable());
 
-        $tx = $transfer->getTransaction();
-        if ($tx) $em->remove($tx);
-        $em->remove($transfer);
+        $txs = $transfer->getAccountTransactions();
+        foreach ($txs as $tx) $em->remove($tx);
 
         $em->flush();
 
@@ -357,9 +394,10 @@ final class TransfertController extends AbstractController
 
     #[Route('/api/transferts/{id}/delete', name: 'api_transfer_delete', methods: ['DELETE'])]
     public function deleteTransfer(Transfert $transfer, EntityManagerInterface $em): JsonResponse
-    { 
- 
-        $tx = $transfer->getTransaction();
+    {
+
+        $txs = $transfer->getAccountTransactions();
+        foreach ($txs as $tx) $em->remove($tx);
 
         if ($tx) $em->remove($tx);
         $em->remove($transfer);

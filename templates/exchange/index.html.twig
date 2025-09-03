@@ -84,7 +84,7 @@
 	<div
 		class="container-fluid">
 		{# --- 1. Statistiques Échanges --- #}
-		<div
+		{# <div
 			class="row mb-4" id="exchangeStats">
 			<!-- Total Échanges -->
 			<div class="col-md-3 mb-3">
@@ -190,7 +190,7 @@
 					</div>
 				</div>
 			</div>
-		</div>
+		</div> #}
 
 		{# --- 2. Filtres --- #}
 		<div class="card mb-4">
@@ -209,21 +209,23 @@
 							<input type="text" id="filterDateRange" class="form-control form-control-sm" placeholder="Sélectionner une période">
 						</div>
 					</div>
-					<div class="col-md-2">
+					{# <div class="col-md-2">
 						<label class="filter-label">Type opération</label>
 						<select id="filterType" class="form-select form-select-sm">
 							<option value="">Tous types</option>
 							<option value="achat">Achat</option>
 							<option value="vente">Vente</option>
 						</select>
-					</div>
-					<div class="col-md-3">
+					</div> #}
+					{# <div class="col-md-3">
 						<label class="filter-label">Agence</label>
 						<select id="filterAgence" class="form-select form-select-sm">
-							<option value="">Toutes agences</option>
-							{# --- inserer et mise à jour automatiquement dans le js par la variable liste agences --- #}
+							<option value="">Toutes agences</option> 
+							{% for agence in agences %}
+								<option value="{{ agence.id }}">{{ agence.designation }}</option>
+							{% endfor %}
 						</select>
-					</div>
+					</div> #}
 				</div>
 			</div>
 		</div>
@@ -242,21 +244,19 @@
 			</div>
 			<div class="card-body p-4">
 				<div class="table-responsive">
-					<table id="exchangesTable" class="table table-exchange table-hover table-stripe mb-0 w-100">
+					<table id="exchangesTable" class="table table-bordered table-hover table-striped border-top border-bottom">
 						<thead>
 							<tr>
 								<th width="100">Date</th>
-								<th>Agence</th>
-								<th>Client</th>
-								<th width="100">Type</th>
-								<th width="120">Total Devise</th>
-								<th width="120">Total CFA</th>
+								<th width="80">Type</th>
+								<th>Description</th>
+								<th width="160">Montant Devise</th>
+								<th width="160">Montant CFA</th>
+								<th width="100">Taux</th>
 								<th width="100">Actions</th>
 							</tr>
 						</thead>
-						<tbody>
-							<!-- Les données seront chargées via DataTables -->
-						</tbody>
+						<tbody></tbody>
 					</table>
 				</div>
 			</div>
@@ -267,7 +267,7 @@
 			<div class="card-header bg-primary text-white">
 				<h3 class="card-title mb-0">
 					<i class="bi bi-currency-exchange"></i>
-					Nouvel Échange
+					Achat et vente de devises
 				</h3>
 			</div>
 			<div class="card-body">
@@ -276,19 +276,24 @@
 					<!-- Section Client -->
 					<div class="mb-3 border rounded p-2">
 						<h5 class="text-primary mb-2">
-							<i class="bi bi-person-fill me-1"></i>Client</h5>
+							<i class="bi bi-person-fill me-1"></i>Agence</h5>
 						<div class="row g-2">
 							<div class="col-md-6">
-								<label class="form-label small fw-bold">Nom complet
+								<label class="form-label small fw-bold">Depuis quel agence est faite l'échange ?
 									<span class="text-danger">*</span>
 								</label>
-								<input type="text" id="clientNom" name="clientNom" class="form-control form-control-sm" placeholder="Nom du client" required>
+								<select id="agence" name="agence" class="form-select form-select-sm" required> 
+									{% for agence in agences %}
+										<option value="{{ agence.id }}">{{ agence.designation }}</option>
+									{% endfor %}
+								</select>
+							</div> 
+							<div class="col-md-6">
+								<label class="form-label small fw-bold">Description (facultatif)</label>
+								<textarea name="description" id="description" rows="1" class="form-control form-control-sm shadow-sm" placeholder="Notes ou précisions sur l’échange..."></textarea>
 							</div>
 							<div class="col-md-6">
-								<label class="form-label small fw-bold">Téléphone
-									<span class="text-danger">*</span>
-								</label>
-								<input type="text" id="clientPhone" name="clientPhone" class="form-control form-control-sm" placeholder="Numéro de téléphone" required>
+
 							</div>
 						</div>
 					</div>
@@ -312,14 +317,19 @@
 									<option value="achat">Achat</option>
 									<option value="vente">Vente</option>
 								</select>
-							</div>
+							</div> 
 							<div class="col-md-4">
-								<label class="form-label small fw-bold">Agence
+								<label class="form-label small fw-bold">Devise
 									<span class="text-danger">*</span>
 								</label>
-								<select id="agence" name="agence" class="form-select form-select-sm" required>
-									<option value="">-- Sélectionner une agence --</option>
-									{# Dynamique via JS #}
+								<select id="deviseExchange" name="deviseExchange" class="form-select form-select-sm country-select" required> 
+									<option value="USD">USD - Dollar américain</option>
+									<option value="AED">AED - Dirham des Émirats Arabes Unis</option>
+									<option value="EUR">EUR - Euro</option> 
+									<option value="GBP">GBP - Livre sterling</option>
+									<option value="CNY">CNY - Yuan chinois</option>
+									<option value="MAD">MAD - Dirham marocain</option>
+									<option value="DZD">DZD - Dinar algérien</option> 
 								</select>
 							</div>
 						</div>
@@ -355,17 +365,12 @@
 							<div class="col-md-3">
 								<label class="form-label small fw-bold">Total</label>
 								<div class="bg-light p-2 rounded text-end">
-									<span id="totalAPayer" class="fw-bold text-success">0.00 CFA</span>
+									<span id="totalAPayer" class="fs-6 fw-bold text-success">0.00 CFA</span>
 								</div>
 							</div>
 						</div>
-					</div>
-
-					<!-- Description -->
-					<div class="mb-3">
-						<label class="form-label small fw-bold">Description (facultatif)</label>
-						<textarea name="description" id="description" rows="2" class="form-control form-control-sm shadow-sm" placeholder="Notes ou précisions sur l’échange..."></textarea>
-					</div>
+					</div> 
+					
 
 					<!-- Boutons -->
 					<div class="d-flex justify-content-between">
@@ -383,7 +388,7 @@
 		{# --- Pour le formulaire quand c'est achat le total CFA est négatif et rouge si positif et vert  --- #}
 
 		{# --- 5. Liste des Agences --- #}
-		<div class="card mt-4">
+		{# <div class="card mt-4">
 			<div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
 				<h3 class="card-title mb-0">
 					<i class="bi bi-building me-2"></i>
@@ -405,12 +410,12 @@
 								<th>Actions</th>
 							</tr>
 						</thead>
-						<tbody>
-							{# --- 5. Généré par datatable --- #}
+						<tbody> 
+
 						</tbody>
 					</table>
 				</div>
-			</div>
+			</div> #}
 		</div>
 
 		<a id="btnAddExchangetFloat" href="#ExchangeFormCard" class="btn btn-lg btn-outline-primary text-bold" style="position: fixed; bottom: 80px; right: 20px; z-index: 1000;">
@@ -645,16 +650,27 @@
 								</div>
 								<div class="card-body">
 									<div class="mb-2">
-										<small class="text-muted">Date :</small>
-										<div class="fw-bold" id="exchangeDate"></div>
+										<div class="d-flex justify-content-between">
+											<small class="text-muted">Date :</small>
+											<div class="fw-bold" id="exchangeDate"></div> 
+										</div>
+										
+										<div>
+											<small class="text-muted">Type :</small>
+											<div class="fw-bold" id="exchangeType"></div>
+										</div>
+
+										
 									</div>
-									<div class="mb-2">
-										<small class="text-muted">Type :</small>
-										<div class="fw-bold" id="exchangeType"></div>
-									</div>
+									
 									<div class="mb-2">
 										<small class="text-muted">Agence :</small>
 										<div class="fw-bold" id="exchangeAgence"></div>
+									</div>
+									
+									<div class="mb-2">
+										<small class="text-muted">Description :</small>
+										<div id="exchangeDescription"></div>	
 									</div>
 									{# <div class="mb-2">
 										<small class="text-muted">Statut :</small>

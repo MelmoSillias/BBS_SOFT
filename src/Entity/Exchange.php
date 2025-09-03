@@ -20,20 +20,16 @@ class Exchange
 
     #[ORM\Column(length: 5)]
     #[Groups(['agence:read'])]
-    private ?string $FromCurrency = null;
-
-    #[ORM\Column(length: 5)]
-    #[Groups(['agence:read'])]
-    private ?string $ToCurrency = null;
+    private ?string $devise = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 15, scale: 2)]
     #[Groups(['agence:read'])]
-    private ?string $FromAmount = null;
+    private ?string $montantDevise = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 15, scale: 2)]
     #[Groups(['agence:read'])]
-    private ?string $ToAmount = null;
-
+    private ?string $montantCFA = null;
+ 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 5)]
     #[Groups(['agence:read'])]
     private ?string $taux = null;
@@ -47,14 +43,11 @@ class Exchange
      */
     #[ORM\OneToMany(targetEntity: AccountTransaction::class, mappedBy: 'exchange', cascade: ['persist', 'remove'])]
     private Collection $transactions;
-
-    #[ORM\ManyToOne(inversedBy: 'exchanges')]
-    #[ORM\JoinColumn(nullable: true)]
-    private ?Agence $agence = null;
+ 
 
     #[ORM\Column(length: 255)]
     #[Groups(['agence:read'])]
-    private ?string $Description = null;
+    private ?string $description = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['agence:read'])]
@@ -69,10 +62,10 @@ class Exchange
 
     #[ORM\Column(length: 10)]
     private ?string $type = null;
-
+ 
     public function __construct()
     {
-        $this->transactions = new ArrayCollection();
+        $this->transactions = new ArrayCollection(); 
     }
 
     public function getId(): ?int
@@ -80,50 +73,38 @@ class Exchange
         return $this->id;
     }
 
-    public function getFromCurrency(): ?string
+    public function getDevise(): ?string
     {
-        return $this->FromCurrency;
+        return $this->devise;
     }
-
-    public function setFromCurrency(string $FromCurrency): static
+    
+    public function setDevise(string $devise): static
     {
-        $this->FromCurrency = $FromCurrency;
+        $this->devise = $devise;
 
         return $this;
     }
 
-    public function getToCurrency(): ?string
+    public function setMontantDevise(string $montantDevise): static
     {
-        return $this->ToCurrency;
-    }
-
-    public function setToCurrency(string $ToCurrency): static
-    {
-        $this->ToCurrency = $ToCurrency;
+        $this->montantDevise = $montantDevise;
 
         return $this;
     }
 
-    public function getFromAmount(): ?string
+    public function getMontantDevise(): ?string
     {
-        return $this->FromAmount;
+        return $this->montantDevise;
     }
 
-    public function setFromAmount(string $FromAmount): static
+    public function getMontantCFA(): ?string
     {
-        $this->FromAmount = $FromAmount;
-
-        return $this;
+        return $this->montantCFA;
     }
 
-    public function getToAmount(): ?string
+    public function setMontantCFA(string $montantCFA): static
     {
-        return $this->ToAmount;
-    }
-
-    public function setToAmount(string $ToAmount): static
-    {
-        $this->ToAmount = $ToAmount;
+        $this->montantCFA = $montantCFA;
 
         return $this;
     }
@@ -180,28 +161,16 @@ class Exchange
         }
 
         return $this;
-    }
-
-    public function getAgence(): ?Agence
-    {
-        return $this->agence;
-    }
-
-    public function setAgence(?Agence $agence): static
-    {
-        $this->agence = $agence;
-
-        return $this;
-    }
+    } 
 
     public function getDescription(): ?string
     {
-        return $this->Description;
+        return $this->description;
     }
 
-    public function setDescription(string $Description): static
+    public function setDescription(string $description): static
     {
-        $this->Description = $Description;
+        $this->description = $description;
 
         return $this;
     }
@@ -252,5 +221,6 @@ class Exchange
         $this->type = $type;
 
         return $this;
-    }
+    } 
+     
 }

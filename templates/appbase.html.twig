@@ -84,6 +84,7 @@
 </head>
 
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+{% if app.user %}
 <div class="app-wrapper">
 
   {# --- HEADER --- #}
@@ -194,7 +195,16 @@
         <li class="nav-item">
           <a href="{{ path('app_exchange') }}" class="nav-link {{ controller_name starts with 'Exchange' ? 'active' : '' }}">
             <i class="nav-icon bi bi-currency-exchange"></i>
-            <p>Echange</p>
+            <p>Change</p>
+          </a>
+        </li>
+        {% endif %}
+
+        {% if is_granted('ROLE_EXPENSES') %}
+        <li class="nav-item">
+          <a href="{{ path('app_depense') }}" class="nav-link {{ controller_name starts with 'Depense' ? 'active' : '' }}">
+            <i class="nav-icon bi bi-graph-down-arrow"></i>
+            <p>Dépenses</p>
           </a>
         </li>
         {% endif %}
@@ -399,5 +409,18 @@ document.addEventListener('DOMContentLoaded', () => {
     {% block javascripts %}
 			
 		{% endblock %}
+
+{% else %}
+    <div style="display: flex; justify-content: center; align-items: center; height: 80vh; text-align: center;">
+        <div>
+            <h2 style="color: #dc3545; margin-bottom: 20px;">Vous avez été déconnecté</h2>
+            <p style="margin-bottom: 20px;">Veuillez vous reconnecter pour continuer.</p>
+            <a href="{{ path('app_login') }}" class="btn btn-primary">
+                Retour à la page de connexion
+            </a>
+        </div>
+    </div>
+{% endif %}
+
 </body>
 </html>

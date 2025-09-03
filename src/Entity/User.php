@@ -39,7 +39,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 255)]
     private ?string $FullName = null; 
     public function __construct()
-    { 
+    {
+        $this->depenses = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -152,6 +153,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'string', length: 10, options: ['default' => 'light'])]
     private string $theme = 'light';
 
+    /**
+     * @var Collection<int, Depense>
+     */
+    #[ORM\OneToMany(targetEntity: Depense::class, mappedBy: 'user')]
+    private Collection $depenses;
+
     public function getTheme(): string
     {
         return $this->theme;
@@ -164,6 +171,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             throw new \InvalidArgumentException("Invalid theme “{$theme}”.");
         }
         $this->theme = $theme;
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Depense>
+     */
+    public function getDepenses(): Collection
+    {
+        return $this->depenses;
+    }
+
+    public function addDepense(Depense $depense): static
+    {
+        if (!$this->depenses->contains($depense)) {
+            $this->depenses->add($depense);
+            $depense->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeDepense(Depense $depense): static
+    {
+        if ($this->depenses->removeElement($depense)) {
+            // set the owning side to null (unless already changed)
+            if ($depense->getUser() === $this) {
+                $depense->setUser(null);
+            }
+        }
+
         return $this;
     }
 }

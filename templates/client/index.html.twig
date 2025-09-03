@@ -32,11 +32,11 @@
 						<thead>
 							<tr>
 								<th>Nom Complet</th>
-								<th>Téléphone</th>
+								<th width="200">Téléphone</th>
 								<th>Solde (FCFA)</th>
 								<th>Solde (USD)</th>
 								<th>Solde (EUR)</th>
-								<th>Actions</th>
+								<th width="150">Actions</th>
 							</tr>
 						</thead>
 						<tbody></tbody>
@@ -138,13 +138,13 @@
 								</label>
 								<select id="deviseW" name="deviseW" class="form-select shadow-sm country-select" required>
 									<option value="CFA">CFA - BECEAO</option>
-									<option value="AED">AED - Dirham des Émirats Arabes Unis</option>
-									<option value="EUR">EUR - Euro</option>
-									<option value="USD">USD - Dollar américain</option>
-									<option value="GBP">GBP - Livre sterling</option>
-									<option value="CNY">CNY - Yuan chinois</option>
-									<option value="MAD">MAD - Dirham marocain</option>
-									<option value="DZD">DZD - Dinar algérien</option>
+									{# <option value="AED">AED - Dirham des Émirats Arabes Unis</option>
+																		<option value="EUR">EUR - Euro</option>
+																		<option value="USD">USD - Dollar américain</option>
+																		<option value="GBP">GBP - Livre sterling</option>
+																		<option value="CNY">CNY - Yuan chinois</option>
+																		<option value="MAD">MAD - Dirham marocain</option>
+																		<option value="DZD">DZD - Dinar algérien</option> #}
 								</select>
 								<small>Solde :
 									<span id='soldeDeviseW' class='texteprimary'></span>
@@ -182,65 +182,88 @@
 		</div>
 	</div>
 
-	<!-- Modal Échange de Devise -->
+	<!-- Modal ACHAT ET VENTE de Devise -->
 	<div class="modal fade" id="currencyModal" tabindex="-1" aria-labelledby="currencyModalLabel" aria-hidden="true">
 		<div class="modal-dialog">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h5 class="modal-title" id="currencyModalLabel">Échange de Devise</h5>
+					<h5 class="modal-title" id="currencyModalLabel">Achat et Vente de Devise sur compte client</h5>
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
 					<input type="hidden" name="clientId" id="exchangeClientId">
 					<div class="row">
-						<div class="col-md-6">
-
-							<div class="mb-3">
-								<label for="fromCurrency" class="form-label">Devise de départ:</label>
-								<select class="form-select" id="fromCurrency" name="fromCurrency">
-									<option value="CFA">CFA - BECEAO</option>
-									<option value="AED">AED - Dirham des Émirats Arabes Unis</option>
-									<option value="EUR">EUR - Euro</option>
-									<option value="USD">USD - Dollar américain</option>
-									<option value="GBP">GBP - Livre sterling</option>
-									<option value="CNY">CNY - Yuan chinois</option>
-									<option value="MAD">MAD - Dirham marocain</option>
-									<option value="DZD">DZD - Dinar algérien</option>
-								</select>
-
-							</div>
-							<div class="mb-3">
-								<label for="fromAmount" class="form-label">Montant:</label>
-								<input type="number" class="form-control" id="fromAmount" name="fromAmount" placeholder="Montant">
-							</div>
-							<div class="mb-3">
-								<label for="exchangeRate" class="form-label">Taux:</label>
-								<input type="number" class="form-control" id="exchangeRate" name="exchangeRate" placeholder="Taux">
+						<div class="mb-3">
+							<label class="form-label fw-bold">Date
+								<span class="text-danger">*</span>
+							</label>
+							<input type="date" id="dateOps" name="date" class="form-control shadow-sm" required>
+						</div>
+						<div class="mb-3">
+							<label class="form-label fw-bold">Depuis l'agence de :
+								<span class="text-danger">*</span>
+							</label>
+							<select id="destination" name="destination" class="form-select shadow-sm country-select" required>
+								{% for agence in agences %}
+									<option value="{{ agence.id }}">
+										<small style="font-weight:bold;  font-size:8px">{{ agence.abg }}</small>
+										<strong>{{ agence.designation }}</strong>
+										-
+										{{ agence.localite }}</option>
+								{% endfor %}
+							</select>
+						</div>
+						<div class="mb-3">
+							<label class="form-label small fw-bold">Type
+								<span class="text-danger">*</span>
+							</label>
+							<select id="typeOps" name="type" class="form-select form-select-sm" required>
+								<option value="achat">Achat</option>
+								<option value="vente">Vente</option>
+							</select>
+						</div>
+						<div class="mb-3">
+							<label class="form-label small fw-bold">Devise
+								<span class="text-danger">*</span>
+							</label>
+							<select id="deviseExchange" name="deviseExchange" class="form-select shadow-sm country-select" required> 
+								<option value="USD">USD - Dollar américain</option>
+								<option value="AED">AED - Dirham des Émirats Arabes Unis</option>
+								<option value="EUR">EUR - Euro</option> 
+								<option value="GBP">GBP - Livre sterling</option>
+								<option value="CNY">CNY - Yuan chinois</option>
+								<option value="MAD">MAD - Dirham marocain</option>
+								<option value="DZD">DZD - Dinar algérien</option> 
+							</select>
+						</div>
+						<div class="mb-3">
+							<label class="form-label small fw-bold">Montant
+								<span class="text-danger">*</span>
+							</label>
+							<div class="input-group input-group-sm">
+								<span class="input-group-text">Montant :</span>
+								<input type="number" id="montant" name="montant" class="form-control" placeholder="0.00" step="0.001" required>
+								<span class="input-group-text" id="devise">USD</span>
 							</div>
 						</div>
-						<div class="col-md-6">
-							<div class="mb-3">
-								<label for="toCurrency" class="form-label">Devise d'arrivée:</label>
-								<select class="form-select" id="toCurrency" name="toCurrency">
-									<option value="CFA">CFA - BECEAO</option>
-									<option value="AED">AED - Dirham des Émirats Arabes Unis</option>
-									<option value="EUR">EUR - Euro</option>
-									<option value="USD">USD - Dollar américain</option>
-									<option value="GBP">GBP - Livre sterling</option>
-									<option value="CNY">CNY - Yuan chinois</option>
-									<option value="MAD">MAD - Dirham marocain</option>
-									<option value="DZD">DZD - Dinar algérien</option>
-								</select>
-							</div>
-							<div class="mb-3">
-								<label for="toAmount" class="form-label">Montant:</label>
-								<input type="number" class="form-control" id="toAmount" name="toAmount" placeholder="Montant" readonly>
+						<div class="mb-3">
+							<label class="form-label small fw-bold">Taux
+								<span class="text-danger">*</span>
+							</label>
+							<div class="input-group input-group-sm">
+								<span class="input-group-text">1</span>
+								<span class="input-group-text" id="deviseAgenceDisplay">USD</span>
+								<span class="input-group-text">=</span>
+								<input type="number" id="taux" name="taux" class="form-control" placeholder="0.00" step="0.0001" required>
+								<span class="input-group-text">CFA</span>
 							</div>
 						</div>
-					</div>
-					<div class="mb-3">
-						<label class="form-label">Solde actuel:</label>
-						<span id="currentBalance"></span>
+						<div class="mb-3">
+							<label class="form-label small fw-bold">Total</label>
+							<div class="bg-light p-2 rounded text-end">
+								<span id="totalAPayer" class="fw-bold text-success">0.00 CFA</span>
+							</div>
+						</div>
 					</div>
 				</div>
 				<div class="modal-footer">
@@ -269,13 +292,13 @@
 							</label>
 							<select id="deviseA" name="deviseA" class="form-select shadow-sm country-select" required>
 								<option value="CFA">CFA - BECEAO</option>
-								<option value="AED">AED - Dirham des Émirats Arabes Unis</option>
-								<option value="EUR">EUR - Euro</option>
-								<option value="USD">USD - Dollar américain</option>
-								<option value="GBP">GBP - Livre sterling</option>
-								<option value="CNY">CNY - Yuan chinois</option>
-								<option value="MAD">MAD - Dirham marocain</option>
-								<option value="DZD">DZD - Dinar algérien</option>
+								{# <option value="AED">AED - Dirham des Émirats Arabes Unis</option>
+																<option value="EUR">EUR - Euro</option>
+																<option value="USD">USD - Dollar américain</option>
+																<option value="GBP">GBP - Livre sterling</option>
+																<option value="CNY">CNY - Yuan chinois</option>
+																<option value="MAD">MAD - Dirham marocain</option>
+																<option value="DZD">DZD - Dinar algérien</option> #}
 							</select>
 							<small>Solde :
 								<span id='soldeDeviseA' class='texteprimary'></span>

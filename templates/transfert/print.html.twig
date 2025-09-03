@@ -15,6 +15,7 @@
 				font-size: 14px;
 				margin: 0;
 				padding: 0;
+				page-break: none
 			}
 
 			/* En-tête */
@@ -25,7 +26,7 @@
 				margin-bottom: 10px;
 			}
 			.header img {
-				width: 128px;
+				width: 116px;
 				height: auto;
 			}
 			.company-info {
@@ -36,10 +37,16 @@
 			/* Titre centré */
 			.title {
 				text-align: center;
-				font-size: 26px;
+				font-size: 20px;
 				font-weight: bold;
 				margin: 10px 0 20px;
 				text-transform: uppercase;
+			}
+
+			.title small {
+				font-size: 12px;
+				font-weight: normal;
+				font-style: italic;
 			}
 
 			/* Cadres */
@@ -93,9 +100,9 @@
         <hr>
 		<!-- Titre -->
 		<div class="title">
-			REÇU DE TRANSFERT D'ARGENT N° {{ transfert.id }}
+			REÇU N° {{ transfert.id }}
 			<br>
-			{# <small>{{ transfert.description }}</small> #}
+			<small class='text-normal' >{{ "now"|date("d/m/Y H:i") }}</small>
 		</div>
 
 
@@ -111,13 +118,13 @@
                     <span>{{ transfert.createdAt ? transfert.createdAt|date('d/m/Y') : '' }}</span>
                 </div>
 				<div>Nom Client :
-					<span>{{ transfert.client ? transfert.client.nomComplet }} {{" | "}} {{ transfert.client ? transfert.client.phoneNumber : transfert.vanishClientName }}+ {{' | '  }} {{transfert.vanishClientPhone  }}</span>
+					<span>{{ transfert.client ? transfert.client.nomComplet }} {{" | "}} {{ transfert.client ? transfert.client.phoneNumber : transfert.senderName }}+ {{' | '  }} {{transfert.senderPhone  }}</span>
 				</div> 
 				<div>Destinataire :
 					<span>{{ transfert.receiverName }} {{" | "}} {{ transfert.receiverPhone }}</span>
 				</div>
                 <div>Destination :
-					<span>{{ transfert.receiverName }} {{" | "}} + {{ transfert.receiverPhone }}</span>
+					<span>{{ transfert.agence.localite }}  </span>
 				</div>
 			</div>
 
@@ -125,13 +132,13 @@
 			<div class="box">
 				 
                 <div>Montant CFA :
-                    <span>{{ transfert.montantCash }} CFA </span>
+                    <span>{{ transfert.montantCFA }} CFA </span>
                 </div>
                 <div>Montant USD :
-                    <span>{{ transfert.montantReception }} </span>
+                    <span>{{ transfert.montantUSD }} USD </span>
                 </div>
                 <div>Montant Reception :
-                    <span>{{ transfert.montantReception * transfert.tauxDeviseReception }} {{ transfert.deviseReception }} </span>
+                    <span>{{ transfert.montantReception }} {{ transfert.agence.deviseLocal }} </span>
                 </div>
 				 
 				<div>Taux appliqué :
@@ -143,7 +150,7 @@
 				</div>
 
                 <div>Montant Total Rémis :
-					<span>{{ transfert.montantCash + transfert.frais }}</span>
+					<span>{{ transfert.montantCFA + transfert.frais }}</span>
 				</div>
 			</div>
 		</div>

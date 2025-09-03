@@ -2,6 +2,7 @@ $(document).ready(function () {
     // Initialisation du date range picker
     const startDate = moment().startOf('day');
     const endDate = moment().endOf('day');
+    let count = 0;
 
     $('#dateRange').daterangepicker({
         locale: {
@@ -25,37 +26,104 @@ $(document).ready(function () {
         }
     });
 
-    // Initialisation de DataTable
     const table = $('#transactionsTable').DataTable({
         dom: 'Bfrtip',
-        buttons: [
+        ajax: {
+            url: '/api/report',
+            dataSrc: '',
+            data: function (d) {
+                const dateRange = $('#dateRange').data('daterangepicker');
+                count = 0
+                d.startDate = dateRange.startDate.format('YYYY-MM-DD');
+                d.endDate = dateRange.endDate.format('YYYY-MM-DD');
+                d.agenceId = $('#agenceSelect').val();
+                d.devise = $('#deviseSelect').val();
+            },
+        },
+        columns: [
+            { data: 'id' },
+            { data: 'description' },
+            { data: 'date' },
             {
-                extend: 'excel',
-                text: '<i class="bi bi-file-earmark-excel me-2"></i>Excel',
-                className: 'btn-export-excel',
-                title: 'Rapport Transactions',
-                exportOptions: {
-                    columns: [0, 1, 2, 3, 4, 5]
+                data: 'entree', render: function (data) {
+                    return data > 0 ? `<span class="text-success fw-bold">${formatMoney(data)}  ${$('#deviseSelect').val()}</span>` : '--';
                 }
             },
             {
-                extend: 'pdf',
+                data: 'sortie', render: function (data) {
+                    return data > 0 ? `<span class="text-danger fw-bold">${formatMoney(data)}  ${$('#deviseSelect').val()}</span>` : '--';
+                }
+            },
+            {
+                data: 'solde', render: function (data) {
+                    return `<span class="fw-bold text-white bg-secondary px-2 py-1 rounded">${formatMoney(data)}  ${$('#deviseSelect').val()}</span>`;
+                }
+            }
+        ],
+        buttons: [
+            {
+                extend: 'excelHtml5',
+                text: '<i class="bi bi-file-earmark-excel me-2"></i>Excel',
+                className: 'btn-export-excel',
+                title: 'Rapport Transactions',
+                exportOptions: { columns: [0, 1, 2, 3, 4, 5] },
+                customizeData: function (data) {
+                    let grouped = {};
+                    data.body.forEach(row => {
+                        const date = row[2];
+                        if (!grouped[date]) grouped[date] = [];
+                        grouped[date].push(row);
+                    });
+
+                    let newBody = [];
+                    Object.keys(grouped).forEach(date => {
+                        const rows = grouped[date];
+                        const soldeDepart = rows[0][5];
+                        const soldeFin = rows[rows.length - 1][5];
+                        newBody.push([
+                            `📅 ${date} | Solde départ: ${soldeDepart} | Solde fin: ${soldeFin}`, '', '', '', '', ''
+                        ]);
+                        rows.forEach(r => newBody.push(r));
+                    });
+
+                    data.body = newBody;
+                }
+            },
+            {
+                extend: 'pdfHtml5',
                 text: '<i class="bi bi-file-earmark-pdf me-2"></i>PDF',
                 className: 'btn-export-pdf',
                 title: 'Rapport Transactions',
-                exportOptions: {
-                    columns: [0, 1, 2, 3, 4, 5]
-                },
+                exportOptions: { columns: [0, 1, 2, 3, 4, 5] },
                 customize: function (doc) {
+                    let grouped = {};
+                    doc.content[1].table.body.forEach((row, idx) => {
+                        if (idx === 0) return; // skip header
+                        const date = row[2].text || row[2];
+                        if (!grouped[date]) grouped[date] = [];
+                        grouped[date].push(row);
+                    });
+
+                    let newBody = [doc.content[1].table.body[0]]; // garder header
+                    Object.keys(grouped).forEach(date => {
+                        const rows = grouped[date];
+                        const soldeDepart = rows[0][5].text || rows[0][5];
+                        const soldeFin = rows[rows.length - 1][5].text || rows[rows.length - 1][5];
+                        newBody.push([
+                            { text: `📅 ${date} | Solde départ: ${soldeDepart} | Solde fin: ${soldeFin}`, colSpan: 6, bold: true, fillColor: '#eeeeee' },
+                            {}, {}, {}, {}, {}
+                        ]);
+                        rows.forEach(r => newBody.push(r));
+                    });
+
+                    doc.content[1].table.body = newBody;
                     doc.content[1].table.widths = ['5%', '35%', '15%', '15%', '15%', '15%'];
                     doc.styles.tableHeader.fillColor = '#3a7bd5';
                     doc.styles.tableHeader.color = 'white';
                 }
             }
         ],
-        language: {
-            url: '/api/datatable_json_fr'
-        },
+        language: { url: '/api/datatable_json_fr' },
         columnDefs: [
             { targets: 0, width: '5%' },
             { targets: 1, width: '35%' },
@@ -63,10 +131,40 @@ $(document).ready(function () {
             { targets: [3, 4, 5], width: '15%', className: 'text-end' }
         ],
         order: [[2, 'desc']],
-        paging: false,
+        paging: true,
         searching: false,
-        info: false
+        info: false,
+ 
+        drawCallback: function (settings) {
+            const api = this.api();
+            const rows = api.rows({ page: 'current' }).nodes();
+            let last = null;
+
+            api.column(2, { page: 'current' }).data().each(function (date, i) {
+                if (last !== date) {
+                    const rowsOfDate = api.rows((idx, data) => data.date === date).data().toArray();
+                    if (rowsOfDate.length > 0) {
+                        const soldeFin = rowsOfDate[0].solde;
+                        const soldeDepart = rowsOfDate[rowsOfDate.length - 1].solde;
+                        $(rows).eq(i).before(
+                            `<tr class="table-group-cell bg-light">
+                            <td colspan="6" class="fw-bold table-group-cell" style="background: lightgrey">
+                                📅 ${date}
+                                <span class="ms-3 text-primary">Solde départ : ${formatMoney(count == 0 ? api.rows((idx, data) => data.date === date).data().toArray()[0].initial : soldeDepart )} ${$('#deviseSelect').val()}</span>
+                                <span class="ms-3 text-success">Solde fin : ${formatMoney(soldeFin)} ${$('#deviseSelect').val()}</span>
+                            </td>
+                        </tr>`
+                        );
+                    }
+                    last = date;
+                }
+            });
+
+            count += 1
+        }
     });
+
+
 
     // Gestion de l'export Excel personnalisé
     $('#exportExcel').click(function () {
@@ -95,6 +193,7 @@ $(document).ready(function () {
         const agence = agences.find(a => a.id == agenceId);
 
         displayAgenceDetails(agence);
+        updateUIByAgency()
     });
 
     // Fonction pour afficher les détails de l'agence
@@ -106,123 +205,36 @@ $(document).ready(function () {
         const createdAt = agence.createdAt;
 
         $('#agenceDetails').html(`
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div>
-                            <h5 class="mb-1">${agence.nom}</h5>
-                            <p class="text-muted mb-1">
-                                <i class="bi bi-geo-alt me-2"></i>${agence.localite}
-                            </p>
-                        </div>
-                        ${activeBadge}
-                    </div>
-                    <hr>
-                    <div class="row">
-                        <div class="col-6">
-                            <p class="mb-1"><strong>Devise:</strong></p>
-                            <p>${agence.devise}</p>
-                        </div>
-                        <div class="col-6">
-                            <p class="mb-1"><strong>Créée le:</strong></p>
-                            <p>${createdAt}</p>
-                        </div>
-                    </div>
-                `);
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <h5 class="mb-1">${agence.nom}</h5>
+                    <p class="text-muted mb-1">
+                        <i class="bi bi-geo-alt me-2"></i>${agence.localite}
+                    </p>
+                </div>
+                ${activeBadge}
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col-6">
+                    <p class="mb-1"><strong>Devise local:</strong></p>
+                    <p>${agence.devise}</p>
+                </div>
+                <div class="col-6">
+                    <p class="mb-1"><strong>Créée le:</strong></p>
+                    <p>${createdAt}</p>
+                </div>
+            </div>
+        `);
     }
 
     // Chargement des transactions
-    $('#filterBtn').click(loadTransactions);
+    $('#filterBtn').click(reloadTable);
 
     // Charger les transactions par défaut pour l'agence Bamako CFA
     if ($('#agenceSelect').val()) {
         $('#agenceSelect').trigger('change');
-        loadTransactions();
     }
-
-    function loadTransactions() {
-        const agenceId = $('#agenceSelect').val();
-        const dateRange = $('#dateRange').val();
-
-        if (!agenceId) {
-            showToast('Veuillez sélectionner une agence', 'warning');
-            return;
-        }
-
-        const dates = dateRange ? dateRange.split(' - ') : [];
-        const startDate = dates[0] || '';
-        const endDate = dates[1] || '';
-
-        $.get(`/api/report/agence/${agenceId}`, {
-            startDate: startDate,
-            endDate: endDate
-        }, function (response) {
-            populateTransactionsTable(response.data, response.initial);
-
-            let sommeEntrees = 0;
-                for (let i = 0; i < response.data.length; i++) {
-                    sommeEntrees += response.data[i].entree;
-                }
-
-                let sommeSorties = 0;
-                for (let i = 0; i < response.data.length; i++) {
-                    sommeSorties += response.data[i].sortie;
-                }
-
-
-
-            updateTotals({
-                entree: sommeEntrees,
-                sortie: sommeSorties,
-                solde: sommeEntrees - sommeSorties
-            });
-
-        });
-    }
-
-    function populateTransactionsTable(transactions, initialBalance) {
-        table.clear();
-
-        let currentDate = null;
-
-        transactions.forEach((tx, index) => {
-            const txDate = new Date(tx.date).toLocaleDateString('fr-FR', {
-                day: '2-digit', month: '2-digit', year: 'numeric'
-            });
-
-            if (currentDate !== txDate) {
-                // Ajouter une ligne d'entête pour cette date
-                const startOfDay = transactions.find(t => new Date(t.date).toLocaleDateString('fr-FR') === txDate);
-                const endOfDay = [...transactions].reverse().find(t => new Date(t.date).toLocaleDateString('fr-FR') === txDate);
-
-                table.row.add([
-                    '', 
-                    `<span class="solde" >Début: ${formatMoney(startOfDay.solde - (startOfDay.entree - startOfDay.sortie))} FCFA | Fin: ${formatMoney(endOfDay.solde)} FCFA</span>`,
-                    '',
-                    '',
-                    '',
-                    `<strong>${txDate}</strong>`,
-                ]);
-
-                currentDate = txDate;
-            }
-
-            const dateTime = new Date(tx.date).toLocaleString('fr-FR', {
-                day: '2-digit', month: '2-digit', year: 'numeric',
-                hour: '2-digit', minute: '2-digit'
-            });
-
-            table.row.add([
-                index + 1,
-                tx.description,
-                dateTime,
-                tx.entree ? `<span class="entree">${formatMoney(tx.entree)} ${tx.devise}</span>` : '-',
-                tx.sortie ? `<span class="sortie">${formatMoney(tx.sortie)} ${tx.devise}</span>` : '-',
-                `<span class="solde">${formatMoney(tx.solde)} ${tx.devise}</span>`
-            ]);
-        });
-
-        table.draw();
-    }
-
 
     // Helper: Formatage d'argent
     function formatMoney(amount) {
@@ -231,29 +243,19 @@ $(document).ready(function () {
         else return 0;
     }
 
-    function updateTotals(totals) {
-        $('#totalEntree').html(`<span class="entree">${formatMoney(totals.entree)} FCFA</span>`);
-        $('#totalSortie').html(`<span class="sortie">${formatMoney(totals.sortie)} FCFA</span>`);
-        $('#totalSolde').html(`<span class="solde">${formatMoney(totals.solde)} FCFA</span>`);
+    function updateUIByAgency() {
+        const selectedAgencyId = parseInt($('#agenceSelect').val());
+
+        if (selectedAgencyId === 1) {
+            $('#deviseSelect').prop('disabled', false).prop('readonly', false);
+        } else {
+            $('#deviseSelect').val('USD').prop('disabled', true).prop('readonly', true);
+        }
     }
 
-    // Helper: Affichage de notification
-    function showToast(message, type = 'success') {
-        const toast = $(`
-                    <div class="toast align-items-center text-white bg-${type} border-0 show" role="alert" aria-live="assertive" aria-atomic="true">
-                        <div class="d-flex">
-                            <div class="toast-body">
-                                ${message}
-                            </div>
-                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-                        </div>
-                    </div>
-                `);
-
-        $('#toastContainer').append(toast);
-
-        setTimeout(() => {
-            toast.remove();
-        }, 5000);
+    // Fonction pour mettre à jour l'affichage des devises
+    function reloadTable() {
+        table.ajax.reload()
     }
+
 });

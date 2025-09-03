@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\TransfertRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -10,8 +12,7 @@ use Doctrine\ORM\Mapping as ORM;
 class Transfert
 {
 
-    public const STATUS_PENDING = 'pending';
-    public const STATUS_PROCESSING = 'processing';
+    public const STATUS_PENDING = 'pending'; 
     public const STATUS_COMPLETED = 'completed';
     public const STATUS_CANCELLED = 'cancelled';
 
@@ -24,37 +25,28 @@ class Transfert
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(length: 55)]
-    private ?string $Type = null;
-
-    #[ORM\Column(length: 255)]
-    private ?string $destination = null;
-
+    private ?string $type = null;
+  
     #[ORM\ManyToOne(inversedBy: 'transferts')]
     private ?Client $client = null;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 0)]
-    private ?string $montantCash = null;
-
-    #[ORM\Column(length: 8)]
-    private ?string $deviseCash = null;
-
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 0)]
-    private ?string $MontantReception = null;
-
-    #[ORM\Column(length: 8)]
-    private ?string $deviseReception = null;
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
+    private ?string $montantCFA = null;
+ 
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
+    private ?string $montantUSD = null; 
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 5)]
-    private ?string $Taux = null;
+    private ?string $taux = null;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 0)]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private ?string $Frais = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    private ?string $vanishClientName = null;
+    private ?string $senderName = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    private ?string $vanishClientPhone = null;
+    private ?string $senderPhone = null;
 
     #[ORM\Column(length: 255)]
     private ?string $receiverName = null;
@@ -62,9 +54,9 @@ class Transfert
     #[ORM\Column(length: 255)]
     private ?string $ReceiverPhone = null;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 3)]
-    private ?string $TauxDeviseReception = null;
-
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
+    private ?string $montantReception = null;
+ 
     #[ORM\Column(length: 55)]
     private ?string $status = null;
 
@@ -72,10 +64,22 @@ class Transfert
     private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\Column(length: 10)]
-    private ?string $ref = null;
+    private ?string $ref = null;  
 
-    #[ORM\OneToOne(inversedBy: 'transfert', cascade: ['persist', 'remove'])]
-    private ?AccountTransaction $transaction = null;
+    /**
+     * @var Collection<int, AccountTransaction>
+     */
+    #[ORM\OneToMany(targetEntity: AccountTransaction::class, mappedBy: 'transfert')]
+    private Collection $accountTransactions;
+
+    #[ORM\ManyToOne(inversedBy: 'transferts')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Agence $agence = null;
+
+    public function __construct()
+    {
+        $this->accountTransactions = new ArrayCollection();
+    } 
 
     public function getId(): ?int
     {
@@ -96,28 +100,16 @@ class Transfert
 
     public function getType(): ?string
     {
-        return $this->Type;
+        return $this->type;
     }
 
-    public function setType(string $Type): static
+    public function setType(string $type): static
     {
-        $this->Type = $Type;
+        $this->type = $type;
 
         return $this;
     }
-
-    public function getDestination(): ?string
-    {
-        return $this->destination;
-    }
-
-    public function setDestination(string $destination): static
-    {
-        $this->destination = $destination;
-
-        return $this;
-    }
-
+ 
     public function getClient(): ?Client
     {
         return $this->client;
@@ -130,62 +122,50 @@ class Transfert
         return $this;
     }
 
-    public function getMontantCash(): ?string
+    public function getMontantCFA(): ?string
     {
-        return $this->montantCash;
+        return $this->montantCFA;
     }
 
-    public function setMontantCash(string $montantCash): static
+    public function setMontantCFA(string $montantCFA): static
     {
-        $this->montantCash = $montantCash;
+        $this->montantCFA = $montantCFA;
 
         return $this;
     }
 
-    public function getDeviseCash(): ?string
+    public function getMontantUSD(): ?string
     {
-        return $this->deviseCash;
+        return $this->montantUSD;
     }
 
-    public function setDeviseCash(string $deviseCash): static
+    public function setMontantUSD(string $montantUSD): static
     {
-        $this->deviseCash = $deviseCash;
+        $this->montantUSD = $montantUSD;
 
         return $this;
     }
 
     public function getMontantReception(): ?string
     {
-        return $this->MontantReception;
+        return $this->montantReception;
     }
 
     public function setMontantReception(string $MontantReception): static
     {
-        $this->MontantReception = $MontantReception;
-
-        return $this;
-    }
-
-    public function getDeviseReception(): ?string
-    {
-        return $this->deviseReception;
-    }
-
-    public function setDeviseReception(string $deviseReception): static
-    {
-        $this->deviseReception = $deviseReception;
+        $this->montantReception = $MontantReception;
 
         return $this;
     }
 
     public function getTaux(): ?string
     {
-        return $this->Taux;
+        return $this->taux;
     }
 
-    public function setTaux(string $Taux): static
+    public function setTaux(string $taux): static
     {
-        $this->Taux = $Taux;
+        $this->taux = $taux;
 
         return $this;
     }
@@ -202,26 +182,26 @@ class Transfert
         return $this;
     }
 
-    public function getVanishClientName(): ?string
+    public function getSenderName(): ?string
     {
-        return $this->vanishClientName;
+        return $this->senderName;
     }
 
-    public function setVanishClientName(?string $vanishClientName): static
+    public function setSenderName(?string $senderName): static
     {
-        $this->vanishClientName = $vanishClientName;
+        $this->senderName = $senderName;
 
         return $this;
     }
 
-    public function getVanishClientPhone(): ?string
+    public function getSenderPhone(): ?string
     {
-        return $this->vanishClientPhone;
+        return $this->senderPhone;
     }
 
-    public function setVanishClientPhone(?string $vanishClientPhone): static
+    public function setSenderPhone(?string $senderPhone): static
     {
-        $this->vanishClientPhone = $vanishClientPhone;
+        $this->senderPhone = $senderPhone;
 
         return $this;
     }
@@ -249,19 +229,7 @@ class Transfert
 
         return $this;
     }
-
-    public function getTauxDeviseReception(): ?string
-    {
-        return $this->TauxDeviseReception;
-    }
-
-    public function setTauxDeviseReception(string $TauxDeviseReception): static
-    {
-        $this->TauxDeviseReception = $TauxDeviseReception;
-
-        return $this;
-    }
-
+ 
     public function getStatus(): ?string
     {
         return $this->status;
@@ -298,15 +266,48 @@ class Transfert
         return $this;
     }
 
-    public function getTransaction(): ?AccountTransaction
+    public function getAgence(): ?Agence
     {
-        return $this->transaction;
+        return $this->agence;
     }
 
-    public function setTransaction(?AccountTransaction $transaction): static
+    public function setAgence(?Agence $agence): static
     {
-        $this->transaction = $transaction;
+        $this->agence = $agence;
 
         return $this;
     }
+
+    public function getAccountTransactions(): ?Collection
+    {
+        return $this->accountTransactions;
+    }
+
+    public function setAccountTransactions(?Collection $accountTransactions): static
+    {
+        $this->accountTransactions = $accountTransactions;
+        return $this;
+    }
+
+    public function addAccountTransaction(AccountTransaction $accountTransaction): static
+    {
+        if (!$this->accountTransactions->contains($accountTransaction)) {
+            $this->accountTransactions[] = $accountTransaction;
+            $accountTransaction->setTransfert($this);
+        }
+        return $this;
+    }
+    
+    public function removeAccountTransaction(AccountTransaction $accountTransaction): static
+    {
+        if ($this->accountTransactions->contains($accountTransaction)) {
+            $this->accountTransactions->removeElement($accountTransaction);
+            if ($accountTransaction->getTransfert() === $this) {
+                $accountTransaction->setTransfert(null);
+            }
+        }
+        return $this;
+    }
+ 
+
 }
