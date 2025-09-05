@@ -137,7 +137,7 @@ final class ExchangeController extends AbstractController
             $agencetx->setAmount($devise, $type === "achat" ? $montantdevise : $montantdevise * -1);
             $agencetx->setDescrib($description != "" ? $description : $type . " de " . $devise . " à " . $agence->getDesignation());
             $agencetx->setExchange($exchange);
-            $em->persist($localtx);
+            $em->persist($agencetx);
         }
 
         // 7. Persister et sauvegarder en base de données

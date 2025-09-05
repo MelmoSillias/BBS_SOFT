@@ -78,14 +78,16 @@ $(document).ready(function () {
                     let newBody = [];
                     Object.keys(grouped).forEach(date => {
                         const rows = grouped[date];
-                        const soldeDepart = rows[0][5];
-                        const soldeFin = rows[rows.length - 1][5];
+                        // Récupérer la ligne brute (depuis le DataTable pour accéder à "initial")
+                        const rawRow = table.rows((idx, d) => d.date === date).data()[0];
+                        const soldeDepart = rawRow.initial; // solde de départ issu de l’API
+                        const soldeFin = rows[0][5].text || rows[0][5];
+
                         newBody.push([
                             `📅 ${date} | Solde départ: ${soldeDepart} | Solde fin: ${soldeFin}`, '', '', '', '', ''
                         ]);
                         rows.forEach(r => newBody.push(r));
                     });
-
                     data.body = newBody;
                 }
             },
@@ -94,6 +96,8 @@ $(document).ready(function () {
                 text: '<i class="bi bi-file-earmark-pdf me-2"></i>PDF',
                 className: 'btn-export-pdf',
                 title: 'Rapport Transactions',
+                orientation: 'landscape',
+                pageSize: 'A4',
                 exportOptions: { columns: [0, 1, 2, 3, 4, 5] },
                 customize: function (doc) {
                     let grouped = {};
@@ -104,23 +108,53 @@ $(document).ready(function () {
                         grouped[date].push(row);
                     });
 
-                    let newBody = [doc.content[1].table.body[0]]; // garder header
+                    let newBody = [doc.content[1].table.body[0]]; // header conservé
+
                     Object.keys(grouped).forEach(date => {
                         const rows = grouped[date];
-                        const soldeDepart = rows[0][5].text || rows[0][5];
-                        const soldeFin = rows[rows.length - 1][5].text || rows[rows.length - 1][5];
+                        // Récupérer la ligne brute pour solde initial
+                        const rawRow = table.rows((idx, d) => d.date === date).data()[0];
+                        const soldeDepart = rawRow.initial;
+                        const soldeFin = rows[0][5].text || rows[0][5];
+
                         newBody.push([
-                            { text: `📅 ${date} | Solde départ: ${soldeDepart} | Solde fin: ${soldeFin}`, colSpan: 6, bold: true, fillColor: '#eeeeee' },
+                            { text: `📅 ${date} | Solde départ: ${soldeDepart} | Solde fin: ${soldeFin}`, colSpan: 6, bold: true, fillColor: '#f5f5f5', alignment: 'center' },
                             {}, {}, {}, {}, {}
                         ]);
                         rows.forEach(r => newBody.push(r));
                     });
 
                     doc.content[1].table.body = newBody;
-                    doc.content[1].table.widths = ['5%', '35%', '15%', '15%', '15%', '15%'];
-                    doc.styles.tableHeader.fillColor = '#3a7bd5';
-                    doc.styles.tableHeader.color = 'white';
+                doc.content[1].table.widths = ['5%', '35%', '15%', '15%', '15%', '15%'];
+
+                // style général
+                doc.styles.tableHeader.fillColor = '#444';
+                doc.styles.tableHeader.color = 'white';
+                doc.styles.tableHeader.alignment = 'center';
+                doc.styles.tableHeader.bold = true;
+
+                // bordures fines grises et centrage
+                let objLayout = {};
+                objLayout['hLineWidth'] = function (i) { return 0.5; };
+                objLayout['vLineWidth'] = function (i) { return 0.5; };
+                objLayout['hLineColor'] = function (i) { return '#cccccc'; };
+                objLayout['vLineColor'] = function (i) { return '#cccccc'; };
+                objLayout['paddingTop'] = function (i) { return 5; };
+                objLayout['paddingBottom'] = function (i) { return 5; };
+                objLayout['paddingLeft'] = function (i) { return 5; };
+                objLayout['paddingRight'] = function (i) { return 5; };
+                doc.content[1].layout = objLayout;
+
+                // centrer le contenu
+                newBody.forEach(row => {
+                    row.forEach(cell => {
+                        if (cell && cell.text) {
+                            cell.alignment = 'center';
+                        }
+                    });
+                });
                 }
+
             }
         ],
         language: { url: '/api/datatable_json_fr' },
@@ -131,10 +165,10 @@ $(document).ready(function () {
             { targets: [3, 4, 5], width: '15%', className: 'text-end' }
         ],
         order: [[2, 'desc']],
-        paging: true,
+        paging: false,
         searching: false,
         info: false,
- 
+
         drawCallback: function (settings) {
             const api = this.api();
             const rows = api.rows({ page: 'current' }).nodes();
@@ -150,7 +184,7 @@ $(document).ready(function () {
                             `<tr class="table-group-cell bg-light">
                             <td colspan="6" class="fw-bold table-group-cell" style="background: lightgrey">
                                 📅 ${date}
-                                <span class="ms-3 text-primary">Solde départ : ${formatMoney(count == 0 ? api.rows((idx, data) => data.date === date).data().toArray()[0].initial : soldeDepart )} ${$('#deviseSelect').val()}</span>
+                                <span class="ms-3 text-primary">Solde départ : ${formatMoney(count == 0 ? api.rows((idx, data) => data.date === date).data().toArray()[0].initial : soldeDepart)} ${$('#deviseSelect').val()}</span>
                                 <span class="ms-3 text-success">Solde fin : ${formatMoney(soldeFin)} ${$('#deviseSelect').val()}</span>
                             </td>
                         </tr>`

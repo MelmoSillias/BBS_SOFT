@@ -700,7 +700,6 @@ $(document).ready(function () {
                 });
             }
         });
-
     }
 
     // Impression de reçu

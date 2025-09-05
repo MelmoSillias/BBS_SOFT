@@ -1192,7 +1192,7 @@ function initTransactions(clientId) {
         data: null,
         title: 'Actions',
         render: function(data, type, row) {
-          if (row.motif === "Versement" || row.motif === "Retrait") {
+          if (row.type === "Versement" || row.type === "Retrait") {
             return `
               <button class="btn btn-sm btn-outline-primary print-btn" data-id="${row.id}" title="Imprimer">
                 <i class="bi bi-printer"></i>

@@ -68,6 +68,8 @@ final class ReportController extends AbstractController
         // Calcul du solde initial (toutes les transactions avant la période)
         $soldeInitial = (float) $txRepo->getSoldeInitial($agence, $devise, $start);
 
+        $current_date = $start->format('Y-m-d');
+
         // Récupération des transactions selon les filtres
         $transactions = $txRepo->findByFilters($agence, $start, $end, $devise);
 
@@ -83,6 +85,12 @@ final class ReportController extends AbstractController
                 // Détermination du montant d'entrée et de sortie
                 $entree = $montant > 0 ? $montant : 0;
                 $sortie = $montant < 0 ? abs($montant) : 0;
+
+                if ($current_date != $transaction->getCreatedAt()->format('Y-m-d'))
+                {
+                    $current_date = $transaction->getCreatedAt()->format('Y-m-d');
+                    $soldeInitial = $soldeCumulatif;
+                }
 
                 // Calcul du solde cumulatif
                 $soldeCumulatif += $montant;

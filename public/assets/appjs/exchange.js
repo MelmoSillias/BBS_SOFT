@@ -61,16 +61,16 @@ $(document).ready(function () {
                     text: '<i class="bi bi-file-earmark-spreadsheet"></i> Exporter Excel',
                     className: 'btn btn-success',
                     titleAttr: 'Exporter vers Excel',
-                    title: 'Liste des clients',
-                    exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6] }
+                    title: 'Liste des exchanges',
+                    exportOptions: { columns: [0, 1, 2, 3, 4, 5] }
                 },
                 {
                     extend: 'pdfHtml5',
                     text: '<i class="bi bi-file-earmark-pdf"></i> Exporter PDF',
                     className: 'btn btn-danger',
                     titleAttr: 'Exporter vers PDF',
-                    title: 'Liste des clients',
-                    exportOptions: { columns: [0, 1, 2, 3] },
+                    title: 'Liste des exchanges',
+                    exportOptions: { columns: [0, 1, 2, 3, 4, 5] },
                     customize: function (doc) {
                         doc.content[1].table.widths = ['*', '*', '*', '*'];
                         doc.content[1].table.body[0].forEach(cell => {
@@ -114,19 +114,23 @@ $(document).ready(function () {
                         // Afficher le type d'opération (achat/vente)
                         return data;
                     }
-                },
+                }, 
                 {
-                    "data": null,
-                    "render": function (data, type, row) {
-                        // Afficher le montant en devise
-                        return `${row.montantDevise} ${row.devise}`;
+                    data: 'null',
+                    render: function (data, type, row) {
+                        // Afficher le montant de la devise avec couleur en fonction du type
+                        const color = row.type === 'achat' ? 'text-success' : 'text-danger';
+                        const sign = row.type === 'achat' ? '+' : '-';
+                        return `<span class="${color}  fw-bold">${sign}${row.montantDevise} ${row.devise}</span>`;
                     }
                 },
                 {
                     "data": null,
                     "render": function (data, type, row) {
                         // Afficher le montant en CFA
-                        return `${row.montantCFA} CFA`;
+                        const color = row.type === 'achat' ? 'text-danger' : 'text-success';
+                        const sign = row.type === 'achat' ? '-' : '+';
+                        return `<span class="${color} fw-bold">${sign}${row.montantCFA} CFA</span>`;
                     }
                 },
                 {
@@ -208,6 +212,9 @@ $(document).ready(function () {
         // Actions sur les échanges
         $(document).on('click', '.view-exchange', showExchangeModal);
         $(document).on('click', '.print-exchange', printReceipt);
+        $(document).on('click', '.cancel-exchange', confirmDeleteExchange);
+        
+        $('#confirmDelete').click(deleteExchange);
 
         // Impression
         $('#printReceiptBtn').click(printReceipt);
@@ -233,28 +240,19 @@ $(document).ready(function () {
         $('#exchangeDate').text(formatDate(exchange.date));
         $('#exchangeType').html(exchange.type === 'achat' ?
             '<span class="badge bg-info">Achat</span>' :
-            '<span class="badge bg-warning text-dark">Vente</span>');
-        $('#exchangeAgence').text(exchange.agence.name + ' (' + exchange.agence.devise + ')');
+            '<span class="badge bg-warning text-dark">Vente</span>'); 
         $('#exchangeDescription').text(exchange.description || 'N/A');
-
-        // Client
-        $('#exchangeClientName').text(exchange.client);
-        $('#exchangeClientPhone').text(exchange.clientPhone);
-
+ 
         // Détails financiers
-        $('#exchangeDevise').text(exchange.agence.devise);
+        $('#exchangeDevise').text(exchange.montantDevise + ' ' + exchange.devise);
 
-        $('#exchangeRate').text('1 ' + exchange.agence.devise + ' = ' + parseFloat(exchange.taux).toFixed(4) + ' FCFA');
-
-        const total = parseFloat(exchange.toAmount);
-        $('#exchangeTotal').text((exchange.type === 'achat' ? '+' : '-') + formatMoney(total) + ' ' + exchange.agence.devise);
-        $('#exchangeAmount').text((exchange.type === 'achat' ? '-' : '+') + formatMoney(parseFloat(exchange.fromAmount).toFixed(2)) + ' ' + "CFA");
+        $('#exchangeRate').text(parseFloat(exchange.taux).toFixed(2) + ' FCFA');
+ 
+        $('#exchangeAmount').text((exchange.type === 'achat' ? '-' : '+') + formatMoney(parseFloat(exchange.montantCFA).toFixed(2)) + ' ' + "CFA");
         if (exchange.type === 'achat') {
-            $('#exchangeAmount').removeClass('text-success').addClass('text-danger');
-            $('#exchangeTotal').removeClass('text-danger').addClass('text-success');
+            $('#exchangeAmount').removeClass('text-success').addClass('text-danger'); 
         } else {
-            $('#exchangeAmount').removeClass('text-danger').addClass('text-success');
-            $('#exchangeTotal').removeClass('text-success').addClass('text-danger');
+            $('#exchangeAmount').removeClass('text-danger').addClass('text-success'); 
         }
 
         // Gestion des boutons d'action
@@ -266,6 +264,37 @@ $(document).ready(function () {
             $('#viewExchangeModal').modal('hide');
             confirmCancelExchange.call({ dataset: { id: exchange.id } });
         });
+    }
+
+    function confirmDeleteExchange() {
+        currentExchangeId = $(this).data('id');
+        $('#modalDeleteExchange').modal('show');
+    }
+
+    // Suppression d'échange
+    function deleteExchange() {
+        $('#modalDeleteExchange').modal('hide');
+
+        // En production, envoyer la requête au serveur
+        $.ajax({
+            url: '/api/exchanges/' + currentExchangeId,
+            type: 'DELETE',
+            success: function () {
+                showToastModal({
+                    message: 'Échange supprimé avec succès',
+                    type: 'success'
+                });
+                loadExchanges();
+            },
+            error: function (error) {
+                showToastModal({
+                    message: error.responseJSON?.message || 'Erreur lors de la suppression',
+                    type: 'error'
+                });
+            }
+        });
+
+
     }
 
     // Impression de reçu

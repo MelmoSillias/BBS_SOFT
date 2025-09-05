@@ -87,25 +87,11 @@ final class TransfertController extends AbstractController
 
             if ($transfert->getType() === "byAccount") {
 
-                $balance = $client->getbalance("CFA");
-
-                if ($balance < $amount) {
-                    return new JsonResponse(['error' => 'le solde est insuffisant'], 400);
-                }
-
-                $ctx = new AccountTransaction();
-                $ctx->setCFA($amount * -1) 
-                    ->setDescrib('Transfert effectué à partir du compte')
-                    ->setClient($client)
-                    ->setCreatedAt(new \DateTimeImmutable($data['date']));
-
-                $ctx->setTransfert($transfert);
-
-                $em->persist($ctx);
+                
             } else {
                 $ctx = new AccountTransaction();
                 $ctx->setCFA($amount) 
-                    ->setDescrib('Transfert effectué par cash')
+                    ->setDescrib('Envoi cash - '.($transfert->getClient() ? $transfert->getClient()->getNomComplet() : $transfert->getSenderName()))
                     ->setAgence($local)
                     ->setCreatedAt(new \DateTimeImmutable($data['date']));
 
@@ -115,16 +101,7 @@ final class TransfertController extends AbstractController
 
             }
         }
-
-        $atx = new AccountTransaction();
-        $atx->setUSD($data['montantUSD'] * -1)
-            ->setDescrib('Transfert de '. $data['montantUSD'] . ' USD')
-            ->setAgence($agence)
-            ->setCreatedAt(new \DateTimeImmutable($data['date']));
-
-        $atx->setTransfert($transfert);
-        $em->persist($atx);
-
+ 
         $ref = $this->generateReference($clientName, $em);
         $transfert->setRef($ref);
         // Persister et sauvegarder l'entité
@@ -350,6 +327,36 @@ final class TransfertController extends AbstractController
                 'message' => 'Le transfert ne peut pas être validé dans son état actuel'
             ], Response::HTTP_BAD_REQUEST);
         }
+
+        $atx = new AccountTransaction();
+        $atx->setUSD($transfer->getMontantUSD() * -1)
+            ->setDescrib('Transfert -- '.($transfer->getClient() ? $transfer->getClient()->getNomComplet() : $transfer->getSenderName()). ' -- '. $transfer->getMontantUSD() . ' USD')
+            ->setAgence($transfer->getAgence())
+            ->setCreatedAt($transfer->getCreatedAt());
+
+        $atx->setTransfert($transfer);
+        $em->persist($atx);
+
+        if ($transfer->getType() === "byAccount") {
+            $client = $transfer->getClient();
+            $balance = $client->getbalance("CFA");
+            $amount = $transfer->getMontantCFA() + $transfer->getFrais();
+
+            if ($balance < $amount) {
+                return new JsonResponse(['error' => 'le solde est insuffisant'], 400);
+            }
+
+            $ctx = new AccountTransaction();
+            $ctx->setCFA($amount * -1) 
+                ->setDescrib('Retrait compte - '.$transfer->getClient()->getNomComplet())
+                ->setClient($client)
+                ->setCreatedAt($transfer->getCreatedAt());
+
+            $ctx->setTransfert($transfer);
+
+            $em->persist($ctx);
+        }
+
 
         $transfer->setStatus(Transfert::STATUS_COMPLETED);
         $transfer->setUpdatedAt(new \DateTimeImmutable());
