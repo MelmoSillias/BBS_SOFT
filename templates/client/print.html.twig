@@ -112,7 +112,7 @@
 			<!-- Cadre gauche -->
 			<div class="box">
 				<div>Opération :
-					<span>{{ transaction.reason }}</span>
+					<span>{{ transaction.type }}</span>
 				</div>
 				<div>Date :
 					<span>{{ transaction.createdAt ? transaction.createdAt|date('d/m/Y') : '' }}</span>
@@ -127,11 +127,11 @@
 
 			<!-- Cadre droit -->
 			<div class="box"> 
-				<div>Devise :
-					<span>{{ transaction.devise }} </span>
+				<div>Devise : 
+					<span>{{ 'CFA' }} </span>
 				</div>
 				<div>Montant :
-					<span>{{ transaction.reason == "Versement" ? transaction.income : transaction.outcome }} </span>
+					<span>{{ transaction.CFA | format_currency('CFA', {significant_digits_used:true, min_significant_digits_used:0, max_significant_digits_used:2}, 'fr') }}</span>
 				</div> 
 			</div>
 		</div>

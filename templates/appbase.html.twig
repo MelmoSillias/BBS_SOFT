@@ -142,7 +142,7 @@
             <span class="d-none d-md-inline">{{ app.user.username ?? 'Utilisateur' }}</span>
           </a>
           <ul class="dropdown-menu dropdown-menu-end">
-            <li><a href="#" class="dropdown-item">Profil</a></li>
+            <li><a href="{{ path('app_profil') }}" class="dropdown-item">Profil</a></li>
             <li><a href="{{ path('app_logout') }}" class="dropdown-item text-danger">Déconnexion</a></li>
           </ul>
         </li>
@@ -204,7 +204,7 @@
         <li class="nav-item">
           <a href="{{ path('app_depense') }}" class="nav-link {{ controller_name starts with 'Depense' ? 'active' : '' }}">
             <i class="nav-icon bi bi-graph-down-arrow"></i>
-            <p>Dépenses</p>
+            <p>Finances</p>
           </a>
         </li>
         {% endif %}

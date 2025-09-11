@@ -317,8 +317,8 @@ final class TransfertController extends AbstractController
         return new JsonResponse($output);
     }
 
-    #[Route('/api/transferts/{id}/validate', name: 'api_transfer_validate', methods: ['POST'])]
-    public function validateTransfer(Transfert $transfer, EntityManagerInterface $em): JsonResponse
+    #[Route('/api/transferts/{id}/validate/{date}', name: 'api_transfer_validate', methods: ['POST'])]
+    public function validateTransfer(Transfert $transfer, String $date, EntityManagerInterface $em): JsonResponse
     {
         // Vérifier que le transfert peut être validé (statut pending par exemple)
         if ($transfer->getStatus() !== Transfert::STATUS_PENDING) {
@@ -332,7 +332,7 @@ final class TransfertController extends AbstractController
         $atx->setUSD($transfer->getMontantUSD() * -1)
             ->setDescrib('Transfert -- '.($transfer->getClient() ? $transfer->getClient()->getNomComplet() : $transfer->getSenderName()). ' -- '. $transfer->getMontantUSD() . ' USD')
             ->setAgence($transfer->getAgence())
-            ->setCreatedAt($transfer->getCreatedAt());
+            ->setCreatedAt(new \DateTimeImmutable($date));
 
         $atx->setTransfert($transfer);
         $em->persist($atx);
@@ -350,7 +350,7 @@ final class TransfertController extends AbstractController
             $ctx->setCFA($amount * -1) 
                 ->setDescrib('Retrait compte - '.$transfer->getClient()->getNomComplet())
                 ->setClient($client)
-                ->setCreatedAt($transfer->getCreatedAt());
+                ->setCreatedAt(new \DateTimeImmutable($date));
 
             $ctx->setTransfert($transfer);
 

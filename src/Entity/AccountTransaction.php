@@ -249,7 +249,7 @@ class AccountTransaction
         return $this;
     }
 
-     public function setAmount(string $currency, string $amount): static
+    public function setAmount(string $currency, string $amount): static
     {
         switch (strtoupper($currency)) {
             case 'CFA':
@@ -282,5 +282,62 @@ class AccountTransaction
 
         return $this;
     }
- 
+
+    public function getCurrencyName(): ?string
+{
+    // Check each currency in a logical order (you can adjust the priority)
+    if ($this->getAED() !== null) {
+        return 'AED';
+    }
+    if ($this->getEUR() !== null) {
+        return 'EUR';
+    }
+    if ($this->getUSD() !== null) {
+        return 'USD';
+    }
+    if ($this->getGBP() !== null) {
+        return 'GBP';
+    }
+    if ($this->getCNY() !== null) {
+        return 'CNY';
+    }
+    if ($this->getMAD() !== null) {
+        return 'MAD';
+    }
+    if ($this->getDZD() !== null) {
+        return 'DZD';
+    }
+    
+    return null; // No currency has a value
+}
+
+public function getAmount(?string $currency = null): ?float
+{
+    if ($currency === null) {
+        $currency = $this->getCurrencyName();
+        if ($currency === null) {
+            return null; // No currency available
+        }
+    }
+    
+    switch ($currency) {
+        case 'AED':
+            return $this->getAED();
+        case 'EUR':
+            return $this->getEUR();
+        case 'USD':
+            return $this->getUSD();
+        case 'GBP':
+            return $this->getGBP();
+        case 'CNY':
+            return $this->getCNY();
+        case 'MAD':
+            return $this->getMAD();
+        case 'DZD':
+            return $this->getDZD();
+        default:
+            throw new \InvalidArgumentException(sprintf('La devise "%s" n\'est pas supportée.', $currency));
+    }
+}
+    
 }

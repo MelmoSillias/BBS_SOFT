@@ -41,23 +41,23 @@ $(document).ready(function () {
             },
         },
         columns: [
-            { data: 'id' },
-            { data: 'description' },
-            { data: 'date' },
+            { data: 'id', orderable: false },
+            { data: 'description', orderable: false },
+            { data: 'date', orderable: false },
             {
                 data: 'entree', render: function (data) {
                     return data > 0 ? `<span class="text-success fw-bold">${formatMoney(data)}  ${$('#deviseSelect').val()}</span>` : '--';
-                }
+                }, orderable: false
             },
             {
                 data: 'sortie', render: function (data) {
                     return data > 0 ? `<span class="text-danger fw-bold">${formatMoney(data)}  ${$('#deviseSelect').val()}</span>` : '--';
-                }
+                }, orderable: false
             },
             {
                 data: 'solde', render: function (data) {
                     return `<span class="fw-bold text-white bg-secondary px-2 py-1 rounded">${formatMoney(data)}  ${$('#deviseSelect').val()}</span>`;
-                }
+                }, orderable: false
             }
         ],
         buttons: [
@@ -65,7 +65,7 @@ $(document).ready(function () {
                 extend: 'excelHtml5',
                 text: '<i class="bi bi-file-earmark-excel me-2"></i>Excel',
                 className: 'btn-export-excel',
-                title: 'Rapport Transactions',
+                title: `Rapport Transactions ${$('#agenceSelect').text()}`,
                 exportOptions: { columns: [0, 1, 2, 3, 4, 5] },
                 customizeData: function (data) {
                     let grouped = {};
@@ -110,6 +110,13 @@ $(document).ready(function () {
 
                     let newBody = [doc.content[1].table.body[0]]; // header conservé
 
+                    // Appliquer le gras aux en-têtes
+                    newBody[0].forEach(cell => {
+                        if (cell && cell.text) {
+                            cell.bold = true;
+                        }
+                    });
+
                     Object.keys(grouped).forEach(date => {
                         const rows = grouped[date];
                         // Récupérer la ligne brute pour solde initial
@@ -118,42 +125,56 @@ $(document).ready(function () {
                         const soldeFin = rows[0][5].text || rows[0][5];
 
                         newBody.push([
-                            { text: `📅 ${date} | Solde départ: ${soldeDepart} | Solde fin: ${soldeFin}`, colSpan: 6, bold: true, fillColor: '#f5f5f5', alignment: 'center' },
+                            {
+                                text: `${date}                     |                         Solde départ: ${soldeDepart} CFA                        |                        Solde fin: ${soldeFin}`,
+                                colSpan: 6,
+                                bold: true,
+                                fillColor: '#f5f5f5',
+                                alignment: 'center'
+                            },
                             {}, {}, {}, {}, {}
                         ]);
-                        rows.forEach(r => newBody.push(r));
+
+                        rows.forEach(r => {
+                            // Appliquer les couleurs de fond aux colonnes
+                            if (r[3]) r[3].fillColor = '#e6ffe6'; // vert clair pour "entrée"
+                            if (r[4]) r[4].fillColor = '#ffcccc'; // rouge clair pour "sortie"
+                            if (r[5]) r[5].fillColor = '#f0f0f0'; // gris clair pour "solde"
+                            newBody.push(r);
+                        });
                     });
 
                     doc.content[1].table.body = newBody;
-                doc.content[1].table.widths = ['5%', '35%', '15%', '15%', '15%', '15%'];
+                    doc.content[1].table.widths = ['5%', '35%', '15%', '15%', '15%', '15%'];
 
-                // style général
-                doc.styles.tableHeader.fillColor = '#444';
-                doc.styles.tableHeader.color = 'white';
-                doc.styles.tableHeader.alignment = 'center';
-                doc.styles.tableHeader.bold = true;
+                    // Style général
+                    doc.styles.tableHeader.fillColor = '#444';
+                    doc.styles.tableHeader.color = 'white';
+                    doc.styles.tableHeader.alignment = 'center';
+                    doc.styles.tableHeader.bold = true;
 
-                // bordures fines grises et centrage
-                let objLayout = {};
-                objLayout['hLineWidth'] = function (i) { return 0.5; };
-                objLayout['vLineWidth'] = function (i) { return 0.5; };
-                objLayout['hLineColor'] = function (i) { return '#cccccc'; };
-                objLayout['vLineColor'] = function (i) { return '#cccccc'; };
-                objLayout['paddingTop'] = function (i) { return 5; };
-                objLayout['paddingBottom'] = function (i) { return 5; };
-                objLayout['paddingLeft'] = function (i) { return 5; };
-                objLayout['paddingRight'] = function (i) { return 5; };
-                doc.content[1].layout = objLayout;
+                    // Bordures fines grises et centrage
+                    let objLayout = {};
+                    objLayout['hLineWidth'] = function (i) { return 0.5; };
+                    objLayout['vLineWidth'] = function (i) { return 0.5; };
+                    objLayout['hLineColor'] = function (i) { return '#cccccc'; };
+                    objLayout['vLineColor'] = function (i) { return '#cccccc'; };
+                    objLayout['paddingTop'] = function (i) { return 5; };
+                    objLayout['paddingBottom'] = function (i) { return 5; };
+                    objLayout['paddingLeft'] = function (i) { return 5; };
+                    objLayout['paddingRight'] = function (i) { return 5; };
+                    doc.content[1].layout = objLayout;
 
-                // centrer le contenu
-                newBody.forEach(row => {
-                    row.forEach(cell => {
-                        if (cell && cell.text) {
-                            cell.alignment = 'center';
-                        }
+                    // Centrer le contenu
+                    newBody.forEach(row => {
+                        row.forEach(cell => {
+                            if (cell && cell.text) {
+                                cell.alignment = 'center';
+                            }
+                        });
                     });
-                });
                 }
+
 
             }
         ],
@@ -164,7 +185,7 @@ $(document).ready(function () {
             { targets: 2, width: '15%' },
             { targets: [3, 4, 5], width: '15%', className: 'text-end' }
         ],
-        order: [[2, 'desc']],
+        order: [[2, 'desc'], [0, 'asc']],
         paging: false,
         searching: false,
         info: false,

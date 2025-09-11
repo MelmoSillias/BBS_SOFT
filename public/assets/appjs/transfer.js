@@ -642,7 +642,9 @@ $(document).ready(function () {
     // Écouteurs pour ouvrir les modales de confirmation
     $('#transfersTable').on('click', '.validate-transfer', function () {
         transferId = $(this).data('id');
+        $('#valid-date').val(new Date().toISOString().split('T')[0])
         $('#confirmValidateModal').modal('show');
+        
     });
 
     $('#transfersTable').on('click', '.cancel-transfer', function () {
@@ -660,7 +662,9 @@ $(document).ready(function () {
         const button = $(this);
         disableButton(button);
 
-        $.post('/api/transferts/' + transferId + '/validate', function () {
+        const valid_date = $('#valid-date').val()
+
+        $.post('/api/transferts/' + transferId + '/validate/' + valid_date, function () {
             showToastModal({ message: 'Transfert validé avec succès!', type: 'success' });
             $('#confirmValidateModal').modal('hide');
             $('#viewTransferModal').modal('hide');

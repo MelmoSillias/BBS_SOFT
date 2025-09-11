@@ -1,341 +1,271 @@
-// assets/dashboard/js/dashboard.js
+$(document).ready(function() {
+    // Définir la date par défaut
+    $('#dateSelector').val(new Date().toISOString().split('T')[0]);
 
-$(function() {
-  // ─── DOM elements ──────────────────────────────────────────────
-  const $filterDate    = $('#filterTasksDate');
-  const $filterStatus  = $('#filterTasksStatus');
-  const $tasksList     = $('#tasksList');
-  const $foldersList   = $('#foldersList');
-  const $invoicesList  = $('#invoicesList');
-  const $tasksTotal    = $('#tasksTotal');
-  const $tasksOpen     = $('#tasksOpen');
-  const $tasksDonePct  = $('#tasksDonePct');
-  const $btnRefresh    = $('#btnRefreshDash');
-  const $viewTaskModal = $('#viewTaskModal');
-  const $confirmCompleteTaskModal = $('#confirmCompleteTaskModal');
-  const $confirmCompleteTaskBtn   = $('#confirmCompleteTaskBtn');
-
-  // ─── Initialize filters & events ────────────────────────────────
-  // Status filter default
-  $filterStatus.val('open');
-
-  // Date range picker
-  $filterDate.daterangepicker({
-    locale: { format: 'YYYY-MM-DD' },
-    autoUpdateInput: false,
-    opens: 'left'
-  })
-  .on('apply.daterangepicker', (ev, picker) => {
-    $filterDate.val(
-      picker.startDate.format('YYYY-MM-DD') +
-      ' - ' +
-      picker.endDate.format('YYYY-MM-DD')
-    );
-    loadDashboardTasks();
-  })
-  .on('cancel.daterangepicker', () => {
-    $filterDate.val('');
-    loadDashboardTasks();
-  });
-
-  // On status change
-  $filterStatus.on('change', loadDashboardTasks);
-
-  // Manual refresh button
-  $btnRefresh.on('click', () => {
-    loadDashboardTasks();
-    loadDashboardFolders();
-    loadDashboardInvoices();
-  });
-
-  // Auto-refresh every minute
-  setInterval(() => {
-    loadDashboardTasks();
-    loadDashboardFolders();
-    loadDashboardInvoices();
-  }, 60000);
-
-  // Initial load
-  loadDashboardTasks();
-  loadDashboardFolders();
-  loadDashboardInvoices();
-
-
-  // ─── Load functions ──────────────────────────────────────────────
-
-  function loadDashboardTasks() {
-    let url = '/api/dashboard/tasks';
-    const params = [];
-    const dr = $filterDate.val();
-    const st = $filterStatus.val();
-    if (dr) params.push(`dateRange=${encodeURIComponent(dr)}`);
-    if (st) params.push(`status=${encodeURIComponent(st)}`);
-    if (params.length) url += `?${params.join('&')}`;
-
-    fetch(url)
-      .then(r => r.ok ? r.json() : Promise.reject(r))
-      .then(json => {
-        const tasks = json.tasks || json;
-        const total = tasks.length;
-        const openCount = tasks.filter(t => t.status === 'open' || t.status === 'rejected').length;
-        const validatedCount = tasks.filter(t => t.status === 'validated').length;
-        const donePct = total ? Math.round((validatedCount / total) * 100) : 0;
-
-        $tasksTotal.text(total);
-        $tasksOpen.text(openCount);
-        $tasksDonePct.text(donePct + '%');
-
-        $tasksList.empty();
-        if (!total) {
-          $tasksList.append(
-            '<li class="list-group-item text-center text-muted">Aucune tâche à afficher</li>'
-          );
-        } else {
-    tasks.forEach(t => {
-        // Determine the badge class and text based on the task status
-        let badgeClass, badgeText;
-        if (t.status === 'open') {
-            badgeClass = 'badge bg-secondary';
-            badgeText = 'en cours';
-        } else if (t.status === 'validated') {
-            badgeClass = 'badge bg-success';
-            badgeText = 'validée';
-        } else if (t.status === 'rejected') {
-            badgeClass = 'badge bg-danger';
-            badgeText = 'rejetée';
-        } else if (t.status === 'waiting_validation') {
-            badgeClass = 'badge bg-info';
-            badgeText = 'en attente de validation';
-        } else {
-            badgeClass = 'badge bg-primary';
-            badgeText = t.status;
-        }
-
-        const $li = $(`
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <span>${t.title}</span>
-                <div>
-                    <span class="${badgeClass}">${badgeText}</span>
-                    <div class="btn-group"></div>
-                </div>
-            </li>
-        `);
-
-        const $btns = $li.find('.btn-group');
-
-        // View button
-        $btns.append(`
-            <button class="btn btn-sm btn-light btn-view-task" data-id="${t.id}" title="Voir">
-                <i class="bi bi-eye"></i>
-            </button>
-        `);
-
-        // Complete if open or rejected
-        if (t.status === 'open' || t.status === 'rejected') {
-            $btns.append(`
-                <button class="btn btn-sm btn-success btn-complete-task" data-id="${t.id}" title="Terminer">
-                    <i class="bi bi-check2-circle"></i>
-                </button>
-            `);
-        }
-
-        $tasksList.append($li);
-    });
-        }
-      })
-      .catch(err => console.error('Error loading tasks', err));
-  }
-
-  function loadDashboardFolders() {
-    fetch('/api/dashboard/folders')
-      .then(r => r.ok ? r.json() : Promise.reject(r))
-      .then(json => {
-        const folders = json.folders || json;
-        $foldersList.empty();
-        if (!folders.length) {
-          $foldersList.append(
-            '<li class="list-group-item text-center text-muted">Aucun dossier assigné</li>'
-          );
-        } else {
-          folders.forEach(f => {
-            const badgeClass = {
-              received:      'info',
-              in_processing: 'primary',
-              validated:     'success',
-              archived:      'secondary'
-            }[f.status] || 'light';
-
-            const $li = $(`
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                  <a href="/dashboard/dossiers/${f.id}" class="fw-bold">${f.companyName}</a>
-                  <small class="text-muted d-block">${f.observations}</small>
-                  <small class="text-muted">${f.dateReception}</small>
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                  <span class="badge bg-${badgeClass} text-capitalize">${f.status}</span>
-                  <button class="btn btn-sm btn-outline-primary btn-treat-folder" data-id="${f.id}">
-                    <i class="bi bi-pencil-square"></i> Traiter
-                  </button>
-                </div>
-              </li>
-            `);
-            $foldersList.append($li);
-          });
-        }
-      })
-      .catch(err => console.error('Error loading folders', err));
-  }
-
-  function loadDashboardInvoices() {
-    fetch('/api/dashboard/invoices')
-      .then(r => r.ok ? r.json() : Promise.reject(r))
-      .then(json => {
-        const invs = json.invoices || json;
-        $invoicesList.empty();
-        if (!invs.length) {
-          $invoicesList.append(
-            '<li class="list-group-item text-center text-muted">Aucune facture récente</li>'
-          );
-        } else {
-          invs.forEach(inv => {
-            const $li = $(`
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                  <strong>${inv.number}</strong> – ${inv.clientName} – ${inv.amount}€
-                  <small class="text-muted d-block">${inv.updatedAt}</small>
-                </div>
-                <a href="/invoices/${inv.id}" class="btn btn-sm btn-light">
-                  <i class="bi bi-eye"></i>
-                </a>
-              </li>
-            `);
-            $invoicesList.append($li);
-          });
-        }
-      })
-      .catch(err => console.error('Error loading invoices', err));
-  }
-
-
-  // ─── Event handlers ─────────────────────────────────────────────
-
-  // View task details
-  $tasksList.on('click', '.btn-view-task', function() {
-    const $btn = $(this);
-    if ($btn.prop('disabled')) return;
-    $btn.prop('disabled', true);
-    const id = $btn.data('id');
-    fetch(`/api/tasks/${id}`)
-      .then(r => r.ok ? r.json() : Promise.reject(r))
-      .then(d => {
-        $('#viewTaskTitle').text(d.title);
-        $('#viewTaskAssignee').text(d.assigneeName || 'Non assigné');
-        $('#viewTaskDeadline').text(d.deadline || '-');
-        $('#viewTaskUrgency').text(d.urgency);
-
-        // Set badge based on status
-        const $statusBadge = $('#viewTaskStatus');
-        if (d.status === 'open') {
-            $statusBadge.html('<span class="badge bg-secondary">en attente</span>');
-        } else if (d.status === 'validate') {
-            $statusBadge.html('<span class="badge bg-success">validée</span>');
-        } else if (d.status === 'rejected') {
-            $statusBadge.html('<span class="badge bg-danger">rejetée</span>');
-        } else {
-            $statusBadge.text(d.status);
-        }
-
-        $('#viewTaskDesc').text(d.description || 'Aucune description.');
-        $viewTaskModal.modal('show');
-      })
-      .catch(() => showToastModal({ message: 'Erreur chargement tâche', type: 'error' }))
-      .finally(() => $btn.prop('disabled', false));
-});
-
-
-  // Complete task: open confirmation modal
-  $tasksList.on('click', '.btn-complete-task', function() {
-    const id = $(this).data('id');
-    $confirmCompleteTaskModal.data('id', id).modal('show');
-  });
-
-  // Confirm complete
-  $confirmCompleteTaskBtn.on('click', function() {
-    const $btn = $(this);
-    if ($btn.prop('disabled')) return;
-    $btn.prop('disabled', true);
-
-    const id = $confirmCompleteTaskModal.data('id');
-    fetch(`/api/tasks/${id}/complete`, { method: 'POST' })
-      .then(r => r.ok ? r.json() : Promise.reject(r))
-      .then(() => {
-        $confirmCompleteTaskModal.modal('hide');
-        loadDashboardTasks();
-      })
-      .catch(() => showToastModal({ message: 'Erreur fermeture tâche', type: 'error' }))
-      .finally(() => $btn.prop('disabled', false));
-  });
-
-  // Treat folder
-  $foldersList.on('click', '.btn-treat-folder', function() {
-    const id = $(this).data('id');
-    window.location.href = `/dashboard/dossiers/${id}`;
-  }); 
-
-  $('#changePasswordForm').on('submit', function(e) {
-  e.preventDefault();
-
-  const payload = {
-    oldPassword:     $('#oldPassword').val().trim(),
-    newPassword:     $('#newPassword').val().trim(),
-    confirmPassword: $('#confirmPassword').val().trim()
-  };
-
-  // Vérification cliente rapide
-  if (!payload.oldPassword || !payload.newPassword || !payload.confirmPassword) {
-    return showToastModal({ message: 'Tous les champs sont requis.', type: 'error' });
-  }
-  if (payload.newPassword !== payload.confirmPassword) {
-    return showToastModal({ message: 'La confirmation ne correspond pas.', type: 'error' });
-  }
-  if (payload.newPassword.length < 8) {
-    return showToastModal({ message: 'Le mot de passe doit contenir au moins 8 caractères.', type: 'error' });
-  }
-  if (payload.newPassword === payload.oldPassword){
-    return showToastModal({ message: 'Le nouveau mot de passe doit être différent de l\'ancien.', type: 'error' });
-  }
-
-  // Envoi au serveur 
-  $.ajax({
-    url: '/dashboard/users/change-password',
-    method: 'POST',
-    contentType: 'application/json',
-    data: JSON.stringify(payload),
-  })
-  .done(response => {
-    // response = { success: bool, message: string }
-    showToastModal({
-      message: response.message,
-      type: response.success ? 'success' : 'error'
-    });
-    if (response.success) {
-      // Optionnel : fermer le modal ou réinitialiser le formulaire
-      $('#changePasswordModal').modal('hide');
-      $('#changePasswordForm')[0].reset();
+    // Fonction pour formater les nombres
+    function formatNumber(num) {
+        return new Intl.NumberFormat('fr-FR').format(num);
     }
-  })
-  .fail((jqXHR, textStatus) => {
-    // Si le serveur renvoie du JSON, on l’affiche, sinon un message générique
-    let msg = 'Une erreur est survenue.';
-    if (jqXHR.responseJSON && jqXHR.responseJSON.message) {
-      msg = jqXHR.responseJSON.message;
+
+    // Fonction pour mettre à jour les statistiques
+    function updateStats(data) {
+    // Mise à jour des valeurs principales
+    $('#totalClients').text(formatNumber(data.totalClients.value));
+    $('#capitalCFA').text(formatNumber(data.capitalCFA.value) + ' FCFA');
+    $('#dailyOperations').text(formatNumber(data.dailyOperations.value));
+    $('#dailyTransfers').text(formatNumber(data.dailyTransfers.value));
+    $('#dailyIncomes').text(formatNumber(data.dailyIncomes.value) + ' FCFA');
+    $('#dailyOutcomes').text(formatNumber(data.dailyOutcomes.value) + ' FCFA');
+    $('#totalExchanges').text(formatNumber(data.totalExchanges.value));
+    $('#clientOperations').text(formatNumber(data.clientOperations.value));
+
+    // Mise à jour des statistiques secondaires
+    $('#newClientsToday').text(data.totalClients.secondary + ' nouveau(x) aujourd\'hui');
+    $('#capitalCFATrend').text(data.capitalCFA.secondary);
+    $('#dailyOperationsAvg').text(data.dailyOperations.secondary);
+    $('#dailyTransfersPending').text(data.dailyTransfers.secondary);
+    $('#dailyIncomesTrend').text(data.dailyIncomes.secondary);
+    $('#dailyOutcomesTrend').text(data.dailyOutcomes.secondary);
+    $('#totalExchangesTop').text(data.totalExchanges.secondary);
+    $('#clientOperationsTrend').text(data.clientOperations.secondary);
+}
+
+
+    // Fonction pour afficher les transferts en attente
+    function renderPendingTransfers(transfers) {
+        const $container = $('#pendingTransfersList');
+        if (transfers.length === 0) {
+            $container.html(`
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-inbox display-5"></i>
+                    <p class="mt-3 fs-5">Aucun transfert en attente</p>
+                </div>
+            `);
+            return;
+        }
+        let html = '<div class="transfers-list">';
+        $.each(transfers, function(index, transfer) {
+            html += `
+                <div class="transfer-item p-3 mb-2 bg-light border rounded d-flex align-items-center justify-content-between">
+                    <div class="transfer-details">
+                        <h6 class="mb-1 fw-bold">${transfer.reference}</h6>
+                        <p class="mb-1 text-muted"><strong>Client:</strong> ${transfer.client}</p>
+                        <p class="mb-1 text-muted"><strong>Montant:</strong> ${formatNumber(transfer.amount)} ${transfer.currency}</p>
+                        <p class="mb-0 text-muted"><strong>Destination:</strong> ${transfer.destination}</p>
+                    </div>
+                    <div class="transfer-actions d-flex align-items-center gap-2">
+                        <span class="badge bg-warning text-dark px-2 py-1">En attente</span>
+                        <button class="btn btn-sm btn-outline-success btn-action" data-bs-toggle="modal" data-bs-target="#confirmValidateModal" data-transfer-id="${transfer.id}">
+                            <i class="bi bi-check-lg"></i> Valider
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger btn-action" data-bs-toggle="modal" data-bs-target="#confirmCancelModal" data-transfer-id="${transfer.id}">
+                            <i class="bi bi-x-lg"></i> Annuler
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        $container.html(html);
     }
-    showToastModal({ message: msg, type: 'error' });
-  });
+
+    // Fonction pour afficher les soldes
+    function renderBalances(balances) {
+        const $container = $('#balancesTable');
+        if (balances.length === 0) {
+            $container.html(`
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-info-circle me-2"></i> Aucun solde à afficher
+                </div>
+            `);
+            return;
+        }
+
+        // Filtrer les devises avec solde > 0, mais toujours afficher CFA et USD
+        const filteredBalances = balances.filter(b =>
+            b.balance > 0 || ['CFA', 'USD'].includes(b.currency)
+        );
+
+        let html = '<div class="row g-4">';
+        $.each(filteredBalances, function(index, balance) {
+            let trendIcon = '';
+            let trendClass = '';
+            if (balance.trend === 'up') {
+                trendIcon = '<i class="bi bi-arrow-up-right-circle-fill me-1"></i>';
+                trendClass = 'text-success';
+            } else if (balance.trend === 'down') {
+                trendIcon = '<i class="bi bi-arrow-down-right-circle-fill me-1"></i>';
+                trendClass = 'text-danger';
+            } else {
+                trendIcon = '<i class="bi bi-dash-circle-fill me-1"></i>';
+                trendClass = 'text-secondary';
+            }
+            html += `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="card-title mb-0">${balance.currency}</h5>
+                                <span class="${trendClass} fs-5">${trendIcon}</span>
+                            </div>
+                            <p class="mb-1">
+                                <span class="text-muted">Solde</span><br>
+                                <strong class="fs-5">${formatNumber(balance.balance)}</strong>
+                            </p>
+                            <p class="mb-0">
+                                <span class="text-muted">Équivalent</span><br>
+                                <strong>${formatNumber(balance.equivalent)} FCFA</strong>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        $container.html(html);
+    }
+
+    // Fonction pour initialiser les graphiques
+    function initCharts(balanceData, operationsData) {
+        // Graphique d'évolution des soldes
+        const balanceCtx = $('#balanceEvolutionChart')[0].getContext('2d');
+        new Chart(balanceCtx, {
+            type: 'line',
+            data: {
+                labels: balanceData.labels,
+                datasets: balanceData.datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: {
+                            drawBorder: false
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+
+        // Graphique des opérations
+        const operationsCtx = $('#operationsChart')[0].getContext('2d');
+        new Chart(operationsCtx, {
+            type: 'bar',
+            data: {
+                labels: operationsData.labels,
+                datasets: operationsData.datasets
+            },
+            options: {
+                responsive: true, 
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            drawBorder: false
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value / 1000000 + 'M';
+                            }, 
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Fonction pour charger les données depuis l'API
+    function loadDashboardData(date) {
+        $.ajax({
+            url: `/api/dashboard/${date}/stats`,
+            method: 'GET',
+            data: { date: date },
+            success: function(response) {
+                updateStats(response.stats);
+                renderPendingTransfers(response.pendingTransfers);
+                renderBalances(response.balances);
+                initCharts(response.balanceEvolution, response.operations);
+            },
+            error: function(xhr, status, error) {
+                console.error("Erreur lors du chargement des données:", error);
+                alert("Une erreur est survenue lors du chargement des données.");
+            }
+        });
+    }
+
+    // Initialiser le tableau de bord
+    loadDashboardData($('#dateSelector').val());
+
+    // Gestion du changement de date
+    $('#dateSelector').on('change', function() {
+        loadDashboardData(this.value);
+    });
+
+    // Gestion des modales de validation/annulation
+    $('#confirmValidateModal, #confirmCancelModal').on('show.bs.modal', function (event) {
+        const button = $(event.relatedTarget);
+        const transferId = button.data('transfer-id');
+        const modal = $(this);
+        modal.find('.modal-footer #confirmValidate, .modal-footer #confirmCancel').data('transfer-id', transferId);
+    });
+
+    // Validation d'un transfert
+    $('#confirmValidate').on('click', function() {
+        const transferId = $(this).data('transfer-id');
+        const validationDate = $('#valid-date').val();
+        $.ajax({
+            url: '/api/transfers/validate',
+            method: 'POST',
+            data: { id: transferId, validationDate: validationDate },
+            success: function(response) {
+                $('#confirmValidateModal').modal('hide');
+                loadDashboardData($('#dateSelector').val());
+            },
+            error: function(xhr, status, error) {
+                console.error("Erreur lors de la validation:", error);
+                alert("Une erreur est survenue lors de la validation.");
+            }
+        });
+    });
+
+    // Annulation d'un transfert
+    $('#confirmCancel').on('click', function() {
+        const transferId = $(this).data('transfer-id');
+        $.ajax({
+            url: '/api/transfers/cancel',
+            method: 'POST',
+            data: { id: transferId },
+            success: function(response) {
+                $('#confirmCancelModal').modal('hide');
+                loadDashboardData($('#dateSelector').val());
+            },
+            error: function(xhr, status, error) {
+                console.error("Erreur lors de l'annulation:", error);
+                alert("Une erreur est survenue lors de l'annulation.");
+            }
+        });
+    });
 });
-
-
-
-});
- 

@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\AccountTransaction;
 use App\Entity\Agence;
+use App\Entity\Approvisionnement;
 use App\Entity\Depense;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
@@ -263,4 +264,214 @@ final class DepenseController extends AbstractController
             'message' => 'Dépense supprimée avec succès'
         ]);
     }
+ 
+    #[Route('/api/approvisionnement/create', name: 'api_approvisionnement_create', methods: ['POST'])]
+    public function createApprovisionnement(EntityManagerInterface $em, Request $req): JsonResponse
+    {
+        $data = json_decode($req->getContent(), true);
+
+        if (empty($data)) {
+            return new JsonResponse(['error' => 'Données manquantes'], 400);
+        }
+
+        $approvisionnement = new Approvisionnement();
+        $approvisionnement->setDate(new \DateTimeImmutable($data['date']));
+        $approvisionnement->setMotif($data['motif']);
+        $approvisionnement->setType($data['type']);
+        $approvisionnement->setMontant($data['montant']);
+        $approvisionnement->setNote($data['notes'] ?? '');
+
+        $user = $this->getUser();
+        if ($user) {
+            $approvisionnement->setUser($user);
+        }
+
+        // Créer la transaction comptable (montant positif pour un approvisionnement)
+        $agence = $em->getRepository(Agence::class)->findOneBy(['id' => 1]);
+        $transaction = new AccountTransaction();
+        $transaction->setCFA($data['montant']) // Montant positif pour un approvisionnement
+                    ->setDescrib('Approvisionnement: ' . $data['motif'])
+                    ->setAgence($agence)
+                    ->setCreatedAt(new \DateTimeImmutable($data['date']));
+
+        $approvisionnement->setTransaction($transaction);
+
+        $em->persist($approvisionnement);
+        $em->persist($transaction);
+        $em->flush();
+
+        return new JsonResponse(['success' => true, 'approvisionnementId' => $approvisionnement->getId()]);
+    }
+
+    #[Route('/api/approvisionnements', name: 'api_approvisionnement_list', methods: ['GET'])]
+    public function listApprovisionnements(EntityManagerInterface $em, Request $req): JsonResponse
+    {
+        $startDate = $req->query->get('dateFrom');
+        $endDate = $req->query->get('dateTo');
+        $type = $req->query->get('type');
+
+        $queryBuilder = $em->getRepository(Approvisionnement::class)->createQueryBuilder('a');
+
+        if ($startDate && $endDate) {
+            $queryBuilder->andWhere('a.date BETWEEN :start AND :end')
+                ->setParameter('start', new \DateTime($startDate))
+                ->setParameter('end', new \DateTime($endDate));
+        }
+
+        if ($type) {
+            $queryBuilder->andWhere('a.type = :type')
+                ->setParameter('type', $type);
+        }
+
+        $queryBuilder->orderBy('a.date', 'DESC');
+        $approvisionnements = $queryBuilder->getQuery()->getResult();
+
+        $output = array_map(function ($appro) {
+            return [
+                'id' => $appro->getId(),
+                'date' => $appro->getDate()->format('Y-m-d'),
+                'motif' => $appro->getMotif(),
+                'type' => $appro->getType(),
+                'montant' => $appro->getMontant(),
+                'notes' => $appro->getNote(),
+                'utilisateur' => $appro->getUser() ? $appro->getUser()->getUsername() : 'Système'
+            ];
+        }, $approvisionnements);
+
+        return new JsonResponse($output);
+    }
+
+    #[Route('/api/approvisionnements/stats', name: 'api_approvisionnement_stats', methods: ['GET'])]
+    public function statsApprovisionnements(EntityManagerInterface $em, Request $req): JsonResponse
+    {
+        $startDate = $req->query->get('dateFrom');
+        $endDate = $req->query->get('dateTo');
+        $type = $req->query->get('type');
+
+        $qb = $em->getRepository(Approvisionnement::class)->createQueryBuilder('a');
+
+        if ($startDate && $endDate) {
+            $qb->andWhere('a.date BETWEEN :start AND :end')
+                ->setParameter('start', new \DateTime($startDate))
+                ->setParameter('end', new \DateTime($endDate));
+        }
+
+        if ($type) {
+            $qb->andWhere('a.type = :type')
+                ->setParameter('type', $type);
+        }
+
+        $approvisionnements = $qb->getQuery()->getResult();
+
+        $totalApprovisionnements = count($approvisionnements);
+        $totalMontant = 0;
+        $parCategorie = [];
+
+        foreach ($approvisionnements as $appro) {
+            $totalMontant += $appro->getMontant();
+            $categorie = $appro->getType();
+            if (!isset($parCategorie[$categorie])) {
+                $parCategorie[$categorie] = $appro->getMontant();
+            } else {
+                $parCategorie[$categorie] += $appro->getMontant();
+            }
+        }
+
+        $stats = [
+            'periode' => $startDate && $endDate ? [
+                'du' => $startDate,
+                'au' => $endDate,
+            ] : 'Toutes périodes',
+            'nombre_total' => $totalApprovisionnements,
+            'montant_total' => $totalMontant,
+            'par_categorie' => $parCategorie,
+        ];
+
+        return new JsonResponse($stats);
+    }
+
+    #[Route('/api/approvisionnements/{id}', name: 'api_approvisionnement_details', methods: ['GET'])]
+    public function detailsApprovisionnement(Approvisionnement $approvisionnement, EntityManagerInterface $em, Request $req): JsonResponse
+    {
+        if (!$approvisionnement) {
+            return $this->json(['error' => 'Approvisionnement invalide'], 404);
+        }
+
+        $output = [
+            'id' => $approvisionnement->getId(),
+            'date' => $approvisionnement->getDate()->format('Y-m-d'),
+            'motif' => $approvisionnement->getMotif(),
+            'type' => $approvisionnement->getType(),
+            'montant' => $approvisionnement->getMontant(),
+            'notes' => $approvisionnement->getNote(),
+            'utilisateur' => $approvisionnement->getUser() ? $approvisionnement->getUser()->getUsername() : 'Système'
+        ];
+
+        return new JsonResponse($output);
+    }
+
+    #[Route('/api/approvisionnements/{id}/update', name: 'api_approvisionnement_update', methods: ['PUT'])]
+    public function updateApprovisionnement(Approvisionnement $approvisionnement, EntityManagerInterface $em, Request $req): JsonResponse
+    {
+        if (!$approvisionnement) {
+            return $this->json(['error' => 'Approvisionnement invalide'], 404);
+        }
+
+        $data = json_decode($req->getContent(), true);
+
+        if (isset($data['date'])) {
+            $approvisionnement->setDate(new \DateTimeImmutable($data['date']));
+        }
+        if (isset($data['motif'])) {
+            $approvisionnement->setMotif($data['motif']);
+        }
+        if (isset($data['type'])) {
+            $approvisionnement->setType($data['type']);
+        }
+        if (isset($data['montant'])) {
+            $approvisionnement->setMontant($data['montant']);
+        }
+        if (isset($data['notes'])) {
+            $approvisionnement->setNote($data['notes']);
+        }
+
+        // Mettre à jour la transaction associée si le montant a changé
+        $transaction = $approvisionnement->getTransaction();
+        if ($transaction && isset($data['montant'])) {
+            $transaction->setCFA($data['montant']);
+            $transaction->setDescrib('Approvisionnement: ' . ($data['motif'] ?? $approvisionnement->getMotif()));
+            $em->persist($transaction);
+        }
+
+        $em->flush();
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Approvisionnement modifié avec succès'
+        ]);
+    }
+
+    #[Route('/api/approvisionnements/{id}/delete', name: 'api_approvisionnement_delete', methods: ['DELETE'])]
+    public function deleteApprovisionnement(Approvisionnement $approvisionnement, EntityManagerInterface $em, Request $req): JsonResponse
+    {
+        if (!$approvisionnement) {
+            return $this->json(['error' => 'Approvisionnement invalide'], 404);
+        }
+
+        $data = json_decode($req->getContent(), true);
+        $raison = $data['raison'] ?? '';
+
+        $transaction = $approvisionnement->getTransaction();
+        if ($transaction) {
+            $em->remove($transaction);
+        }
+
+        $em->remove($approvisionnement);
+        $em->flush();
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Approvisionnement supprimé avec succès'
+        ]);
+    } 
 }

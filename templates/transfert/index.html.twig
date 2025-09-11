@@ -813,8 +813,13 @@
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
-					Êtes-vous sûr de vouloir valider ce transfert ?
+					<div class="mb-3">Êtes-vous sûr de vouloir valider ce transfert ? </div> 
+					<div>
+					 	<label class="form-label">Date de validation :</label>	
+						<input type="date" id="valid-date" class="form-select form-control">
+					</div>
 				</div>
+
 				<div class="modal-footer">
 					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
 					<button type="button" class="btn btn-primary" id="confirmValidate">Valider</button>

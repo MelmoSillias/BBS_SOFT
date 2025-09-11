@@ -124,14 +124,13 @@
 			<!-- Cadre droit -->
 			<div class="box"> 
 				<div>Montant CFA :
-					<span>{{ exchange.montantCFA }} CFA</span>
+					<span>{{ exchange.montantCFA | format_currency('CFA', {significant_digits_used:true, min_significant_digits_used:0, max_significant_digits_used:2}, 'fr') }}</span>
 				</div>
 				<div>Montant Devise :
-					<span>{{ exchange.montantDevise }}
-						{{ exchange.devise }}</span>
+					<span>{{ exchange.montantDevise | format_currency(exchange.devise, {significant_digits_used:true, min_significant_digits_used:0, max_significant_digits_used:2}, 'fr') }}</span>
 				</div> 
 				<div>Taux appliqué :
-					<span>{{ exchange.taux }}</span>
+					<span>{{ 1 | format_currency(exchange.devise, {significant_digits_used:true, min_significant_digits_used:0, max_significant_digits_used:2}, 'fr') }} ↔ {{ exchange.taux | format_currency('CFA', {significant_digits_used:true, min_significant_digits_used:0, max_significant_digits_used:2}, 'fr') }}</span>
 				</div>
 			</div>
 		</div>

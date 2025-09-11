@@ -132,25 +132,26 @@
 			<div class="box">
 				 
                 <div>Montant CFA :
-                    <span>{{ transfert.montantCFA }} CFA </span>
+					<span>{{ transfert.montantCFA | format_currency('CFA', {significant_digits_used:true, min_significant_digits_used:0, max_significant_digits_used:2}, 'fr') }}</span> 
                 </div>
                 <div>Montant USD :
-                    <span>{{ transfert.montantUSD }} USD </span>
+                    <span>{{ transfert.montantUSD | format_currency('USD', {significant_digits_used:true, min_significant_digits_used:0, max_significant_digits_used:2}, 'fr') }}</span> 
                 </div>
                 <div>Montant Reception :
-                    <span>{{ transfert.montantReception }} {{ transfert.agence.deviseLocal }} </span>
+					<span>{{ transfert.montantReception | format_currency(transfert.agence.deviseLocal, {significant_digits_used:true, min_significant_digits_used:0, max_significant_digits_used:2}, 'fr') }}</span> 
+                
                 </div>
 				 
 				<div>Taux appliqué :
-					<span>{{ transfert.taux }}</span>
+					<span>1$ ↔ {{ transfert.taux | format_currency('CFA', {significant_digits_used:true, min_significant_digits_used:0, max_significant_digits_used:2}, 'fr') }}</span>
 				</div>
 
                 <div>Frais de transfert :
-					<span>{{ transfert.frais }}</span>
+					<span>{{ transfert.frais | format_currency('CFA', {significant_digits_used:true, min_significant_digits_used:0, max_significant_digits_used:2}, 'fr') }}</span>
 				</div>
 
                 <div>Montant Total Rémis :
-					<span>{{ transfert.montantCFA + transfert.frais }}</span>
+					<span>{{ (transfert.montantCFA + transfert.frais) | format_currency('CFA', {significant_digits_used:true, min_significant_digits_used:0, max_significant_digits_used:2}, 'fr')}}</span>
 				</div>
 			</div>
 		</div>

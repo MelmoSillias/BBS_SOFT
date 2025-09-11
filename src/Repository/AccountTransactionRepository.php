@@ -21,27 +21,30 @@ class AccountTransactionRepository extends ServiceEntityRepository
 
     public function findByFilters(?Agence $agence, ?\DateTimeImmutable $start, ?\DateTimeImmutable $end): array
     {
-        $qb = $this->createQueryBuilder('t')
-            ->orderBy('t.createdAt', 'ASC');
+        $qb = $this->createQueryBuilder('t');
 
         if ($agence) {
             $qb->andWhere('t.agence = :agence')
-                ->setParameter('agence', $agence);
+            ->setParameter('agence', $agence);
         }
 
         if ($start) {
             $qb->andWhere('t.createdAt >= :start')
-                ->setParameter('start', $start);
+            ->setParameter('start', $start);
         }
 
         if ($end) {
             $qb->andWhere('t.createdAt <= :end')
-                ->setParameter('end', $end);
+            ->setParameter('end', $end);
         }
 
-
-        return $qb->orderBy('t.id', 'ASC')->getQuery()->getResult();
+        return $qb
+            ->orderBy('t.createdAt', 'ASC')
+            ->addOrderBy('t.id', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
+
 
     public function getSoldeInitial(?Agence $agence, string $devise, \DateTimeImmutable $startDate): float
     {
