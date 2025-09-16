@@ -62,6 +62,9 @@ class Exchange
 
     #[ORM\Column(length: 10)]
     private ?string $type = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $ref = null;
  
     public function __construct()
     {
@@ -219,6 +222,18 @@ class Exchange
     public function setType(string $type): static
     {
         $this->type = $type;
+
+        return $this;
+    }
+
+    public function getRef(): ?string
+    {
+        return $this->ref;
+    }
+
+    public function setRef(?string $ref): static
+    {
+        $this->ref = $ref;
 
         return $this;
     } 

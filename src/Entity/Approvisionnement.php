@@ -35,6 +35,9 @@ class Approvisionnement
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $note = null;
 
+    #[ORM\Column(length: 25, nullable: true)]
+    private ?string $ref = null;
+
     // Getters et Setters
 
     public function getId(): ?int
@@ -116,6 +119,18 @@ class Approvisionnement
     public function setNote(?string $note): static
     {
         $this->note = $note;
+        return $this;
+    }
+
+    public function getRef(): ?string
+    {
+        return $this->ref;
+    }
+
+    public function setRef(?string $ref): static
+    {
+        $this->ref = $ref;
+
         return $this;
     }
 }

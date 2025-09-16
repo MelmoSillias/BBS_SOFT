@@ -8,6 +8,7 @@ use App\Entity\Approvisionnement;
 use App\Entity\Depense;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat\Wizard\Accounting;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -41,6 +42,7 @@ final class DepenseController extends AbstractController
         // Définir les propriétés de l'entité Depense
         $depense->setDate(new \DateTimeImmutable($data['date']));
         $depense->setMotif($data['motif']);
+        $depense->setRef($this->generateDepenseReference($em));
         $depense->setType($data['type']);
         $depense->setMontant($data['montant']);
         $depense->setNote($data['notes'] ?? '');
@@ -278,6 +280,7 @@ final class DepenseController extends AbstractController
         $approvisionnement->setDate(new \DateTimeImmutable($data['date']));
         $approvisionnement->setMotif($data['motif']);
         $approvisionnement->setType($data['type']);
+        $approvisionnement->setRef($this->generateApproReference($em));
         $approvisionnement->setMontant($data['montant']);
         $approvisionnement->setNote($data['notes'] ?? '');
 
@@ -474,4 +477,64 @@ final class DepenseController extends AbstractController
             'message' => 'Approvisionnement supprimé avec succès'
         ]);
     } 
+
+    private function getTotalDepenseCount(EntityManagerInterface $em): int
+    {
+        $queryBuilder = $em->createQueryBuilder();
+        $queryBuilder->select('COUNT(t.id)')
+            ->from(Depense::class, 't');
+
+        $transferCount = $queryBuilder->getQuery()->getSingleScalarResult();
+        return $transferCount + 1; // Incrémenter pour le nouveau transfert
+    }
+
+    private function getTotalApproCount(EntityManagerInterface $em): int
+    {
+        $queryBuilder = $em->createQueryBuilder();
+        $queryBuilder->select('COUNT(t.id)')
+            ->from(Approvisionnement::class, 't');
+
+        $transferCount = $queryBuilder->getQuery()->getSingleScalarResult();
+        return $transferCount + 1; // Incrémenter pour le nouveau transfert
+    }
+
+    private function generateDepenseReference(EntityManagerInterface $em): string
+    {
+        // Obtenir le nombre total de transferts + 1
+        $transferCount = $this->getTotalDepenseCount($em);
+        // Formater le nombre sur trois chiffres
+        $formattedTransferCount = str_pad($transferCount, 3, '0', STR_PAD_LEFT);
+        // Combiner pour former la référence
+        $ref = 'BSS-D' . $formattedTransferCount;
+        return $ref;
+    }
+
+    private function generateApproReference(EntityManagerInterface $em): string
+    {
+        // Obtenir le nombre total de transferts + 1
+        $transferCount = $this->getTotalApproCount($em);
+        // Formater le nombre sur trois chiffres
+        $formattedTransferCount = str_pad($transferCount, 3, '0', STR_PAD_LEFT);
+        // Combiner pour former la référence
+        $ref = 'BSS-A' . $formattedTransferCount;
+        return $ref;
+    }
+
+    #[Route('/api/depenses/{id}/print', name: 'api_depense_print', methods: ['GET'])]
+    public function PrintDep( Depense $dep, EntityManagerInterface $em): Response
+    {
+        return $this->render('depense/printDepense.html.twig', [
+            'controller_name' => 'DepenseController',
+            'depense' => $dep
+        ]);
+    }
+
+    #[Route('/api/appro/{id}/print', name: 'api_appro_print', methods: ['GET'])]
+    public function PrintAppr(Approvisionnement $appro, EntityManagerInterface $em): Response
+    {
+        return $this->render('depense/printAppro.html.twig', [
+            'controller_name' => 'DepenseController',
+            'appro' => $appro
+        ]);
+    }
 }

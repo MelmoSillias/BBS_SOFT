@@ -118,10 +118,6 @@ final class ClientController extends AbstractController
         $balance = $client->getbalance($cur);
         $cName = $client->getNomComplet();
 
-        if ($amount <= 0 or $amount > $balance) {
-            return $this->json(['error' => 'Montant invalide'], 400);
-        }
-
         // 1. Créer un enregistrement de transaction (acompte client)
         $tx = new AccountTransaction();
         $tx->setClient($client)

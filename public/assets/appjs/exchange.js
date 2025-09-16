@@ -101,6 +101,11 @@ $(document).ready(function () {
                 {
                     "data": "date",  
                 },
+                
+                {
+                    "data": "ref", 
+                
+                },
                 {
                     "data": "type",
                     "render": function (data, type, row) {
@@ -132,13 +137,6 @@ $(document).ready(function () {
                         const sign = row.type === 'achat' ? '-' : '+';
                         return `<span class="${color} fw-bold">${sign}${row.montantCFA} CFA</span>`;
                     }
-                },
-                {
-                    "data": "taux",
-                    "render": function (data, type, row) {
-                        // Formater le taux
-                        return parseFloat(data).toFixed(4);
-                }
                 },
 
                 {

@@ -35,6 +35,9 @@ class Depense
     #[ORM\Column(length: 255)]
     private ?string $note = null;
 
+    #[ORM\Column(length: 25)]
+    private ?string $ref = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -120,6 +123,18 @@ class Depense
     public function setNote(string $note): static
     {
         $this->note = $note;
+
+        return $this;
+    }
+
+    public function getRef(): ?string
+    {
+        return $this->ref;
+    }
+
+    public function setRef(string $ref): static
+    {
+        $this->ref = $ref;
 
         return $this;
     }

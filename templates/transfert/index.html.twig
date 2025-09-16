@@ -275,15 +275,14 @@
 				<div class="table-responsive">
 					<table id="transfersTable" class="table table-transfer table-hover table-stripe mb-0 w-100">
 						<thead>
-							<tr>
+							<tr><th width="100">Reference</th>
 								<th width="100">Date</th>
 								<th width="100">Type</th>
 								<th>Expéditeur</th>
-								<th width="150">Montant</th>
-								<th width="120">Taux</th>
-								<th width="120">Frais</th>
+								<th width="160">Montant</th>
+								<th width="120">Taux</th> 
 								<th width="150">Total remis</th>
-								<th width="160">Statut</th>
+								<th width="170">Statut</th>
 								<th width="100">Actions</th>
 							</tr>
 						</thead>
@@ -492,7 +491,15 @@
 							<div class="col-md-12">
 								<div class="p-3 bg-light rounded">
 									<div class="d-flex justify-content-between total-display">
-										<span class="fw-bold">Total à payer:</span>
+										<div>
+											<span class="fw-bold">Total à payer:</span>
+											<div class="form-check">
+												<input class="form-check-input" type="checkbox" value="" id="moneyReceived" name="moneyReceived" checked>
+												<label class="form-check-label" for="flexCheckDefault">
+													Argent récu ?
+												</label>
+											</div> 
+										</div>
 										<span id="totalAPayer" class="fw-bold text-success display-6">0.00 CFA</span>
 									</div>
 								</div>
@@ -572,6 +579,228 @@
 			</div>
 		</div>
 	</div>
+
+	<!-- Modal pour la modification d'un transfert -->
+<div class="modal fade" id="editTransferModal" tabindex="-1" aria-labelledby="editTransferModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="editTransferModalLabel">
+                    <i class="bi bi-pencil-square me-2"></i>Modifier un Transfert
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-edit-transfer">
+                    <!-- Section Opération -->
+                    <div class="section mb-4 p-3 border rounded">
+                        <h4 class="text-primary mb-3">
+                            <i class="bi bi-gear-fill me-2"></i>Opération
+                        </h4>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Date
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <input type="date" id="editDateOps" name="date" class="form-control shadow-sm" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Type
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <select id="editTypeOps" name="type" class="form-select shadow-sm" required>
+                                    <option value="standard">Envoi Cash</option>
+                                    <option value="byAccount">Retrait sur compte</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Destination
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <select id="editDestination" name="destination" class="form-select shadow-sm country-select" required>
+                                    {% for agence in agences %}
+                                        {% if agence.id != 1 %}
+                                            <option value="{{ agence.id }}">
+                                                <small style="font-weight:bold; font-size:8px">{{ agence.abg }}</small>
+                                                <strong>{{ agence.designation }}</strong> - {{ agence.localite }}
+                                            </option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Section Expéditeur -->
+                    <div class="section mb-4">
+                        <div class="row g-3">
+                            <!-- Expéditeur -->
+                            <div class="col-lg-6 col-md-12 mb-3 mb-lg-0">
+                                <div class="p-3 border rounded h-100">
+                                    <h4 class="text-primary mb-3">
+                                        <i class="bi bi-person-fill me-2"></i>Expéditeur
+                                    </h4>
+                                    <div class="row g-2">
+                                        <div class="col-12">
+                                            <label class="form-label fw-bold">Sélectionner l'expéditeur
+                                                <span class="text-danger">*</span>
+                                            </label>
+                                            <select id="editSelectExpediteur" name="expediteur" class="form-select shadow-sm" required>
+                                                <option value="">-- Choisir un expéditeur --</option>
+                                                <option value="vanish">
+                                                    <strong>++ Client éphémère</strong>
+                                                </option>
+                                                {% for client in clients %}
+                                                    <option value="{{client.id}}">
+                                                        <strong>{{client.nomComplet}} ({{client.phoneNumber}})</strong>
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div id="editExpediteurPhone" class="col-12 mt-2">
+                                            <div class="p-2 bg-light rounded">
+                                                <small class="text-muted">Téléphone :</small>
+                                                <div class="fw-bold">-</div>
+                                            </div>
+                                        </div>
+                                        <!-- Section pour le nouveau client (éphémère) -->
+                                        <div class="col-12 new-client-section d-none" id="editNewClientSection">
+                                            <h5 class="text-primary">Client Éphémère</h5>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">Nom complet
+                                                    <span class="text-danger">*</span>
+                                                </label>
+                                                <input type="text" id="editNewExpediteurNom" name="newExpediteurNom" class="form-control shadow-sm" placeholder="Nom du client">
+                                            </div>
+                                            <div>
+                                                <label class="form-label fw-bold">Téléphone
+                                                    <span class="text-danger">*</span>
+                                                </label>
+                                                <input type="text" id="editNewExpediteurPhone" name="newExpediteurPhone" class="form-control shadow-sm" placeholder="Numéro de téléphone">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Bénéficiaire -->
+                            <div class="col-lg-6 col-md-12">
+                                <div class="p-3 border rounded h-100">
+                                    <h4 class="text-primary mb-3">
+                                        <i class="bi bi-person-check-fill me-2"></i>Bénéficiaire
+                                    </h4>
+                                    <div class="row g-2">
+                                        <div class="col-12">
+                                            <label class="form-label fw-bold">Nom complet</label>
+                                            <input type="text" id="editNomBeneficiaire" name="nomBeneficiaire" class="form-control shadow-sm" placeholder="Nom du bénéficiaire">
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label fw-bold">Téléphone
+                                                <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="bi bi-phone"></i>
+                                                </span>
+                                                <input type="text" id="editPhoneBeneficiaire" name="phoneBeneficiaire" class="form-control shadow-sm" placeholder="+1234567890">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Section Montants -->
+                    <div class="section mb-4 p-3 border rounded">
+                        <h4 class="text-primary mb-3">
+                            <i class="bi bi-cash-stack me-2"></i>Montants et Frais
+                        </h4>
+                        <div class="row g-3">
+                            <!-- Montant Cash -->
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Montant Cash
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group shadow-sm">
+                                    <span class="input-group-text bg-light">CFA</span>
+                                    <input type="number" id="editMontantCash" name="montantCash" class="form-control" placeholder="0.00" step="0.01" required>
+                                </div>
+                            </div>
+                            <!-- Frais d'envoi -->
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Frais d'envoi
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group shadow-sm">
+                                    <input type="number" id="editFraisEnvoi" name="fraisEnvoi" class="form-control shadow-sm" placeholder="0.00" step="0.01">
+                                    <span class="input-group-text bg-light">CFA</span>
+                                </div>
+                            </div>
+                            <!-- Taux de change -->
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Taux
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group shadow-sm">
+                                    <span class="input-group-text">1</span>
+                                    <span class="input-group-text bg-light">USD</span>
+                                    <span class="input-group-text">=</span>
+                                    <input type="number" id="editTaux" name="taux" class="form-control" placeholder="0.00" step="0.0001" value="562.58" required>
+                                    <span class="input-group-text bg-light">CFA</span>
+                                </div>
+                            </div>
+                            <!-- Montant Reçu -->
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Montant Reçu</label>
+                                <div class="input-group shadow-sm">
+                                    <span class="input-group-text bg-light">USD</span>
+                                    <input type="number" id="editMontantRecu" name="montantRecu" class="form-control" placeholder="0.00" step="0.01" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label fw-bold" id="editNomDeviseReceptionTaux">Taux de devise reception
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group shadow-sm">
+                                    <span class="input-group-text">1</span>
+                                    <span id="editDeviseOrigineDisplay" class="input-group-text bg-light">USD</span>
+                                    <span class="input-group-text">=</span>
+                                    <input type="number" id="editTauxReception" name="tauxReception" class="form-control" placeholder="0.00" step="0.0001" value="3.67" required>
+                                    <span class="input-group-text bg-light" id="editDeviseRecueDisplay">AED</span>
+                                    <input type="number" id="editMontantDeviseReception" name="montantDevise" class="form-control bg-info" placeholder="0.00" step="0.01" readonly>
+                                </div>
+                            </div>
+                            <!-- Total à payer -->
+                            <div class="col-md-12">
+                                <div class="p-3 bg-light rounded">
+                                    <div class="d-flex justify-content-between total-display">
+                                        <div>
+                                            <span class="fw-bold">Total à payer:</span>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" value="" id="editMoneyReceived" name="moneyReceived" checked>
+                                                <label class="form-check-label" for="editMoneyReceived">
+                                                    Argent récu ?
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <span id="editTotalAPayer" class="fw-bold text-success display-6">0.00 CFA</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end mt-4">
+                        <button type="button" class="btn btn-outline-secondary me-2" data-bs-dismiss="modal">
+                            <i class="bi bi-x-lg me-2"></i>Annuler
+                        </button>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-save-fill me-2"></i>Enregistrer les modifications
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 	{# Modal Annulation Transfert #}
 	<div class="modal fade" id="modalCancelTransfer" tabindex="-1" aria-hidden="true">
 		<div class="modal-dialog">
@@ -660,6 +889,10 @@
 										<i class="bi bi-info-circle me-2"></i>Informations Générales</h6>
 								</div>
 								<div class="card-body">
+									<div class="mb-2">
+										<small class="text-muted">Reference:</small>
+										<div class="fw-bold" id="transferRef"></div>
+									</div>
 									<div class="mb-2">
 										<small class="text-muted">Date de création:</small>
 										<div class="fw-bold" id="transferDate"></div>
@@ -799,6 +1032,31 @@
 							</div>
 						</div>
 					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Modal de confirmation pour le traitement -->
+	<div class="modal fade" id="confirmProcessModal" tabindex="-1" role="dialog" aria-labelledby="confirmProcessModalLabel" aria-hidden="true">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="confirmProcessModalLabel">Confirmer le lancement du traitement</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div class="mb-3">Êtes-vous sûr de vouloir lancer le traitement de ce transfert ? </div> 
+					<div class="mb-3 small">cela signifira que vous avez bien recu l'argent ! </div>
+					<div>
+					 	<label class="form-label">Date de reception du montant :</label>	
+						<input type="date" id="process-date" class="form-select form-control">
+					</div>
+				</div>
+
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+					<button type="button" class="btn btn-primary" id="confirmProcess">Lancer le traitement</button>
 				</div>
 			</div>
 		</div>

@@ -66,6 +66,7 @@ final class ExchangeController extends AbstractController
                 'montantDevise' => $ex->getMontantDevise(),
                 'devise' => $ex->getDevise(),
                 'taux' => $ex->getTaux(),
+                'ref' => $ex->getRef(),
             ];
         }, $exchanges);
 
@@ -103,6 +104,7 @@ final class ExchangeController extends AbstractController
         $exchange = new Exchange();
         $exchange->setMontantCFA($montantCfa);
         $exchange->setMontantDevise($montantdevise);
+        $exchange->setRef($this->generateReference($em));
         $exchange->setDevise($devise);
         $exchange->setType($type);
         $exchange->setTaux($taux);
@@ -137,6 +139,7 @@ final class ExchangeController extends AbstractController
             $agencetx->setAmount($devise, $type === "achat" ? $montantdevise : $montantdevise * -1);
             $agencetx->setDescrib($description != "" ? $description : $type . " de " . $devise . " à " . $agence->getDesignation());
             $agencetx->setExchange($exchange);
+             $agencetx->setCreatedAt(!$date ? new DateTimeImmutable("now") : new DateTimeImmutable($date));
             $em->persist($agencetx);
         }
 
@@ -236,5 +239,26 @@ final class ExchangeController extends AbstractController
             'local_solde' => $localSolde,
             'taux_moyen' => $tauxMoyen,
         ]);
+    }
+
+    private function getTotalExchangeCount(EntityManagerInterface $em): int
+    {
+        $queryBuilder = $em->createQueryBuilder();
+        $queryBuilder->select('COUNT(t.id)')
+            ->from(Exchange::class, 't');
+
+        $transferCount = $queryBuilder->getQuery()->getSingleScalarResult();
+        return $transferCount + 1; // Incrémenter pour le nouveau transfert
+    }
+
+    private function generateReference(EntityManagerInterface $em): string
+    {
+        // Obtenir le nombre total de transferts + 1
+        $transferCount = $this->getTotalExchangeCount($em);
+        // Formater le nombre sur trois chiffres
+        $formattedTransferCount = str_pad($transferCount, 3, '0', STR_PAD_LEFT);
+        // Combiner pour former la référence
+        $ref = 'BSS-D' . $formattedTransferCount;
+        return $ref;
     }
 }

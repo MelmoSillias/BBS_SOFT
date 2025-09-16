@@ -65,7 +65,7 @@ $(document).ready(function () {
                 extend: 'excelHtml5',
                 text: '<i class="bi bi-file-earmark-excel me-2"></i>Excel',
                 className: 'btn-export-excel',
-                title: `Rapport Transactions ${$('#agenceSelect').text()}`,
+                title: 'Rapport Transactions ' + $('#agenceSelect').val() + ' : ' + dateRange.startDate + ' - ' + dateRange.endDate,
                 exportOptions: { columns: [0, 1, 2, 3, 4, 5] },
                 customizeData: function (data) {
                     let grouped = {};
@@ -95,7 +95,7 @@ $(document).ready(function () {
                 extend: 'pdfHtml5',
                 text: '<i class="bi bi-file-earmark-pdf me-2"></i>PDF',
                 className: 'btn-export-pdf',
-                title: 'Rapport Transactions',
+                title: 'Rapport Transactions ' + $('#agenceSelect').val() + ' : ' + dateRange.startDate + ' - ' + dateRange.endDate,
                 orientation: 'landscape',
                 pageSize: 'A4',
                 exportOptions: { columns: [0, 1, 2, 3, 4, 5] },
@@ -121,8 +121,8 @@ $(document).ready(function () {
                         const rows = grouped[date];
                         // Récupérer la ligne brute pour solde initial
                         const rawRow = table.rows((idx, d) => d.date === date).data()[0];
-                        const soldeDepart = rawRow.initial;
-                        const soldeFin = rows[0][5].text || rows[0][5];
+                    const soldeDepart = formatMoney(rawRow.initial);
+                        const soldeFin = rows[rows.length - 1][5].text || rows[0][5];
 
                         newBody.push([
                             {
@@ -184,8 +184,8 @@ $(document).ready(function () {
             { targets: 1, width: '35%' },
             { targets: 2, width: '15%' },
             { targets: [3, 4, 5], width: '15%', className: 'text-end' }
-        ],
-        order: [[2, 'desc'], [0, 'asc']],
+        ], 
+        ordering: false,
         paging: false,
         searching: false,
         info: false,
@@ -199,8 +199,8 @@ $(document).ready(function () {
                 if (last !== date) {
                     const rowsOfDate = api.rows((idx, data) => data.date === date).data().toArray();
                     if (rowsOfDate.length > 0) {
-                        const soldeFin = rowsOfDate[0].solde;
-                        const soldeDepart = rowsOfDate[rowsOfDate.length - 1].solde;
+                        const soldeFin = rowsOfDate[rowsOfDate.length - 1].solde;
+                        const soldeDepart = rowsOfDate[rowsOfDate.length - 1].initial;
                         $(rows).eq(i).before(
                             `<tr class="table-group-cell bg-light">
                             <td colspan="6" class="fw-bold table-group-cell" style="background: lightgrey">

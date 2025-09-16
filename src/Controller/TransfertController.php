@@ -59,7 +59,7 @@ final class TransfertController extends AbstractController
         $transfert->setFrais($data['fraisEnvoi']);
         $transfert->setReceiverName($data['nomBeneficiaire']);
         $transfert->setReceiverPhone($data['phoneBeneficiaire']);
-        $transfert->setStatus('pending');
+        $transfert->setStatus($data['moneyReceived'] ? 'processing' : 'pending');
 
         // Gérer le client éphémère
         if (isset($data['newExpediteurNom']) && isset($data['newExpediteurPhone'])) {
@@ -67,14 +67,16 @@ final class TransfertController extends AbstractController
             $transfert->setSenderPhone($data['newExpediteurPhone']);
             $clientName = $data['newExpediteurNom'];
 
-            $ctx = new AccountTransaction();
-            $ctx->setCFA($amount)
-                ->setDescrib('Transfert effectué par cash')
-                ->setAgence($local)
-                ->setCreatedAt(new \DateTimeImmutable($data['date']));
+            if($transfert->getStatus() == 'processing') {
+                $ctx = new AccountTransaction();
+                $ctx->setCFA($amount)
+                    ->setDescrib('Transfert effectué par cash')
+                    ->setAgence($local)
+                    ->setCreatedAt(new \DateTimeImmutable($data['date']));
 
-            $ctx->setTransfert($transfert);
-            $em->persist($ctx);
+                $ctx->setTransfert($transfert);
+                $em->persist($ctx);
+            }
         } else {
             // Si un client existant est sélectionné, vous devez récupérer l'entité Client correspondante
             $clientId = $data['expediteur'];
@@ -86,23 +88,22 @@ final class TransfertController extends AbstractController
             }
 
             if ($transfert->getType() === "byAccount") {
-
-                
+ 
             } else {
-                $ctx = new AccountTransaction();
-                $ctx->setCFA($amount) 
-                    ->setDescrib('Envoi cash - '.($transfert->getClient() ? $transfert->getClient()->getNomComplet() : $transfert->getSenderName()))
-                    ->setAgence($local)
-                    ->setCreatedAt(new \DateTimeImmutable($data['date']));
+                if($transfert->getStatus() == 'processing') {
+                    $ctx = new AccountTransaction();
+                    $ctx->setCFA($amount) 
+                        ->setDescrib('Envoi cash - '.($transfert->getClient() ? $transfert->getClient()->getNomComplet() : $transfert->getSenderName()))
+                        ->setAgence($local)
+                        ->setCreatedAt(new \DateTimeImmutable($data['date']));
 
-                $ctx->setTransfert($transfert);
-
-                $em->persist($ctx);
-
+                    $ctx->setTransfert($transfert); 
+                    $em->persist($ctx);
+                } 
             }
         }
  
-        $ref = $this->generateReference($clientName, $em);
+        $ref = $this->generateReference($em);
         $transfert->setRef($ref);
         // Persister et sauvegarder l'entité
         $em->persist($transfert);
@@ -301,7 +302,9 @@ final class TransfertController extends AbstractController
                     'abg' => $transfert->getAgence()->getAbg(),
                     'isActive' => $transfert->getAgence()->IsActive(),
                 ],
+            'clientType' => $transfert->getClient() ? 'registered' : 'ephemeral',
             'expediteur' => $nomComplet,
+            'expediteurId' => $transfert->getClient() ?  $transfert->getClient()->getId() : null,
             'phone' => $telephone,
             'montantCFA' => $transfert->getMontantCFA(),
             'montantUSD' => $transfert->getMontantUSD(),
@@ -317,46 +320,103 @@ final class TransfertController extends AbstractController
         return new JsonResponse($output);
     }
 
+    #[Route('/api/transferts/{id}/process/{date}', name: 'api_transfer_process', methods: ['POST'])]
+    public function processTransfer(Transfert $transfer, String $date, EntityManagerInterface $em): JsonResponse
+    {
+        // Vérifier que le transfert peut être validé (statut pending par exemple)
+        if ($transfer->getStatus() !== Transfert::STATUS_PENDING) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Le transfert ne peut pas être mis en traitement dans son état actuel'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $local = $em->getRepository(Agence::class)->findOneBy(['id' => 1]);  
+
+        $client = $transfer->getClient(); 
+        $amount = $transfer->getMontantCFA() + $transfer->getFrais();
+ 
+        $ctx = new AccountTransaction();
+        $ctx->setCFA($amount) 
+            ->setDescrib('Envoi cash - '.($transfer->getClient() ? $transfer->getClient()->getNomComplet() : $transfer->getSenderName()))
+            ->setAgence($local)
+            ->setCreatedAt(new \DateTimeImmutable($date));
+
+        $ctx->setTransfert($transfer); 
+        $em->persist($ctx);  
+
+        $transfer->setStatus(Transfert::STATUS_PROCESSING);
+        $transfer->setUpdatedAt(new \DateTimeImmutable($date));
+
+        $em->flush();
+
+        return $this->json([
+            'success' => false,
+            'message' => 'Le transfert a été validé avec succès'
+        ], Response::HTTP_OK);
+    }
+
     #[Route('/api/transferts/{id}/validate/{date}', name: 'api_transfer_validate', methods: ['POST'])]
     public function validateTransfer(Transfert $transfer, String $date, EntityManagerInterface $em): JsonResponse
     {
         // Vérifier que le transfert peut être validé (statut pending par exemple)
-        if ($transfer->getStatus() !== Transfert::STATUS_PENDING) {
+        if ($transfer->getStatus() !== Transfert::STATUS_PENDING && $transfer->getStatus() !== Transfert::STATUS_PROCESSING) {
             return $this->json([
                 'success' => false,
                 'message' => 'Le transfert ne peut pas être validé dans son état actuel'
             ], Response::HTTP_BAD_REQUEST);
         }
 
-        $atx = new AccountTransaction();
-        $atx->setUSD($transfer->getMontantUSD() * -1)
-            ->setDescrib('Transfert -- '.($transfer->getClient() ? $transfer->getClient()->getNomComplet() : $transfer->getSenderName()). ' -- '. $transfer->getMontantUSD() . ' USD')
-            ->setAgence($transfer->getAgence())
-            ->setCreatedAt(new \DateTimeImmutable($date));
-
-        $atx->setTransfert($transfer);
-        $em->persist($atx);
-
-        if ($transfer->getType() === "byAccount") {
-            $client = $transfer->getClient();
-            $balance = $client->getbalance("CFA");
-            $amount = $transfer->getMontantCFA() + $transfer->getFrais();
-
-            if ($balance < $amount) {
-                return new JsonResponse(['error' => 'le solde est insuffisant'], 400);
-            }
-
-            $ctx = new AccountTransaction();
-            $ctx->setCFA($amount * -1) 
-                ->setDescrib('Retrait compte - '.$transfer->getClient()->getNomComplet())
-                ->setClient($client)
+        if ($transfer->getStatus() === Transfert::STATUS_PROCESSING) {
+            $atx = new AccountTransaction();
+            $atx->setUSD($transfer->getMontantUSD() * -1)
+                ->setDescrib('Transfert -- '.($transfer->getClient() ? $transfer->getClient()->getNomComplet() : $transfer->getSenderName()). ' -- '. $transfer->getMontantUSD() . ' USD')
+                ->setAgence($transfer->getAgence())
                 ->setCreatedAt(new \DateTimeImmutable($date));
 
-            $ctx->setTransfert($transfer);
+            $atx->setTransfert($transfer);
+            $em->persist($atx);
 
-            $em->persist($ctx);
+            if ($transfer->getType() === "byAccount") {
+                $client = $transfer->getClient();
+                $balance = $client->getbalance("CFA");
+                $amount = $transfer->getMontantCFA() + $transfer->getFrais();
+    
+                $ctx = new AccountTransaction();
+                $ctx->setCFA($amount * -1) 
+                    ->setDescrib('Retrait compte - '.$transfer->getClient()->getNomComplet())
+                    ->setClient($client)
+                    ->setCreatedAt(new \DateTimeImmutable($date));
+
+                $ctx->setTransfert($transfer);
+
+                $em->persist($ctx);
+            }
+        } else {
+            
+            $local = $em->getRepository(Agence::class)->findOneBy(['id' => 1]);  
+
+            $client = $transfer->getClient(); 
+            $amount = $transfer->getMontantCFA() + $transfer->getFrais();
+    
+            $ctx = new AccountTransaction();
+            $ctx->setCFA($amount) 
+                ->setDescrib('Envoi cash - '.($transfer->getClient() ? $transfer->getClient()->getNomComplet() : $transfer->getSenderName()))
+                ->setAgence($local)
+                ->setCreatedAt(new \DateTimeImmutable($date));
+
+            $ctx->setTransfert($transfer); 
+            $em->persist($ctx);  
+
+            $atx = new AccountTransaction();
+            $atx->setUSD($transfer->getMontantUSD() * -1)
+                ->setDescrib('Transfert -- '.($transfer->getClient() ? $transfer->getClient()->getNomComplet() : $transfer->getSenderName()). ' -- '. $transfer->getMontantUSD() . ' USD')
+                ->setAgence($transfer->getAgence())
+                ->setCreatedAt(new \DateTimeImmutable($date));
+
+            $atx->setTransfert($transfer);
+            $em->persist($atx); 
         }
-
 
         $transfer->setStatus(Transfert::STATUS_COMPLETED);
         $transfer->setUpdatedAt(new \DateTimeImmutable());
@@ -433,43 +493,99 @@ final class TransfertController extends AbstractController
         ]);
     }
 
-    private function generateReference(string $clientName, EntityManagerInterface $em): string
-    {
-        // Obtenir trois lettres du nom du client
-        $threeLetters = strtoupper(substr($clientName, 0, 3));
+    private function getTotalTransferCount(EntityManagerInterface $em): int
+{
+    $queryBuilder = $em->createQueryBuilder();
+    $queryBuilder->select('COUNT(t.id)')
+        ->from(Transfert::class, 't');
 
-        // Obtenir les deux derniers chiffres de l'année actuelle
-        $year = date('y');
+    $transferCount = $queryBuilder->getQuery()->getSingleScalarResult();
+    return $transferCount + 1; // Incrémenter pour le nouveau transfert
+}
 
-        // Obtenir les deux chiffres du mois actuel
-        $month = date('m');
+ private function generateReference(EntityManagerInterface $em): string
+{
+    // Obtenir le nombre total de transferts + 1
+    $transferCount = $this->getTotalTransferCount($em);
+    // Formater le nombre sur trois chiffres
+    $formattedTransferCount = str_pad($transferCount, 3, '0', STR_PAD_LEFT);
+    // Combiner pour former la référence
+    $ref = 'BSS-T' . $formattedTransferCount;
+    return $ref;
+}
 
-        // Obtenir le nombre de transferts effectués dans le mois actuel
-        $transferCount = $this->getTransferCountForCurrentMonth($em);
+    #[Route('/api/transfert/update/{id}', name: 'api_transfert_update', methods: ['PUT'])]
+public function updateTransfert(Transfert $transfert, EntityManagerInterface $em, Request $req): JsonResponse
+{
+    // Récupérer les données du corps de la requête
+    $data = json_decode($req->getContent(), true);
 
-        // Formater le nombre de transferts sur trois chiffres
-        $formattedTransferCount = str_pad($transferCount, 3, '0', STR_PAD_LEFT);
-
-        // Combiner pour former la référence
-        $ref = $threeLetters . $year . $month . $formattedTransferCount;
-
-        return $ref;
+    // Vérifier si les données sont valides
+    if (empty($data)) {
+        return new JsonResponse(['error' => 'Erreur de données'], 400);
     }
 
-    private function getTransferCountForCurrentMonth(EntityManagerInterface $em): int
-    {
-        $start = date('Y-m-01');
-        $end = date('Y-m-t');
+    // Récupérer l'agence de destination
+    $agence = $em->getRepository(Agence::class)->findOneBy(['id' => $data['destination']]);
+    $local = $em->getRepository(Agence::class)->findOneBy(['id' => 1]);
 
-        $queryBuilder = $em->createQueryBuilder();
-        $queryBuilder->select('COUNT(t.id)')
-            ->from(Transfert::class, 't')
-            ->where('t.createdAt BETWEEN :start AND :end')
-            ->setParameter('start', $start)
-            ->setParameter('end', $end);
-
-        $transferCount = $queryBuilder->getQuery()->getSingleScalarResult();
-
-        return $transferCount + 1; // Increment to account for the current transfer
+    // Supprimer les anciennes transactions associées
+    $existingTransactions = $transfert->getAccountTransactions();
+    foreach ($existingTransactions as $tx) {
+        $em->remove($tx);
     }
+
+    // Mettre à jour les propriétés de base du transfert
+    $transfert->setCreatedAt(new \DateTimeImmutable($data['date']));
+    $transfert->setType($data['type']);
+    $transfert->setAgence($agence);
+    $transfert->setMontantCFA($data['montantCash']);
+    $transfert->setMontantUSD($data['montantUSD']);
+    $transfert->setMontantReception($data['montantDeviseReception']);
+    $transfert->setTaux($data['taux']);
+    $transfert->setFrais($data['fraisEnvoi']);
+    $transfert->setReceiverName($data['nomBeneficiaire']);
+    $transfert->setReceiverPhone($data['phoneBeneficiaire']);
+    $transfert->setStatus($data['moneyReceived'] ? 'processing' : 'pending');
+
+    // Gérer le client éphémère ou existant
+    if (isset($data['newExpediteurNom']) && isset($data['newExpediteurPhone'])) {
+        $transfert->setSenderName($data['newExpediteurNom']);
+        $transfert->setSenderPhone($data['newExpediteurPhone']);
+        $clientName = $data['newExpediteurNom'];
+        $transfert->setClient(null); // Pas de client associé pour un client éphémère
+    } else {
+        // Si un client existant est sélectionné, récupérer l'entité Client correspondante
+        $clientId = $data['expediteur'];
+        $client = $em->getRepository(Client::class)->find($clientId);
+        if ($client) {
+            $transfert->setClient($client);
+            $clientName = $client->getNomComplet();
+        }
+    }
+
+    // Logique de création des transactions selon le type et le statut
+    $amount = $data['totalAPayer'];
+    if ($transfert->getStatus() == 'processing') {
+        $ctx = new AccountTransaction();
+        $ctx->setCFA($amount)
+            ->setDescrib('Transfert effectué par cash - ' . ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : $transfert->getSenderName()))
+            ->setAgence($local)
+            ->setCreatedAt(new \DateTimeImmutable($data['date']));
+        $ctx->setTransfert($transfert);
+        $em->persist($ctx);
+    }
+
+    // Persister et sauvegarder l'entité
+    $em->persist($transfert);
+    $em->flush();
+
+    // Retourner une réponse JSON
+    return new JsonResponse([
+        'success' => true,
+        'transfertId' => $transfert->getId(),
+        'message' => 'Transfert mis à jour avec succès'
+    ]);
+}
+
 }
