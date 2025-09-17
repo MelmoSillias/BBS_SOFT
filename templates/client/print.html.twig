@@ -100,7 +100,7 @@
 
 		<!-- Titre -->
 		<div class="title">
-			REÇU N° transaction.id
+			REÇU N° {{ 'BBS-C'~"%03d"|format(transaction.id) }}
 			<br>
 			<small class='text-normal' >{{ "now"|date("d/m/Y H:i") }}</small>
 		</div>

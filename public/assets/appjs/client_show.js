@@ -9,84 +9,84 @@ const countryCodeCurrency = {
   'ALG': { code: "ALG", countryName: "Algérie", capital: "Alger", currency: "DZD", currencyName: "Dinar algérien", USDValue: 133.40 }
 };
 
-  const $destination = $('#destination');
-  const $typeOps = $('#typeOps');
-  const $deviseExchange = $('#deviseExchange');
-  const $montant = $('#montant');
-  const $taux = $('#taux');
-  const $deviseAgenceDisplay = $('#deviseAgenceDisplay');
-  const $devise = $('#devise');
-  const $totalAPayer = $('#totalAPayer');
-  const $exchangeButton = $('#exchangeButton');
+const $destination = $('#destination');
+const $typeOps = $('#typeOps');
+const $deviseExchange = $('#deviseExchange');
+const $montant = $('#montant');
+const $taux = $('#taux');
+const $deviseAgenceDisplay = $('#deviseAgenceDisplay');
+const $devise = $('#devise');
+const $totalAPayer = $('#totalAPayer');
+const $exchangeButton = $('#exchangeButton');
 
 
 // Initialisation de la table avec DataTables
 const exchangesTable = $('#exchangesTable').DataTable({
-    "order": [[0, "desc"]], // Trier par la première colonne (Date) en ordre décroissant
-    language: { url: '/api/datatable_json_fr' },
-    "ajax": {
-        "url": `/api/client/${extractClientId()}/exchanges`,
-        "dataSrc": ""
+  "order": [[0, "desc"]], // Trier par la première colonne (Date) en ordre décroissant
+  language: { url: '/api/datatable_json_fr' },
+  "ajax": {
+    "url": `/api/client/${extractClientId()}/exchanges`,
+    "dataSrc": ""
+  },
+  "dom": 'Bfrtip', // Ajouter les boutons d'exportation
+  "buttons": [
+    {
+      extend: 'excelHtml5',
+      text: 'Exporter en Excel',
+      title: 'Liste_des_Échanges'
     },
-    "dom": 'Bfrtip', // Ajouter les boutons d'exportation
-    "buttons": [
-        {
-            extend: 'excelHtml5',
-            text: 'Exporter en Excel',
-            title: 'Liste_des_Échanges'
-        },
-        {
-            extend: 'pdfHtml5',
-            text: 'Exporter en PDF',
-            title: 'Liste_des_Échanges'
-        },
-        {
-            extend: 'print',
-            text: 'Imprimer',
-            title: 'Liste_des_Échanges'
-        }
-    ],
-    "columns": [
-        { 
-            "data": "date",
-            "render": function(data, type, row) {
-                // Formater la date pour un affichage plus lisible
-                return new Date(data).toLocaleString('fr-FR');
-            }
-        },
-        { 
-            "data": "type",
-            "render": function(data, type, row) {
-                // Afficher le type d'opération (achat/vente)
-                return data.charAt(0).toUpperCase() + data.slice(1);
-            }
-        },
-        { 
-            "data": null,
-            "render": function(data, type, row) {
-                // Afficher le montant en devise
-                return `${row.montantDevise} ${row.devise}`;
-            }
-        },
-        { 
-            "data": null,
-            "render": function(data, type, row) {
-                // Afficher le montant en CFA
-                return `${row.montantCFA} CFA`;
-            }
-        },
-        { 
-            "data": "taux",
-            "render": function(data, type, row) {
-                // Formater le taux
-                return parseFloat(data).toFixed(4);
-            }
-        },
-        {
-            "data": null,
-            "render": function(data, type, row) {
-                // Boutons d'action
-                return `
+    {
+      extend: 'pdfHtml5',
+      text: 'Exporter en PDF',
+      title: 'Liste_des_Échanges'
+    },
+    {
+      extend: 'print',
+      text: 'Imprimer',
+      title: 'Liste_des_Échanges'
+    }
+  ],
+  "columns": [
+    {
+      "data": "date",
+      "render": function (data, type, row) {
+        // Formater la date pour un affichage plus lisible
+        return new Date(data).toLocaleString('fr-FR');
+      }
+    },
+    {
+      "data": "type",
+      "render": function (data, type, row) {
+        // Afficher le type d'opération (achat/vente)
+        return data.charAt(0).toUpperCase() + data.slice(1);
+      }
+    },
+    {
+      "data": null,
+      "render": function (data, type, row) {
+        // Afficher le montant en devise
+        return `${row.montantDevise} ${row.devise}`;
+      }
+    },
+    {
+      "data": null,
+      "render": function (data, type, row) {
+        // Afficher le montant en CFA
+        return `${row.montantCFA} CFA`;
+      }
+    },
+    {
+      "data": "taux",
+      "render": function (data, type, row) {
+        // Formater le taux
+        return parseFloat(data).toFixed(4);
+      }
+    },
+    {
+      "data": null,
+      "render": function (data, type, row) {
+        // Boutons d'action
+        return `
                     <button class="btn btn-info btn-sm view-btn text-white" data-id="${row.id}"> 
                         <i class="bi bi-eye"></i> 
                     </button>
@@ -97,9 +97,9 @@ const exchangesTable = $('#exchangesTable').DataTable({
                         <i class="bi bi-printer"></i>  
                     </button>
                 `;
-            }
-        }
-    ]
+      }
+    }
+  ]
 });
 
 $(document).ready(function () {
@@ -141,7 +141,7 @@ function loadClientSoldes(clientId) {
       // Parcourir toutes les devises dans la réponse
       for (const [currencyCode, amount] of Object.entries(response)) {
         // Trouver les informations de la devise
-        
+
         let currencyInfo = null;
         for (const country in countryCodeCurrency) {
           if (countryCodeCurrency[country].currency === currencyCode) {
@@ -420,7 +420,7 @@ function formatCurrency(amount, currencyCode) {
 
   return formatter.format(amount);
 }
- 
+
 /** Initialise la section Factures ponctuelles */
 function initTranferts(clientId) {
 
@@ -502,86 +502,86 @@ function initTranferts(clientId) {
   });
 
   const tableTransfers = $('#transfersTable').DataTable({
-        ajax: {
-            url: `/api/client/${extractClientId()}/transferts`,
-            dataSrc: '',
-            data: function (d) {
-                // Ajout des paramètres de filtre à la requête
-                d.status = $('#filterStatus').val();
-                d.type = $('#filterType').val();
-                d.clientType = $('#filterClientType').val();
-                d.dateFrom = startTransfertDate;
-                d.dateTo = endTransfertDate;
-            }
+    ajax: {
+      url: `/api/client/${extractClientId()}/transferts`,
+      dataSrc: '',
+      data: function (d) {
+        // Ajout des paramètres de filtre à la requête
+        d.status = $('#filterStatus').val();
+        d.type = $('#filterType').val();
+        d.clientType = $('#filterClientType').val();
+        d.dateFrom = startTransfertDate;
+        d.dateTo = endTransfertDate;
+      }
+    },
+    columns: [
+      {
+        data: 'createdAt',
+        visible: false,
+      },
+      {
+        data: 'type',
+        render: function (data) {
+          const types = {
+            'standard': '<span class="badge bg-primary">Envoi Cash</span>',
+            'byAccount': '<span class="badge bg-info">Retrait compte</span>'
+          };
+          return types[data] || data;
+        }
+      },
+      {
+        data: 'receiverName',
+      },
+      {
+        data: 'montantCFA',
+        render: function (data) {
+          return `<span class="text-success fw-bold">${parseFloat(data).toLocaleString('fr-FR')} F CFA</span>`;
         },
-        columns: [
-            {
-                data: 'createdAt',
-                visible: false,
-            },
-            {
-                data: 'type',
-                render: function (data) {
-                    const types = {
-                        'standard': '<span class="badge bg-primary">Envoi Cash</span>',
-                        'byAccount': '<span class="badge bg-info">Retrait compte</span>'
-                    };
-                    return types[data] || data;
-                }
-            },
-            {
-                data: 'receiverName', 
-            },
-            {
-            data: 'montantCFA',
-                render: function (data) {
-                    return `<span class="text-success fw-bold">${parseFloat(data).toLocaleString('fr-FR')} F CFA</span>`;
-                },
-                className: 'text-end'
-            },
-            {
-                data: 'taux',
-                render: function (data) {
-                    return `<span class="text-primary">${parseFloat(data).toLocaleString('fr-FR')}</span>`;
-                },
-                className: 'text-end'
-            },
-            {
-                data: 'frais',
-                render: function (data) {
-                    return `<span class="text-danger">${parseFloat(data).toLocaleString('fr-FR')} F CFA</span>`;
-                },
-                className: 'text-end'
-            },
-            {
-                data: null,
-                render: function (data, type, row) {
-                    const total = parseFloat(row.montantCFA) + parseFloat(row.frais);
-                    return `<span class="fw-bold">${total.toLocaleString('fr-FR')} F CFA</span>`;
-                },
-                className: 'text-end'
-            },
-            {
-                data: 'status',
-                render: function (data) {
-                    const statusMap = {
-                        'completed': { class: 'badge-completed', text: 'Complété', icon: 'check-circle' },
-                        'pending': { class: 'badge-pending', text: 'En attente', icon: 'hourglass' },
-                        'cancelled': { class: 'badge-cancelled', text: 'Annulé', icon: 'x-circle' },
-                        'processing': { class: 'badge-processing', text: 'En cours', icon: 'arrow-repeat' }
-                    };
-                    const status = statusMap[data] || { class: '', text: data, icon: '' };
-                    return `
+        className: 'text-end'
+      },
+      {
+        data: 'taux',
+        render: function (data) {
+          return `<span class="text-primary">${parseFloat(data).toLocaleString('fr-FR')}</span>`;
+        },
+        className: 'text-end'
+      },
+      {
+        data: 'frais',
+        render: function (data) {
+          return `<span class="text-danger">${parseFloat(data).toLocaleString('fr-FR')} F CFA</span>`;
+        },
+        className: 'text-end'
+      },
+      {
+        data: null,
+        render: function (data, type, row) {
+          const total = parseFloat(row.montantCFA) + parseFloat(row.frais);
+          return `<span class="fw-bold">${total.toLocaleString('fr-FR')} F CFA</span>`;
+        },
+        className: 'text-end'
+      },
+      {
+        data: 'status',
+        render: function (data) {
+          const statusMap = {
+            'completed': { class: 'badge-completed', text: 'Complété', icon: 'check-circle' },
+            'pending': { class: 'badge-pending', text: 'En attente', icon: 'hourglass' },
+            'cancelled': { class: 'badge-cancelled', text: 'Annulé', icon: 'x-circle' },
+            'processing': { class: 'badge-processing', text: 'En cours', icon: 'arrow-repeat' }
+          };
+          const status = statusMap[data] || { class: '', text: data, icon: '' };
+          return `
                                     <span class="badge-status ${status.class}">
                                         <i class="bi bi-${status.icon} me-1"></i>${status.text}
                                     </span>
                                 `;
-                }
-            },
-            {
-                data: null,
-                render: function (data, type, row) {
-                    let actions = `
+        }
+      },
+      {
+        data: null,
+        render: function (data, type, row) {
+          let actions = `
                                     <div class="dropdown">
                                         <button class="btn btn-sm btn-outline-primary dropdown-toggle btn-table-action" type="button" data-bs-toggle="dropdown">
                                             <i class="bi bi-gear"></i>
@@ -591,125 +591,125 @@ function initTranferts(clientId) {
                                             <li><a class="dropdown-item print-transfer" href="#" data-id="${row.id}"><i class="bi bi-printer me-2"></i>Imprimer</a></li>
                                 `;
 
-                    if (row.status === 'pending') {
-                        actions += `
+          if (row.status === 'pending') {
+            actions += `
                                         <li><hr class="dropdown-divider"></li>
                                         <li><a class="dropdown-item validate-transfer" href="#" data-id="${row.id}"><i class="bi bi-check-circle me-2"></i>Valider</a></li>
                                         <li><a class="dropdown-item cancel-transfer" href="#" data-id="${row.id}"><i class="bi bi-x-circle me-2"></i>Annuler</a></li>
                                     `;
-                    }
+          }
 
-                    if (row.status !== 'completed') {
-                        actions += `
+          if (row.status !== 'completed') {
+            actions += `
                                         <li><hr class="dropdown-divider"></li>
                                         <li><a class="dropdown-item delete-transfer" href="#" data-id="${row.id}"><i class="bi bi-trash me-2"></i>Supprimer</a></li>
                                     `;
-                    }
+          }
 
-                    actions += `</ul></div>`;
-                    return actions;
-                },
-                orderable: false,
-                className: 'text-center'
-            }
-        ],
-        order: [[0, 'desc']],
-        dom: 'Bflrtip',
-        buttons: [
-            {
-                extend: 'excelHtml5',
-                text: '<i class="bi bi-file-earmark-spreadsheet"></i> Exporter Excel',
-                className: 'btn btn-success',
-                titleAttr: 'Exporter vers Excel',
-                title: 'Liste des transferts',
-                exportOptions: {
-                    columns: [0, 1, 2, 3, 4, 5, 6, 7],
-                    format: {
-                        body: function (data, row, column, node) {
-                            // Nettoyer le contenu HTML pour Excel
-                            if (column === 1) { // Type
-                                return $(data).text() || data;
-                            }
-                            if (column === 2) { // Expéditeur
-                                return $(data).find('.fw-bold').text() || data;
-                            }
-                            if (column === 3 || column === 5 || column === 6) { // Montant, Frais, Total
-                                return data.replace(' F CFA', '').replace(/\s/g, '');
-                            }
-                            if (column === 7) { // Statut
-                                return $(data).text().trim() || data;
-                            }
-                            return data;
-                        }
-                    }
-                },
-                customize: function (xlsx) {
-                    var sheet = xlsx.xl.worksheets['sheet1.xml'];
-
-                    // Modifier le style des en-têtes
-                    $('row:first c', sheet).attr('s', '2');
-                }
-            },
-            {
-                extend: 'pdfHtml5',
-                text: '<i class="bi bi-file-earmark-pdf"></i> Exporter PDF',
-                className: 'btn btn-danger',
-                titleAttr: 'Exporter vers PDF',
-                title: 'Liste des transferts',
-                exportOptions: {
-                    columns: [0, 1, 2, 3, 4, 5, 6, 7],
-                    format: {
-                        body: function (data, row, column, node) {
-                            // Nettoyer le contenu HTML pour PDF
-                            if (column === 1) { // Type
-                                return $(data).text() || data;
-                            }
-                            if (column === 2) { // Expéditeur
-                                return $(data).find('.fw-bold').text() || data;
-                            }
-                            if (column === 3 || column === 5 || column === 6) { // Montant, Frais, Total
-                                return data.replace(' F CFA', '').replace(/\s/g, '');
-                            }
-                            if (column === 7) { // Statut
-                                return $(data).text().trim() || data;
-                            }
-                            return data;
-                        }
-                    }
-                },
-                customize: function (doc) {
-                    // Structure simple pour le PDF
-                    doc.content[1].table.widths = ['*', '*', '*', '*', '*', '*', '*', '*'];
-                    doc.styles.tableHeader.fillColor = '#007bff';
-                    doc.styles.tableHeader.color = '#ffffff';
-                    doc.styles.tableHeader.alignment = 'center';
-
-                    // Personnaliser les cellules du corps
-                    doc.content[1].table.body.forEach(function (row, i) {
-                        if (i > 0) { // Ignorer l'en-tête
-                            // Alignement des colonnes numériques à droite
-                            row[3].alignment = 'right';
-                            row[4].alignment = 'right';
-                            row[5].alignment = 'right';
-                            row[6].alignment = 'right';
-                        }
-                    });
-
-                    // Ajouter "F CFA" aux montants
-                    for (var i = 1; i < doc.content[1].table.body.length; i++) {
-                        doc.content[1].table.body[i][3] = { text: doc.content[1].table.body[i][3] + ' F CFA', alignment: 'right' };
-                        doc.content[1].table.body[i][5] = { text: doc.content[1].table.body[i][5] + ' F CFA', alignment: 'right' };
-                        doc.content[1].table.body[i][6] = { text: doc.content[1].table.body[i][6] + ' F CFA', alignment: 'right' };
-                    }
-                }
-            }
-        ],
-        language: {
-            url: '/api/datatable_json_fr'
+          actions += `</ul></div>`;
+          return actions;
         },
-        initComplete: function () {
-            // Ajout des filtres personnalisés
-            $('#transfersTable_filter').prepend(`
+        orderable: false,
+        className: 'text-center'
+      }
+    ],
+    order: [[0, 'desc']],
+    dom: 'Bflrtip',
+    buttons: [
+      {
+        extend: 'excelHtml5',
+        text: '<i class="bi bi-file-earmark-spreadsheet"></i> Exporter Excel',
+        className: 'btn btn-success',
+        titleAttr: 'Exporter vers Excel',
+        title: 'Liste des transferts',
+        exportOptions: {
+          columns: [0, 1, 2, 3, 4, 5, 6, 7],
+          format: {
+            body: function (data, row, column, node) {
+              // Nettoyer le contenu HTML pour Excel
+              if (column === 1) { // Type
+                return $(data).text() || data;
+              }
+              if (column === 2) { // Expéditeur
+                return $(data).find('.fw-bold').text() || data;
+              }
+              if (column === 3 || column === 5 || column === 6) { // Montant, Frais, Total
+                return data.replace(' F CFA', '').replace(/\s/g, '');
+              }
+              if (column === 7) { // Statut
+                return $(data).text().trim() || data;
+              }
+              return data;
+            }
+          }
+        },
+        customize: function (xlsx) {
+          var sheet = xlsx.xl.worksheets['sheet1.xml'];
+
+          // Modifier le style des en-têtes
+          $('row:first c', sheet).attr('s', '2');
+        }
+      },
+      {
+        extend: 'pdfHtml5',
+        text: '<i class="bi bi-file-earmark-pdf"></i> Exporter PDF',
+        className: 'btn btn-danger',
+        titleAttr: 'Exporter vers PDF',
+        title: 'Liste des transferts',
+        exportOptions: {
+          columns: [0, 1, 2, 3, 4, 5, 6, 7],
+          format: {
+            body: function (data, row, column, node) {
+              // Nettoyer le contenu HTML pour PDF
+              if (column === 1) { // Type
+                return $(data).text() || data;
+              }
+              if (column === 2) { // Expéditeur
+                return $(data).find('.fw-bold').text() || data;
+              }
+              if (column === 3 || column === 5 || column === 6) { // Montant, Frais, Total
+                return data.replace(' F CFA', '').replace(/\s/g, '');
+              }
+              if (column === 7) { // Statut
+                return $(data).text().trim() || data;
+              }
+              return data;
+            }
+          }
+        },
+        customize: function (doc) {
+          // Structure simple pour le PDF
+          doc.content[1].table.widths = ['*', '*', '*', '*', '*', '*', '*', '*'];
+          doc.styles.tableHeader.fillColor = '#007bff';
+          doc.styles.tableHeader.color = '#ffffff';
+          doc.styles.tableHeader.alignment = 'center';
+
+          // Personnaliser les cellules du corps
+          doc.content[1].table.body.forEach(function (row, i) {
+            if (i > 0) { // Ignorer l'en-tête
+              // Alignement des colonnes numériques à droite
+              row[3].alignment = 'right';
+              row[4].alignment = 'right';
+              row[5].alignment = 'right';
+              row[6].alignment = 'right';
+            }
+          });
+
+          // Ajouter "F CFA" aux montants
+          for (var i = 1; i < doc.content[1].table.body.length; i++) {
+            doc.content[1].table.body[i][3] = { text: doc.content[1].table.body[i][3] + ' F CFA', alignment: 'right' };
+            doc.content[1].table.body[i][5] = { text: doc.content[1].table.body[i][5] + ' F CFA', alignment: 'right' };
+            doc.content[1].table.body[i][6] = { text: doc.content[1].table.body[i][6] + ' F CFA', alignment: 'right' };
+          }
+        }
+      }
+    ],
+    language: {
+      url: '/api/datatable_json_fr'
+    },
+    initComplete: function () {
+      // Ajout des filtres personnalisés
+      $('#transfersTable_filter').prepend(`
                             <div class="btn-group ms-2">
                                 <select id="filterStatus" class="form-select form-select-sm">
                                     <option value="">Tous statuts</option>
@@ -731,13 +731,13 @@ function initTranferts(clientId) {
                             </div>
                         `);
 
-            // Écouteurs d'événements pour les filtres
-            $('#filterStatus, #filterType, #filterClientType, #filterDateRange').on('change', function () {
-                tableTransfers.ajax.reload();
-                // chargerStatsTransferts(); 
-            });
-        }
-    });
+      // Écouteurs d'événements pour les filtres
+      $('#filterStatus, #filterType, #filterClientType, #filterDateRange').on('change', function () {
+        tableTransfers.ajax.reload();
+        // chargerStatsTransferts(); 
+      });
+    }
+  });
 
 
   $('#btnAddTransfert , #btnAddTransfertFloat').on('click', () => $('#modalAddTransfert').modal('show'));
@@ -745,173 +745,173 @@ function initTranferts(clientId) {
   $('#dateOps').val(new Date().toISOString().split('T')[0]);
 
   // Gestion du changement de destination
-    $('#destination').change(function () {
-        const destination = $(this).find(':selected').val();
-        let abg
-        $.get(`/api/agence/${destination}`,
-             function(data, status){ 
-                abg = data['abg'] 
-                // Mettre à jour les affichages de devise
-                $('#deviseRecueDisplay').text(countryCodeCurrency[abg].currency);
-                $('#nomDeviseReceptionTaux').html(
-                    `
+  $('#destination').change(function () {
+    const destination = $(this).find(':selected').val();
+    let abg
+    $.get(`/api/agence/${destination}`,
+      function (data, status) {
+        abg = data['abg']
+        // Mettre à jour les affichages de devise
+        $('#deviseRecueDisplay').text(countryCodeCurrency[abg].currency);
+        $('#nomDeviseReceptionTaux').html(
+          `
                         ${countryCodeCurrency[abg].currencyName}
                                     <span class="text-danger">*</span>
                         `
-                );
-                $('#tauxReception').val(countryCodeCurrency[abg].USDValue)
+        );
+        $('#tauxReception').val(countryCodeCurrency[abg].USDValue)
 
-                // Recalculer les montants
-                calculerMontants();
-          });   
-    });
+        // Recalculer les montants
+        calculerMontants();
+      });
+  });
 
-    $("#resetForm").on('click', () => {
-        $('#totalAPayer').text(0 + ' CFA');
-    });
+  $("#resetForm").on('click', () => {
+    $('#totalAPayer').text(0 + ' CFA');
+  });
 
-    // Calcul des montants
-    function calculerMontants() {
-        const montantCash = parseFloat($('#montantCash').val()) || 0;
-        const fraisEnvoi = parseFloat($('#fraisEnvoi').val()) || 0;
-        const taux = parseFloat($('#taux').val()) || 1;
-        const destination = $('[name="destination"]').val();
-        const tauxReception = $('#tauxReception').val();
+  // Calcul des montants
+  function calculerMontants() {
+    const montantCash = parseFloat($('#montantCash').val()) || 0;
+    const fraisEnvoi = parseFloat($('#fraisEnvoi').val()) || 0;
+    const taux = parseFloat($('#taux').val()) || 1;
+    const destination = $('[name="destination"]').val();
+    const tauxReception = $('#tauxReception').val();
 
-        // Calcul du montant reçu
-        let montantRecu = 0;
-        if (montantCash > 0 && taux > 0) {
-            montantRecu = montantCash / taux;
-        }
-
-        // Calcul du montant en Dirhams si destination est Dubaï
-        let montantReception = 0;
-        if (taux > 0) {
-            montantReception = montantRecu * tauxReception;
-        }
-
-        // Calcul du total à payer
-        const totalAPayer = montantCash + fraisEnvoi;
-
-        // Mise à jour des champs
-        $('#montantRecu').val(montantRecu.toFixed(2));
-        $('#montantDeviseReception').val(montantReception.toFixed(2));
-        $('#totalAPayer').text(totalAPayer.toFixed(2) + ' CFA');
+    // Calcul du montant reçu
+    let montantRecu = 0;
+    if (montantCash > 0 && taux > 0) {
+      montantRecu = montantCash / taux;
     }
 
-    // Écouteurs pour le recalcul automatique
-    $('#montantCash, #fraisEnvoi, #taux').on('input', calculerMontants);
-
-    // Soumission du formulaire
-    $('#form-add-transfer').submit(function (e) {
-        e.preventDefault();
-
-        const $form = $(this);
-        const $btn = $form.find('button[type="submit"]');
-        disableButton($btn)
-
-        // Validation
-        const type = $('[name="type"]').val(); 
- 
-        // Préparation des données
-        const formData = {
-            date: $('#dateOps').val(),
-            type: $('#typeOpsT').val(),
-            destination: $('#destination').val(),
-            expediteur: clientId, 
-            nomBeneficiaire: $('#nomBeneficiaire').val(),
-            phoneBeneficiaire: $('#phoneBeneficiaire').val(),
-            montantCash: $('#montantCash').val(),
-            fraisEnvoi: $('#fraisEnvoi').val(),
-            taux: $('#taux').val(),
-            montantUSD: $('#montantRecu').val(),
-            tauxReception: $('#tauxReception').val(),
-            montantDeviseReception: $('#montantDeviseReception').val(),
-            totalAPayer: $('#totalAPayer').text()
-        };
-
-        // Envoi des données via AJAX
-        $.ajax({
-            url: '/api/transfert/create', // Remplacez par l'URL de votre endpoint
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(formData),
-            success: function (response) {
-                showToastModal({ message: 'Transfert crée avec succès', type: 'success' });
-                // Réinitialisation du formulaire
-                $('#form-add-transfer').trigger("reset");
-                $('#select-expediteur').val(null).trigger('change');
-                $('#new-client-section').addClass('d-none');
-                tableTransfers.ajax.reload()
-                calculerMontants();
-            },
-            error: function (xhr, status, error) {
-                showToastModal({ message: !error && error != "" ? error : "Erreur de connexion", type: 'error' })
-            }
-        });
-    });
-    // Ouvrir le modal avec les données du transfert
-    function openViewTransferModal(transferId) {
-        // Simulation de données - remplacer par un appel AJAX réel
-        $.get('/api/transferts/' + transferId, function (data) {
-            currentTransferData = data;
-
-            // Remplir les informations générales
-            $('#transferReference').text(data.reference);
-            $('#transferDate').text(new Date(data.createdAt).toLocaleDateString());
-            $('#transferType').html(data.type === 'standard' ?
-                '<span class="badge bg-primary">Envoi Cash</span>' :
-                '<span class="badge bg-info">Retrait compte</span>');
-            $('#transferDestination').text(countryCodeCurrency[data.destination.abg]['capital'] + ' - ' + countryCodeCurrency[data.destination.abg]['countryName']);
-
-            // Remplir le statut avec le badge approprié
-            let statusBadge = '';
-            switch (data.status) {
-                case 'completed':
-                    statusBadge = '<span class="badge bg-success">Complété</span>';
-                    break;
-                case 'pending':
-                    statusBadge = '<span class="badge bg-warning">En attente</span>';
-                    break;
-                case 'cancelled':
-                    statusBadge = '<span class="badge bg-danger">Annulé</span>';
-                    break;
-                default:
-                    statusBadge = '<span class="badge bg-secondary">' + data.status + '</span>';
-            }
-            $('#transferStatus').html(statusBadge);
-
-            // Remplir les informations de l'expéditeur
-            $('#senderName').text(data.expediteur);
-            $('#senderPhone').text(data.phone || '--');
-            $('#senderType').text(data.clientType === 'ephemeral' ? 'Client éphémère' : 'Client enregistré');
-            $('#senderId').text(data.expediteurId || '--');
-
-            // Remplir les informations du bénéficiaire
-            $('#beneficiaryName').text(data.receiverName || '--');
-            $('#beneficiaryPhone').text(data.receiverPhone || '--');
-
-            // Remplir les montants
-            $('#transferAmount').text(data.montantCFA.toLocaleString('fr-FR') + ' F CFA');
-            $('#transferFees').text(data.frais.toLocaleString('fr-FR') + ' F CFA');
-            $('#transferRate').text('1 USD = ' + data.taux.toLocaleString('fr-FR') + ' F CFA');
-            $('#transferAmountUSD').text((data.montantUSD).toLocaleString('fr-FR') + ' USD');
-            $('#deviseDestination').text(countryCodeCurrency[data.destination.abg]['currencyName']);
-            $('#destinationRate').text('1 USD = ' + (destination.abg === "EAU" ? 3.67 : (data.montantReception / data.montantUSD).toLocaleString('fr-FR')) + ' ' + countryCodeCurrency[data.destination.abg]['currency']);
-            $('#destinationAmount').text((data.montantReception).toLocaleString('fr-FR') + ' ' + countryCodeCurrency[data.destination.abg]['currency']);
-
-            const total = parseFloat(data.montantCFA) + parseFloat(data.frais);
-            $('#transferTotal').text(total.toLocaleString('fr-FR') + ' F CFA');
-
-            // Afficher/masquer les boutons d'action selon le statut
-            toggleActionButtons(data.status);
-
-            // Afficher le modal
-            $('#viewTransferModal').modal('show');
-        }).fail(function () {
-            showToastModal({ message: 'Erreur de connexion', type: 'error' });
-        });
+    // Calcul du montant en Dirhams si destination est Dubaï
+    let montantReception = 0;
+    if (taux > 0) {
+      montantReception = montantRecu * tauxReception;
     }
+
+    // Calcul du total à payer
+    const totalAPayer = montantCash + fraisEnvoi;
+
+    // Mise à jour des champs
+    $('#montantRecu').val(montantRecu.toFixed(2));
+    $('#montantDeviseReception').val(montantReception.toFixed(2));
+    $('#totalAPayer').text(totalAPayer.toFixed(2) + ' CFA');
+  }
+
+  // Écouteurs pour le recalcul automatique
+  $('#montantCash, #fraisEnvoi, #taux').on('input', calculerMontants);
+
+  // Soumission du formulaire
+  $('#form-add-transfer').submit(function (e) {
+    e.preventDefault();
+
+    const $form = $(this);
+    const $btn = $form.find('button[type="submit"]');
+    disableButton($btn)
+
+    // Validation
+    const type = $('[name="type"]').val();
+
+    // Préparation des données
+    const formData = {
+      date: $('#dateOps').val(),
+      type: $('#typeOpsT').val(),
+      destination: $('#destination').val(),
+      expediteur: clientId,
+      nomBeneficiaire: $('#nomBeneficiaire').val(),
+      phoneBeneficiaire: $('#phoneBeneficiaire').val(),
+      montantCash: $('#montantCash').val(),
+      fraisEnvoi: $('#fraisEnvoi').val(),
+      taux: $('#taux').val(),
+      montantUSD: $('#montantRecu').val(),
+      tauxReception: $('#tauxReception').val(),
+      montantDeviseReception: $('#montantDeviseReception').val(),
+      totalAPayer: $('#totalAPayer').text()
+    };
+
+    // Envoi des données via AJAX
+    $.ajax({
+      url: '/api/transfert/create', // Remplacez par l'URL de votre endpoint
+      type: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify(formData),
+      success: function (response) {
+        showToastModal({ message: 'Transfert crée avec succès', type: 'success' });
+        // Réinitialisation du formulaire
+        $('#form-add-transfer').trigger("reset");
+        $('#select-expediteur').val(null).trigger('change');
+        $('#new-client-section').addClass('d-none');
+        tableTransfers.ajax.reload()
+        calculerMontants();
+      },
+      error: function (xhr, status, error) {
+        showToastModal({ message: !error && error != "" ? error : "Erreur de connexion", type: 'error' })
+      }
+    });
+  });
+  // Ouvrir le modal avec les données du transfert
+  function openViewTransferModal(transferId) {
+    // Simulation de données - remplacer par un appel AJAX réel
+    $.get('/api/transferts/' + transferId, function (data) {
+      currentTransferData = data;
+
+      // Remplir les informations générales
+      $('#transferReference').text(data.reference);
+      $('#transferDate').text(new Date(data.createdAt).toLocaleDateString());
+      $('#transferType').html(data.type === 'standard' ?
+        '<span class="badge bg-primary">Envoi Cash</span>' :
+        '<span class="badge bg-info">Retrait compte</span>');
+      $('#transferDestination').text(countryCodeCurrency[data.destination.abg]['capital'] + ' - ' + countryCodeCurrency[data.destination.abg]['countryName']);
+
+      // Remplir le statut avec le badge approprié
+      let statusBadge = '';
+      switch (data.status) {
+        case 'completed':
+          statusBadge = '<span class="badge bg-success">Complété</span>';
+          break;
+        case 'pending':
+          statusBadge = '<span class="badge bg-warning">En attente</span>';
+          break;
+        case 'cancelled':
+          statusBadge = '<span class="badge bg-danger">Annulé</span>';
+          break;
+        default:
+          statusBadge = '<span class="badge bg-secondary">' + data.status + '</span>';
+      }
+      $('#transferStatus').html(statusBadge);
+
+      // Remplir les informations de l'expéditeur
+      $('#senderName').text(data.expediteur);
+      $('#senderPhone').text(data.phone || '--');
+      $('#senderType').text(data.clientType === 'ephemeral' ? 'Client éphémère' : 'Client enregistré');
+      $('#senderId').text(data.expediteurId || '--');
+
+      // Remplir les informations du bénéficiaire
+      $('#beneficiaryName').text(data.receiverName || '--');
+      $('#beneficiaryPhone').text(data.receiverPhone || '--');
+
+      // Remplir les montants
+      $('#transferAmount').text(data.montantCFA.toLocaleString('fr-FR') + ' F CFA');
+      $('#transferFees').text(data.frais.toLocaleString('fr-FR') + ' F CFA');
+      $('#transferRate').text('1 USD = ' + data.taux.toLocaleString('fr-FR') + ' F CFA');
+      $('#transferAmountUSD').text((data.montantUSD).toLocaleString('fr-FR') + ' USD');
+      $('#deviseDestination').text(countryCodeCurrency[data.destination.abg]['currencyName']);
+      $('#destinationRate').text('1 USD = ' + (destination.abg === "EAU" ? 3.67 : (data.montantReception / data.montantUSD).toLocaleString('fr-FR')) + ' ' + countryCodeCurrency[data.destination.abg]['currency']);
+      $('#destinationAmount').text((data.montantReception).toLocaleString('fr-FR') + ' ' + countryCodeCurrency[data.destination.abg]['currency']);
+
+      const total = parseFloat(data.montantCFA) + parseFloat(data.frais);
+      $('#transferTotal').text(total.toLocaleString('fr-FR') + ' F CFA');
+
+      // Afficher/masquer les boutons d'action selon le statut
+      toggleActionButtons(data.status);
+
+      // Afficher le modal
+      $('#viewTransferModal').modal('show');
+    }).fail(function () {
+      showToastModal({ message: 'Erreur de connexion', type: 'error' });
+    });
+  }
 
   // Afficher/masquer les boutons d'action selon le statut
   function toggleActionButtons(status) {
@@ -936,7 +936,7 @@ function initTranferts(clientId) {
     button.prop('disabled', true);
     setTimeout(() => {
       button.prop('disabled', false);
-    }, 3000); // Réactiver après 3 secondes
+    }, 10000); // Réactiver après 3 secondes
   }
 
   $('#validateTransferBtn').on('click', function () {
@@ -977,9 +977,9 @@ function initTranferts(clientId) {
     const button = $(this);
     disableButton(button);
 
-     const valid_date = $('#valid-date').val()
+    const valid_date = $('#valid-date').val()
 
-    $.post('/api/transferts/' + transferId + '/validate/' + valid_date , function () {
+    $.post('/api/transferts/' + transferId + '/validate/' + valid_date, function () {
       showToastModal({ message: 'Transfert validé avec succès!', type: 'success' });
       $('#confirmValidateModal').modal('hide');
       $('#viewTransferModal').modal('hide');
@@ -1101,12 +1101,13 @@ function initTransactions(clientId) {
       data: d => { d.type = $('#filterTransactionType').val(); }
     },
     columns: [
-      { data: 'date', title: 'Date' },
+      { data: 'id', title: 'Reference', render: (data) => { return 'BSS-C' + String(data).padStart(3, '0'); } },
+      { data: 'date', title: 'Date', render: (data) => { return data.split(" ")[0]; } },
       { data: 'description', title: 'Description' },
       {
         data: 'amountCFA',
         title: 'CFA',
-        render: function(data) {
+        render: function (data) {
           if (data === null) return '<span class="text-muted">0.00</span>';
           const amount = parseFloat(data);
           const formattedAmount = amount.toLocaleString();
@@ -1117,88 +1118,95 @@ function initTransactions(clientId) {
       {
         data: 'amountAED',
         title: 'AED',
-        render: function(data) {
+        render: function (data) {
           if (data === null) return '<span class="text-muted">0.00</span>';
           const amount = parseFloat(data);
           const formattedAmount = amount.toLocaleString();
           const colorClass = amount < 0 ? 'text-danger' : 'text-success';
           return `<span class="fw-bold ${colorClass}">${formattedAmount}</span>`;
-        }
+
+        }, visible: false,
       },
       {
         data: 'amountEUR',
         title: 'EUR',
-        render: function(data) {
+        render: function (data) {
           if (data === null) return '<span class="text-muted">0.00</span>';
           const amount = parseFloat(data);
           const formattedAmount = amount.toLocaleString();
           const colorClass = amount < 0 ? 'text-danger' : 'text-success';
           return `<span class="fw-bold ${colorClass}">${formattedAmount}</span>`;
-        }
+        }, visible: false,
       },
       {
         data: 'amountUSD',
         title: 'USD',
-        render: function(data) {
+        render: function (data) {
           if (data === null) return '<span class="text-muted">0.00</span>';
           const amount = parseFloat(data);
           const formattedAmount = amount.toLocaleString();
           const colorClass = amount < 0 ? 'text-danger' : 'text-success';
           return `<span class="fw-bold ${colorClass}">${formattedAmount}</span>`;
-        }
+        }, visible: false,
       },
       {
         data: 'amountGBP',
         title: 'GBP',
-        render: function(data) {
+        render: function (data) {
           if (data === null) return '<span class="text-muted">0.00</span>';
           const amount = parseFloat(data);
           const formattedAmount = amount.toLocaleString();
           const colorClass = amount < 0 ? 'text-danger' : 'text-success';
           return `<span class="fw-bold ${colorClass}">${formattedAmount}</span>`;
-        }
+        }, visible: false,
       },
       {
         data: 'amountCNY',
         title: 'CNY',
-        render: function(data) {
+        render: function (data) {
           if (data === null) return '<span class="text-muted">0.00</span>';
           const amount = parseFloat(data);
           const formattedAmount = amount.toLocaleString();
           const colorClass = amount < 0 ? 'text-danger' : 'text-success';
           return `<span class="fw-bold ${colorClass}">${formattedAmount}</span>`;
-        }
+        }, visible: false,
       },
       {
         data: 'amountMAD',
         title: 'MAD',
-        render: function(data) {
+        render: function (data) {
           if (data === null) return '<span class="text-muted">0.00</span>';
           const amount = parseFloat(data);
           const formattedAmount = amount > 0 ? amount.toLocaleString() : '--';
           const colorClass = amount < 0 ? 'text-danger' : 'text-success';
           return `<span class="fw-bold ${colorClass}">${formattedAmount}</span>`;
-        }
+        }, visible: false,
       },
       {
         data: 'amountDZD',
         title: 'DZD',
-        render: function(data) {
+        render: function (data) {
           if (data === null) return '<span class="text-muted">0.00</span>';
           const amount = parseFloat(data);
           const formattedAmount = amount.toLocaleString();
           const colorClass = amount < 0 ? 'text-danger' : 'text-success';
           return `<span class="fw-bold ${colorClass}">${formattedAmount}</span>`;
-        }
+        }, visible: false,
       },
       {
         data: null,
         title: 'Actions',
-        render: function(data, type, row) {
+        render: function (data, type, row) {
           if (row.type === "Versement" || row.type === "Retrait") {
             return `
               <button class="btn btn-sm btn-outline-primary print-btn" data-id="${row.id}" title="Imprimer">
                 <i class="bi bi-printer"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-info modify-btn" data-id="${row.id}" title="Modifier">
+                  <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger cancel-btn" data-id="${row.id}" title="Cancel">
+                  <i class="bi bi-x-circle"></i>
               </button>
             `;
           } else {
@@ -1210,39 +1218,95 @@ function initTransactions(clientId) {
     ],
     order: [[0, 'desc']],
     language: { url: '/api/datatable_json_fr' }
-  }); 
+  });
 
   transactionsTable.on('click', '.print-btn', function () {
     id = $(this).data('id');
     window.open(`/api/transaction/${id}/receipt`, '_blank');
   });
 
-  $('#form-edit-client').on('submit', function (e) {
-    e.preventDefault();
-    const $form = $(this);
-    const $btn = $form.find('button[type="submit"]');
-    if ($btn.prop('disabled')) return;
-    $btn.prop('disabled', true);
-    const id = $('#editClientId').val();
-    const fd = new FormData(this);
-    $.ajax({
-      url: `/client/${id}/modify`,
-      method: 'POST',
-      data: fd,
-      processData: false,
-      contentType: false
+  let selectedTransactionID
+
+  transactionsTable.on('click', '.modify-btn', function () {
+    selectedTransactionID = $(this).data('id');
+    $.get(`/api/transaction/${selectedTransactionID}/details`, function (data) {
+      $("#editTransDate").val(data.date)
+      $("#editTransAmount").val(data.montant)
+      $("#editTransType").val(data.type)
     })
-      .done(() => {
-        showToastModal({ message: 'Client modifié avec succès !', type: 'success' });
-        $('#modalEditClient').modal('hide');
-        table.ajax.reload();
-      })
-      .fail(xhr => {
-        const msg = xhr.responseJSON?.message || 'Erreur modification client';
-        showToastModal({ message: msg, type: 'error' });
-      })
-      .always(() => $btn.prop('disabled', false));
+
+    $("#editTransactionModal").modal('show')
   });
+
+  $('#confirmEditTrans').on('click', () => {
+    $(this).prop('disabled', true)
+    $.post('/api/transaction/' + selectedTransactionID + '/update',
+      {
+        montant: $("#editTransAmount").val(),
+        date: $("#editTransDate").val()
+      },
+      () => {
+        transactionsTable.ajax.reload()
+        $("#editTransactionModal").modal('hide')
+        showToastModal({ message: "Transaction modifiée avec succès", type: "success" });
+        $(this).prop('disabled', false);
+
+      }
+    ).fail(function () {
+      showToastModal({ message: "Echec de modification", type: "error" });
+      $(this).prop('disabled', false);
+    })
+  }),
+
+    transactionsTable.on('click', '.cancel-btn', function () {
+      selectedTransactionID = $(this).data('id');
+      console.log(selectedTransactionID);
+
+      $("#confirmCancelTransactionModal").modal('show')
+    });
+
+  $('#confirmCancelTransaction').on('click', () => {
+    console.log(selectedTransactionID);
+    $(this).prop('disabled', true)
+    $.post('/api/transaction/' + selectedTransactionID + '/cancel', { id: selectedTransactionID },
+      () => {
+        transactionsTable.ajax.reload();
+        $("#confirmCancelTransactionModal").modal('hide')
+        showToastModal({ message: "Transaction supprimée avec succès", type: "success" });
+        $(this).prop('disabled', false);
+      }
+    ).fail(function () {
+      showToastModal({ message: "Echec de suppression", type: "error" });
+      $(this).prop('disabled', false);
+    })
+  }),
+
+    $('#form-edit-client').on('submit', function (e) {
+      e.preventDefault();
+      const $form = $(this);
+      const $btn = $form.find('button[type="submit"]');
+      if ($btn.prop('disabled')) return;
+      $btn.prop('disabled', true);
+      const id = $('#editClientId').val();
+      const fd = new FormData(this);
+      $.ajax({
+        url: `/client/${id}/modify`,
+        method: 'POST',
+        data: fd,
+        processData: false,
+        contentType: false
+      })
+        .done(() => {
+          showToastModal({ message: 'Client modifié avec succès !', type: 'success' });
+          $('#modalEditClient').modal('hide');
+          table.ajax.reload();
+        })
+        .fail(xhr => {
+          const msg = xhr.responseJSON?.message || 'Erreur modification client';
+          showToastModal({ message: msg, type: 'error' });
+        })
+        .always(() => $btn.prop('disabled', false));
+    });
 
   $('#btnAccompte').on('click', function (e) {
     e.preventDefault();
@@ -1355,113 +1419,113 @@ function initTransactions(clientId) {
   });
 
   // Fonction pour mettre à jour l'interface en fonction de l'agence sélectionnée
-    function updateUIByAgency() {
-        const selectedAgencyId = parseInt($destination.val());
-        
-        if (selectedAgencyId === 1) {
-            // Agence d'id 1: tous les choix sont disponibles
-            $typeOps.prop('disabled', false).prop('readonly', false);
-            $deviseExchange.prop('disabled', false).prop('readonly', false);
-        } else {
-            // Autres agences: seulement vente et USD
-            $typeOps.val('vente').prop('disabled', true).prop('readonly', true);
-            $deviseExchange.val('USD').prop('disabled', true).prop('readonly', true);
-        }
-        
-        // Mettre à jour l'affichage des devises
-        updateDeviseDisplay();
+  function updateUIByAgency() {
+    const selectedAgencyId = parseInt($destination.val());
+
+    if (selectedAgencyId === 1) {
+      // Agence d'id 1: tous les choix sont disponibles
+      $typeOps.prop('disabled', false).prop('readonly', false);
+      $deviseExchange.prop('disabled', false).prop('readonly', false);
+    } else {
+      // Autres agences: seulement vente et USD
+      $typeOps.val('vente').prop('disabled', true).prop('readonly', true);
+      $deviseExchange.val('USD').prop('disabled', true).prop('readonly', true);
     }
 
-    // Fonction pour mettre à jour l'affichage des devises
-    function updateDeviseDisplay() {
-        const selectedDevise = $deviseExchange.val();
-        $deviseAgenceDisplay.text(selectedDevise);
-        
-        if ($typeOps.val() === 'achat') {
-            $devise.text('CFA');
-        } else {
-            $devise.text(selectedDevise);
-        }
+    // Mettre à jour l'affichage des devises
+    updateDeviseDisplay();
+  }
+
+  // Fonction pour mettre à jour l'affichage des devises
+  function updateDeviseDisplay() {
+    const selectedDevise = $deviseExchange.val();
+    $deviseAgenceDisplay.text(selectedDevise);
+
+    if ($typeOps.val() === 'achat') {
+      $devise.text('CFA');
+    } else {
+      $devise.text(selectedDevise);
     }
+  }
 
-    // Fonction pour calculer le total
-    function calculateTotal() {
-        const montant = parseFloat($montant.val()) || 0;
-        const taux = parseFloat($taux.val()) || 0;
-        const type = $typeOps.val();
-        const devise = $deviseExchange.val();
-        
-        let total = 0;
-        
-        if (type === 'achat') {
-            // Pour l'achat: montant en devise * taux = montant en CFA
-            total = montant * taux;
-            $totalAPayer.removeClass('text-success text-danger').addClass('text-danger');
-            $totalAPayer.text(`-${total.toFixed(2)} CFA`);
-        } else {
-            // Pour la vente: montant en devise * taux = montant en CFA
-            total = montant * taux;
-            $totalAPayer.removeClass('text-success text-danger').addClass('text-success');
-            $totalAPayer.text(`+${total.toFixed(2)} CFA`);
-        }
+  // Fonction pour calculer le total
+  function calculateTotal() {
+    const montant = parseFloat($montant.val()) || 0;
+    const taux = parseFloat($taux.val()) || 0;
+    const type = $typeOps.val();
+    const devise = $deviseExchange.val();
+
+    let total = 0;
+
+    if (type === 'achat') {
+      // Pour l'achat: montant en devise * taux = montant en CFA
+      total = montant * taux;
+      $totalAPayer.removeClass('text-success text-danger').addClass('text-danger');
+      $totalAPayer.text(`-${total.toFixed(2)} CFA`);
+    } else {
+      // Pour la vente: montant en devise * taux = montant en CFA
+      total = montant * taux;
+      $totalAPayer.removeClass('text-success text-danger').addClass('text-success');
+      $totalAPayer.text(`+${total.toFixed(2)} CFA`);
     }
+  }
 
-    // Événement lors du changement d'agence
-    $destination.on('change', function() {
-        updateUIByAgency();
-        calculateTotal();
-    });
-
-    // Événement lors du changement de type d'opération
-    $typeOps.on('change', function() {
-        updateDeviseDisplay();
-        calculateTotal();
-    });
-
-    // Événement lors du changement de devise
-    $deviseExchange.on('change', function() {
-        updateDeviseDisplay();
-        calculateTotal();
-    });
-
-    // Événements pour le calcul en temps réel
-    $montant.on('input', calculateTotal);
-    $taux.on('input', calculateTotal);
-
-    // Événement pour le bouton d'échange
-    $exchangeButton.on('click', function() {
-        // Validation des champs
-        if (!$montant.val() || !$taux.val()) {
-            showToastModal({message: 'Veuillez remplir tous les champs obligatoires.' , type : "warning"});
-            return;
-        }
-        
-        // Récupération des données du formulaire
-        const formData = {
-            clientId: extractClientId(),
-            destination: $destination.find(":selected").val(),
-            type: $typeOps.val(),
-            deviseExchange: $deviseExchange.val(),
-            montant: $montant.val(),
-            date: $("dateOps").val(),
-            taux: $taux.val()
-        };
-        
-        $.post(`/api/client/${formData.clientId}/exchange`, formData)
-            .done(() => {
-                showToastModal({ message: `${formData.type} effectué avec succès !`, type: 'success' });
-                table.ajax.reload();
-                loadStats();
-            }).fail(() => {
-              showToastModal({ message: "L'opération a echouée !", type: 'error' })
-            })
- 
-        // Fermer le modal après traitement
-        $('#currencyModal').modal('hide');
-    });
-
-    // Initialisation de l'interface au chargement
+  // Événement lors du changement d'agence
+  $destination.on('change', function () {
     updateUIByAgency();
-    calculateTotal();  
+    calculateTotal();
+  });
+
+  // Événement lors du changement de type d'opération
+  $typeOps.on('change', function () {
+    updateDeviseDisplay();
+    calculateTotal();
+  });
+
+  // Événement lors du changement de devise
+  $deviseExchange.on('change', function () {
+    updateDeviseDisplay();
+    calculateTotal();
+  });
+
+  // Événements pour le calcul en temps réel
+  $montant.on('input', calculateTotal);
+  $taux.on('input', calculateTotal);
+
+  // Événement pour le bouton d'échange
+  $exchangeButton.on('click', function () {
+    // Validation des champs
+    if (!$montant.val() || !$taux.val()) {
+      showToastModal({ message: 'Veuillez remplir tous les champs obligatoires.', type: "warning" });
+      return;
+    }
+
+    // Récupération des données du formulaire
+    const formData = {
+      clientId: extractClientId(),
+      destination: $destination.find(":selected").val(),
+      type: $typeOps.val(),
+      deviseExchange: $deviseExchange.val(),
+      montant: $montant.val(),
+      date: $("dateOps").val(),
+      taux: $taux.val()
+    };
+
+    $.post(`/api/client/${formData.clientId}/exchange`, formData)
+      .done(() => {
+        showToastModal({ message: `${formData.type} effectué avec succès !`, type: 'success' });
+        table.ajax.reload();
+        loadStats();
+      }).fail(() => {
+        showToastModal({ message: "L'opération a echouée !", type: 'error' })
+      })
+
+    // Fermer le modal après traitement
+    $('#currencyModal').modal('hide');
+  });
+
+  // Initialisation de l'interface au chargement
+  updateUIByAgency();
+  calculateTotal();
 
 }

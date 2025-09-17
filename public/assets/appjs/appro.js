@@ -115,7 +115,9 @@ $(document).ready(function () {
                             <button class="btn btn-sm btn-outline-success dropdown-toggle btn-table-action" type="button" data-bs-toggle="dropdown">
                                 <i class="bi bi-gear"></i>
                             </button>
+                            
                             <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item print-appro" href="#" data-id="${row.id}"> <i class="bi bi-printer me-2"></i>Imprimer</a></li>
                                 <li><a class="dropdown-item view-appro" href="#" data-id="${row.id}"><i class="bi bi-eye me-2"></i>Voir</a></li>
                                 <li><a class="dropdown-item edit-appro" href="#" data-id="${row.id}"><i class="bi bi-pencil me-2"></i>Modifier</a></li>
                                 <li><a class="dropdown-item delete-appro" href="#" data-id="${row.id}"><i class="bi bi-trash me-2"></i>Supprimer</a></li>
@@ -328,6 +330,12 @@ $(document).ready(function () {
         const id = $(this).data('id');
         $('#deleteApproId').val(id);
         $('#modalDeleteAppro').modal('show');
+    });
+
+    $('#approvisionnementTable').on('click', '.print-appro', function (e) {
+        e.preventDefault();
+        const id = $(this).data('id'); 
+        window.open(`/api/appro/${id}/print`, "_blank")
     });
 
     // Fonction pour charger les statistiques des approvisionnements

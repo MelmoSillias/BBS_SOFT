@@ -493,4 +493,44 @@ final class ClientController extends AbstractController
             ]
         ]);
     }
+    
+    #[Route('/api/transaction/{id}/cancel', name: 'transaction_cancel')]
+    public function CancelTransaction(AccountTransaction $transaction, EntityManagerInterface $em): Response
+    {
+        if (!$transaction) {
+            return $this->json([false, "La transaction n'existe pas"], 404);
+        }
+
+        $em->remove($transaction);
+        $em->flush();
+
+        return $this->json([true, 200]);
+    }
+
+    #[Route('/api/transaction/{id}/details', name: 'transaction_details')]
+    public function TransactionDetails(AccountTransaction $transaction, EntityManagerInterface $em, Request $request): Response
+    {
+        if (!$transaction) {
+            return $this->json([false, "La transaction n'existe pas"], 404);
+        }   
+
+        return $this->json(['id' => $transaction->getId(), 'type' => $transaction->getType(), 'montant' => $transaction->getCFA(), 'date' => $transaction->getCreatedAt()->format('Y-m-d') ]);
+    }
+
+    #[Route('/api/transaction/{id}/update', name: 'transaction_update')]
+    public function UpdateTransaction(AccountTransaction $transaction, EntityManagerInterface $em,Request $request): Response
+    {
+        if (!$transaction) {
+            return $this->json([false, "La transaction n'existe pas"], 404);
+        }
+
+        $amount = $request->get('montant');
+
+        $transaction->setCFA($amount);
+
+        $em->persist($transaction);
+        $em->flush();
+
+        return $this->json([true, 200]);
+    }
 }

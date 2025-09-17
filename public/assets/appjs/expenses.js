@@ -120,6 +120,7 @@ $(document).ready(function () {
                                 <i class="bi bi-gear"></i>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item print-expense" href="#" data-id="${row.id}"> <i class="bi bi-printer me-2"></i>Imprimer </a></li>
                                 <li><a class="dropdown-item view-expense" href="#" data-id="${row.id}"><i class="bi bi-eye me-2"></i>Voir</a></li>
                                 <li><a class="dropdown-item edit-expense" href="#" data-id="${row.id}"><i class="bi bi-pencil me-2"></i>Modifier</a></li>
                                 <li><a class="dropdown-item delete-expense" href="#" data-id="${row.id}"><i class="bi bi-trash me-2"></i>Supprimer</a></li>
@@ -401,6 +402,12 @@ $(document).ready(function () {
         const id = $(this).data('id');
         $('#deleteExpenseId').val(id);
         $('#modalDeleteExpense').modal('show');
+    });
+
+    $('#expensesTable').on('click', '.print-expense', function (e) { 
+        e.preventDefault();
+        const id = $(this).data('id'); 
+        window.open(`/api/depenses/${id}/print`, "_blank")
     });
 
     // Fonction pour charger les statistiques des dépenses

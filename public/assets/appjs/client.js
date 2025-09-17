@@ -406,7 +406,7 @@ $(document).ready(function() {
         if (!$montant.val() || !$taux.val()) {
             showToastModal({message: 'Veuillez remplir tous les champs obligatoires.' , type : "warning"});
             return;
-        }
+        } 
         
         // Récupération des données du formulaire
         const formData = {
@@ -415,7 +415,7 @@ $(document).ready(function() {
             type: $typeOps.val(),
             deviseExchange: $deviseExchange.val(),
             montant: $montant.val(),
-            date: $("dateOps").val(),
+            date: $("#dateOps").val(),
             taux: $taux.val()
         };
         
