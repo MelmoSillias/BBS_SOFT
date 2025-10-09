@@ -25,9 +25,7 @@
 		.stat-text {
 			font-size: 0.9rem;
 			color: #6c757d;
-		}
-
-
+		} 
 		/* Style pour les filtres */
 		.filter-section {
 			background-color: #f8f9fa;
@@ -42,9 +40,9 @@
 		}
 
 		.badge-status {
-			padding: 5px 10px;
+			padding: 3px 6px;
 			border-radius: 20px;
-			font-size: 0.8rem;
+			font-size: 0.6rem;
 			font-weight: 600;
 			text-transform: uppercase;
 		}
@@ -150,43 +148,69 @@
 								<span id="stat-attente">0</span>
 							</small>
 							<small class="text-danger">
-								<i class="bi bi-x-circle"></i>
-								<span id="stat-annule">0</span>
+								<i class="bi bi-arrow-repeat"></i>
+								<span id="stat-en-cours">0</span>
 							</small>
 						</div>
 					</div>
 				</div>
 			</div>
 
-			<!-- Transferts par type : Internes -->
+			<!-- Transferts en attente -->
 			<div class="col-md-3 mb-3">
-				<div class="card stat-card border-start border-success border-4">
+				<div class="card stat-card border-start border-warning border-4">
 					<div class="card-body">
 						<div class="d-flex justify-content-between align-items-center">
 							<div>
-								<div class="stat-text">par type Clients</div>
-								<div class="stat-number text-success" id="stat-enregistres">0</div>
+								<div class="stat-text">Transferts en attente</div>
+								<div class="stat-number text-warning" id="stat-pending-cfa"></div>
 							</div>
-							<div class="stat-icon text-success">
-								<i class="bi bi-person"></i>
+							<div class="stat-icon text-warning">
+								<i class="bi bi-hourglass-split"></i>
 							</div>
 						</div>
 						<hr class="my-2">
 						<div class="d-flex justify-content-between">
-							<small class="text-primary">
-								<i class="bi bi-person-check-fill"></i>
-								<span id="stat-enregistres">0</span> enregistrés
+							<small class="text-success">
+								<i class="bi "></i>
+								<span id="stat-pending-count">0</span>
 							</small>
 							<small class="text-warning">
-								<i class="bi bi-person-dash-fill"></i>
-								<span id="stat-ephemeres">0</span> éphémères
+								<i class="bi bi-currency-dollar"></i>
+								<span id="stat-pending-usd">0</span>
 							</small> 
 						</div>
 					</div>
 				</div>
 			</div>
 
-			 
+			<!-- Transferts en cours -->
+			<div class="col-md-3 mb-3">
+				<div class="card stat-card border-start border-info border-4">
+					<div class="card-body">
+						<div class="d-flex justify-content-between align-items-center">
+							<div>
+								<div class="stat-text">Transferts en cours</div>
+								<div class="stat-number text-info" id="stat-processing-usd"></div>
+							</div>
+							<div class="stat-icon text-info">
+								<i class="bi bi-arrow-repeat"></i>
+							</div>
+						</div>
+						<hr class="my-2">
+						<div class="d-flex justify-content-between">
+							<small class="text-success">
+								<i class="bi bi-hash"></i>
+								<span id="stat-processing-count">0</span>
+							</small>
+							<small class="text-warning">
+								<i class="bi bi-cash"></i>
+								<span id="stat-processing-cfa">0</span>
+							</small> 
+						</div>
+					</div>
+				</div>
+			</div>
 
 			<!-- Montants globaux -->
 			<div class="col-md-3 mb-3">
@@ -234,8 +258,9 @@
 						<label class="filter-label">Statut</label>
 						<select id="filterStatus" class="form-select form-select-sm">
 							<option value="">Tous statuts</option>
-							<option value="completed">Complétés</option>
-							<option value="pending">En attente</option>
+							<option value="completed">Complétés</option> 
+							<option value="processing">En cours</option>
+							<option value="pending">En attente</option> 
 							<option value="cancelled">Annulés</option>
 						</select>
 					</div>
@@ -274,17 +299,15 @@
 			<div class="card-body p-4">
 				<div class="table-responsive">
 					<table id="transfersTable" class="table table-transfer table-hover table-stripe mb-0 w-100">
-						<thead>
-							<tr><th width="100">Reference</th>
-								<th width="100">Date</th>
-								<th width="100">Type</th>
+						<thead><th width="30">ID</th>
+						<th width="100">Reference</th>
+								<th width="100">Date</th> 
 								<th>Expéditeur</th>
 								<th width="160">Montant</th>
-								<th width="120">Taux</th> 
+								<th width="160">en USD</th> 
 								<th width="150">Total remis</th>
-								<th width="170">Statut</th>
-								<th width="100">Actions</th>
-							</tr>
+								<th width="100">Statut</th>
+								<th width="80">Actions</th>
 						</thead>
 						<tbody>
 							<!-- Les données seront chargées via DataTables -->

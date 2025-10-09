@@ -192,7 +192,6 @@
 {% block main %}
 	<div
 		class="container-fluid">
-
 		{# --- 1. Informations du Client --- #}
 		<div class="card card-info card-outline mb-4">
 			<div class="card-header">
@@ -230,20 +229,9 @@
 					</div>
 				</form>
 			</div>
-		</div>
-
-		{# --- 2. Soldes du Client --- #}
-		<div class="card card-primary card-outline mb-4">
-			<div class="card-header d-flex justify-content-between align-items-center bg-opacity-25">
-				<h3 class="card-title">Soldes | Changes</h3>
-				<button class="btn btn-sm btn-outline-primary exchange" id="btnExchange" data-id="{{client.id}}" title="Echanger">
-					<i class="bi bi-currency-exchange"></i>Echanger
-				</button>
-			</div>
-			<div class="card-body">
-				<div
-					class="row" id="clientBalances">
-					<!-- Les soldes seront chargés dynamiquement ici -->
+			<div class="card-footer">
+				<div class="row" id="clientBalances">
+				<!-- Les soldes seront chargés dynamiquement ici -->
 					<div class="col-12 text-center py-4">
 						<div class="spinner-border text-primary" role="status">
 							<span class="visually-hidden">Chargement des soldes...</span>
@@ -251,171 +239,23 @@
 						<p class="mt-2">Chargement des soldes...</p>
 					</div>
 				</div>
-
-				<div class="table-responsive">
-					<table id="exchangesTable" class="table table-bordered table-hover table-striped border-top border-bottom">
-						<thead>
-							<tr>
-								<th width="200">Date</th>
-								<th>type</th>
-								<th>Montant Devise</th>
-								<th>Montant CFA</th>
-								<th>Taux</th>
-								<th>Actions</th>
-							</tr>
-						</thead>
-						<tbody></tbody>
-					</table>
-				</div>
 			</div>
 		</div>
 
-
-		{# --- 3. Transferts --- #}
-		<div class="card card-success card-outline mt-4">
-			<div class="card-header d-flex justify-content-between align-items-center bg-opacity-25">
-				<h3 class="card-title">Transferts</h3>
-				<button id="btnAddTransfert" class="btn btn-sm btn-primary">
-					<i class="bi bi-plus-lg"></i>
-					Transferer
-				</button>
+		<ul class="nav nav-tabs" id="mainTab" role="tablist">
+			<li class="nav-item" role="presentation">
+				<button class="nav-link active" id="uniqView-tab" data-bs-toggle="tab" data-bs-target="#uniqView-tab-pane" type="button" role="tab" aria-controls="uniqView-tab-pane" aria-selected="true">Vue d'ensemble</button>
+			</li>
+			<li class="nav-item" role="presentation">
+				<button class="nav-link" id="composed-tab" data-bs-toggle="tab" data-bs-target="#composed-pane" type="button" role="tab" aria-controls="composed-pane" aria-selected="false">Vue détaillée</button>
+			</li>
+		</ul>
+		<div class="tab-content" id="mainTabContent">
+			<div class="tab-pane fade show active" id="uniqView-tab-pane" role="tabpanel" aria-labelledby="uniqView-tab" tabindex="0">
+				{% include "client/client_show/uniqView.html.twig" %}
 			</div>
-			<div
-				class="card-body">
-				{# --- Stats --- #}
-				<div
-					class="row mb-4" id="transferStats">
-
-					<!-- Total Transferts -->
-					<div class="col-md-3 mb-3">
-						<div class="card stat-card border-start border-primary border-4">
-							<div class="card-body">
-								<div class="d-flex justify-content-between align-items-center">
-									<div>
-										<div class="stat-text">Total Transferts</div>
-										<div class="stat-number text-primary" id="stat-total">0</div>
-									</div>
-									<div class="stat-icon text-primary">
-										<i class="bi bi-arrow-left-right"></i>
-									</div>
-								</div>
-								<hr class="my-2">
-								<div class="d-flex justify-content-between">
-									<small class="text-success">
-										<i class="bi bi-check-circle"></i>
-										<span id="stat-valide">0</span>
-									</small>
-									<small class="text-warning">
-										<i class="bi bi-hourglass"></i>
-										<span id="stat-attente">0</span>
-									</small>
-									<small class="text-danger">
-										<i class="bi bi-x-circle"></i>
-										<span id="stat-annule">0</span>
-									</small>
-								</div>
-							</div>
-						</div>
-					</div>
-
-					<!-- Montants globaux -->
-					<div class="col-md-3 mb-3">
-						<div class="card stat-card border-start border-warning border-4">
-							<div class="card-body">
-								<div class="d-flex justify-content-between align-items-center">
-									<div>
-										<div class="stat-text">Montant Total Envoyé</div>
-										<div class="stat-number text-warning" id="stat-montant">0 FCFA</div>
-									</div>
-									<div class="stat-icon text-warning">
-										<i class="bi bi-cash-stack"></i>
-									</div>
-								</div>
-								<hr class="my-2">
-								<div class="d-flex justify-content-between">
-									<small class="text-danger">Frais:
-										<span id="stat-frais">0</span>
-									</small>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="row mb-3">
-					<div class="col-md-4">
-						<input type="text" id="filterDateRange" class="form-control" placeholder="Période (ex. 01/01/2025 - 31/01/2025)">
-					</div>
-					<div class="col-md-4">
-						<select id="filterStatus" class="form-select">
-							<option value="">Tous</option>
-							<option value="pending">En cours</option>
-							<option value="completed">Confirmé</option>
-							<option value="cancelled">Annulé</option>
-						</select>
-					</div>
-					<div class="col-md-4">
-						<select id="filterType" class="form-select form-control">
-							<option value="">Tous types</option>
-							<option value="standard">Envoi Cash</option>
-							<option value="byAccount">Retrait compte</option>
-						</select>
-					</div>
-				</div>
-				<table id="transfersTable" class="table table-bordered table-hover table-striped border-top border-bottom">
-					<thead>
-						<tr>	
-							<th width="100">Date</th>
-							<th width="100">Type</th>
-							<th>Destinataire</th>
-							<th width="150">Montant</th>
-							<th width="120">Taux</th>
-							<th width="120">Frais</th>
-							<th width="150">Total remis</th>
-							<th width="160">Statut</th>
-							<th width="100">Actions</th>
-						</tr>
-					</thead>
-					<tbody></tbody>
-				</table>
-			</div>
-		</div>
-
-		{# --- 4. Transactions du Client --- #}
-		<div class="card card-primary card-outline mt-4">
-			<div class="card-header d-flex justify-content-between align-items-center bg-primary bg-opacity-25">
-				<h3 class="card-title mb-0">Toutes les transactions</h3>
-				<div class="d-flex align-items-center">
-					<label for="filterTransactionType" class="me-2 mb-0 w-50">Type :</label>
-					<select id="filterTransactionType" class="form-select form-select-sm " style="min-width:120px;">
-						<option value="">Tous</option>
-						<option value="Entrée">Entrée</option>
-						<option value="Sortie">Sortie</option>
-					</select>
-				</div>
-
-			</div>
-			<div class="card-body">
-				<table id="transactionsTable" class="table table-bordered table-hover table-striped border-top border-bottom">
-					<thead>
-						<tr>
-							<th width="100">Reference</th>
-							<th width="100">Date</th>
-							<th  width="250">Description</th>
-							<th>CFA</th>
-							<th>AED</th>
-							<th>EUR</th>
-							<th>USD</th>
-							<th>GBP</th>
-							<th>CNY</th>
-							<th>MAD</th>
-							<th>DZD</th>
-							<th width="150">Actions</th>
-						</tr>
-					</thead>
-					<tbody>
-						<!-- Les lignes seront remplies dynamiquement -->
-					</tbody>
-				</table> 
+			<div class="tab-pane fade" id="composed-pane" role="tabpanel" aria-labelledby="composed" tabindex="0">
+				{% include "client/client_show/composed.html.twig" %}
 			</div>
 		</div>
 
@@ -440,7 +280,6 @@
 			<i class="bi bi-plus-lg"></i>
 		</button>
 	</div>
-
 
 	{# 3a. Modal Ajout transfet #}
 	<div class="modal fade" id="modalAddTransfert" tabindex="-1" aria-hidden="true">
@@ -475,9 +314,13 @@
 								</label>
 								<select id="destination" name="destination" class="form-select shadow-sm country-select" required>
 									{% for agence in agences %}
-									    {% if agence.id != 1 %} 
-											<option value="{{ agence.id }}"> <small style="font-weight:bold;  font-size:8px" >{{ agence.abg }}</small> <strong>{{ agence.designation }}</strong> - {{ agence.localite }}</option>
-										{% endif %} 
+										{% if agence.id != 1 %}
+											<option value="{{ agence.id }}">
+												<small style="font-weight:bold;  font-size:8px">{{ agence.abg }}</small>
+												<strong>{{ agence.designation }}</strong>
+												-
+												{{ agence.localite }}</option>
+										{% endif %}
 									{% endfor %}
 								</select>
 							</div>
@@ -810,13 +653,13 @@
 							<label class="form-label fw-bold">Date
 								<span class="text-danger">*</span>
 							</label>
-							<input type="date" id="dateOps" name="date" class="form-control shadow-sm" required>
+							<input type="date" id="dateOpsEchange" name="date" class="form-control shadow-sm" required>
 						</div>
 						<div class="mb-3">
 							<label class="form-label fw-bold">Depuis l'agence de :
 								<span class="text-danger">*</span>
 							</label>
-							<select id="destination" name="destination" class="form-select shadow-sm country-select" required>
+							<select id="destinationEchange" name="destination" class="form-select shadow-sm country-select" required>
 								{% for agence in agences %}
 									<option value="{{ agence.id }}">
 										<small style="font-weight:bold;  font-size:8px">{{ agence.abg }}</small>
@@ -830,7 +673,7 @@
 							<label class="form-label small fw-bold">Type
 								<span class="text-danger">*</span>
 							</label>
-							<select id="typeOps" name="type" class="form-select form-select-sm" required>
+							<select id="typeOpsEchange" name="type" class="form-select form-select-sm" required>
 								<option value="achat">Achat</option>
 								<option value="vente">Vente</option>
 							</select>
@@ -839,14 +682,14 @@
 							<label class="form-label small fw-bold">Devise
 								<span class="text-danger">*</span>
 							</label>
-							<select id="deviseExchange" name="deviseExchange" class="form-select shadow-sm country-select" required> 
+							<select id="deviseExchange" name="deviseExchange" class="form-select shadow-sm country-select" required>
 								<option value="USD">USD - Dollar américain</option>
 								<option value="AED">AED - Dirham des Émirats Arabes Unis</option>
-								<option value="EUR">EUR - Euro</option> 
+								<option value="EUR">EUR - Euro</option>
 								<option value="GBP">GBP - Livre sterling</option>
 								<option value="CNY">CNY - Yuan chinois</option>
 								<option value="MAD">MAD - Dirham marocain</option>
-								<option value="DZD">DZD - Dinar algérien</option> 
+								<option value="DZD">DZD - Dinar algérien</option>
 							</select>
 						</div>
 						<div class="mb-3">
@@ -855,8 +698,8 @@
 							</label>
 							<div class="input-group input-group-sm">
 								<span class="input-group-text">Montant :</span>
-								<input type="number" id="montant" name="montant" class="form-control" placeholder="0.00" step="0.001" required>
-								<span class="input-group-text" id="devise">USD</span>
+								<input type="number" id="montantEchange" name="montant" class="form-control" placeholder="0.00" step="0.001" required>
+								<span class="input-group-text" id="deviseEchange">USD</span>
 							</div>
 						</div>
 						<div class="mb-3">
@@ -865,17 +708,21 @@
 							</label>
 							<div class="input-group input-group-sm">
 								<span class="input-group-text">1</span>
-								<span class="input-group-text" id="deviseAgenceDisplay">USD</span>
+								<span class="input-group-text" id="deviseAgenceDisplayEchange">USD</span>
 								<span class="input-group-text">=</span>
-								<input type="number" id="taux" name="taux" class="form-control" placeholder="0.00" step="0.0001" required>
+								<input type="number" id="tauxEchange" name="taux" class="form-control" placeholder="0.00" step="0.0001" required>
 								<span class="input-group-text">CFA</span>
 							</div>
 						</div>
 						<div class="mb-3">
 							<label class="form-label small fw-bold">Total</label>
 							<div class="bg-light p-2 rounded text-end">
-								<span id="totalAPayer" class="fw-bold text-success">0.00 CFA</span>
+								<span id="totalAPayerEchange" class="fw-bold text-success">0.00 CFA</span>
 							</div>
+						</div>
+						<div class="mb-3">
+							<label for="exchangeNoteNote" class="form-label">Note (optionnel)</label>
+							<textarea class="form-control" id="exchangeNote" name="note" rows="2"></textarea>
 						</div>
 					</div>
 				</div>
@@ -886,7 +733,7 @@
 			</div>
 		</div>
 	</div>
- 
+
 	<div class="modal fade" id="editTransactionModal" tabindex="-1" role="dialog" aria-labelledby="editTransactionModalLabel" aria-hidden="true">
 		<div class="modal-dialog" role="document">
 			<div class="modal-content">
@@ -896,15 +743,15 @@
 				</div>
 				<div class="modal-body">
 					<div>
-					 	<label class="form-label">Type :</label>	
+						<label class="form-label">Type :</label>
 						<input type="text" id="editTransType" class="form-control" readonly>
 					</div>
 					<div class='mb-3'>
-					 	<label class="form-label">Date :</label>	
+						<label class="form-label">Date :</label>
 						<input type="date" id="editTransDate" class="form-select form-control">
 					</div>
 					<div>
-					 	<label class="form-label">Montant :</label>	
+						<label class="form-label">Montant :</label>
 						<input type="number" id="editTransAmount" class="form-control">
 					</div>
 				</div>
@@ -926,9 +773,10 @@
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
-					<div class="mb-3">Êtes-vous sûr de vouloir valider ce transfert ? </div> 
+					<div class="mb-3">Êtes-vous sûr de vouloir valider ce transfert ?
+					</div>
 					<div>
-					 	<label class="form-label">Date de validation :</label>	
+						<label class="form-label">Date de validation :</label>
 						<input type="date" id="valid-date" class="form-select form-control">
 					</div>
 				</div>
@@ -1016,8 +864,8 @@
 									<div
 										class="d-flex align-items-center">
 										{# <div class="flex-shrink-0">
-										                                        <span class="currency-flag currency-flag-aed" style="width: 40px; height: 30px; display: inline-block; background-size: cover;"></span>
-										                                    </div> #}
+																																								                                        <span class="currency-flag currency-flag-aed" style="width: 40px; height: 30px; display: inline-block; background-size: cover;"></span>
+																																								                                    </div> #}
 										<div class="flex-grow-1 ms-3">
 											<h4 id="detail-from-amount" class="mb-0">0.00</h4>
 											<span id="detail-from-currency" class="text-muted">USD</span>
@@ -1035,8 +883,8 @@
 									<div
 										class="d-flex align-items-center">
 										{# <div class="flex-shrink-0">
-										                                        <span class="currency-flag currency-flag-eur" style="width: 40px; height: 30px; display: inline-block; background-size: cover;"></span>
-										                                    </div> #}
+																																								                                        <span class="currency-flag currency-flag-eur" style="width: 40px; height: 30px; display: inline-block; background-size: cover;"></span>
+																																								                                    </div> #}
 										<div class="flex-grow-1 ms-3">
 											<h4 id="detail-to-amount" class="mb-0">0.00</h4>
 											<span id="detail-to-currency" class="text-muted">EUR</span>
@@ -1156,12 +1004,12 @@
 							<select id="deviseW" name="deviseW" class="form-select shadow-sm country-select" required>
 								<option value="CFA">CFA - BECEAO</option>
 								{# <option value="AED">AED - Dirham des Émirats Arabes Unis</option>
-								<option value="EUR">EUR - Euro</option>
-								<option value="USD">USD - Dollar américain</option>
-								<option value="GBP">GBP - Livre sterling</option>
-								<option value="CNY">CNY - Yuan chinois</option>
-								<option value="MAD">MAD - Dirham marocain</option>
-								<option value="DZD">DZD - Dinar algérien</option> #}
+																																<option value="EUR">EUR - Euro</option>
+																																<option value="USD">USD - Dollar américain</option>
+																																<option value="GBP">GBP - Livre sterling</option>
+																																<option value="CNY">CNY - Yuan chinois</option>
+																																<option value="MAD">MAD - Dirham marocain</option>
+																																<option value="DZD">DZD - Dinar algérien</option> #}
 							</select>
 							<small>Solde :
 								<span id='soldeDeviseW' class='texteprimary'></span>
@@ -1182,7 +1030,7 @@
 						</div>
 						<div class="mb-3">
 							<label for="withdrawMode" class="form-label">Mode de paiement</label>
-							<select class="form-select" id="withdrawMode" name="mode" required>
+							<select class="form-select" id="withdrawMode" name="mode">
 								<option value="Espèces">Espèces</option>
 								<option value="Chèque">Chèque</option>
 								<option value="Virement">Virement</option>
@@ -1198,8 +1046,6 @@
 		</div>
 	</div>
 </div>
-
-
 <!-- Modal Versement Client -->
 <div class="modal fade" id="modalAccompteClient" tabindex="-1" aria-labelledby="modalAccompteClientLabel" aria-hidden="true">
 	<div class="modal-dialog">
@@ -1210,18 +1056,19 @@
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
 				</div>
 				<div class="modal-body">
-					<input type="hidden" name="clientId" id="accompteClientId">
+					<input
+					type="hidden" name="clientId" id="accompteClientId">
 					{# <div class="mb-3">
-					    <label for="agence" class="form-label fw-bold">Depuis
-					        <span class="text-danger">*</span>
-						</label>
-						<select id="agence" name="agence" class="form-select form-control shadow-sm country-select" required>
-							<option>--Selectionner l'agence ou se fait le depot--</option>
-							{% for agence in agences %}
-								<option value="{{ agence.id }}">{{ agence.designation }}</option>
-							{% endfor %} 
-						</select>
-					</div> #}
+																				    <label for="agence" class="form-label fw-bold">Depuis
+																				        <span class="text-danger">*</span>
+																					</label>
+																					<select id="agence" name="agence" class="form-select form-control shadow-sm country-select" required>
+																						<option>--Selectionner l'agence ou se fait le depot--</option>
+																						{% for agence in agences %}
+																							<option value="{{ agence.id }}">{{ agence.designation }}</option>
+																						{% endfor %} 
+																					</select>
+																				</div> #}
 					<div class="mb-3">
 						<label class="form-label fw-bold">Devise
 							<span class="text-danger">*</span>
@@ -1245,9 +1092,9 @@
 						<input type="number" class="form-control" id="accompteAmount" name="amount" min="1" required>
 					</div>
 					{# <div class="mb-3 hidden">
-						<label for="accomptedAmount" class="form-label">Montant de depot</label>
-						<input type="number" class="form-control" id="accompteAmount" name="amount" min="1" required>
-					</div> #}
+																					<label for="accomptedAmount" class="form-label">Montant de depot</label>
+																					<input type="number" class="form-control" id="accompteAmount" name="amount" min="1" required>
+																				</div> #}
 					<div class="mb-3">
 						<label for="accompteNote" class="form-label">Note (optionnel)</label>
 						<textarea class="form-control" id="accompteNote" name="note" rows="2"></textarea>
@@ -1258,7 +1105,7 @@
 					</div>
 					<div class="mb-3">
 						<label for="accompteMode" class="form-label">Mode de paiement</label>
-						<select class="form-select" id="accompteMode" name="mode" required>
+						<select class="form-select" id="accompteMode" name="mode">
 							<option value="Espèces">Espèces</option>
 							<option value="Chèque">Chèque</option>
 							<option value="Virement">Virement</option>
@@ -1272,8 +1119,14 @@
 			</form>
 		</div>
 	</div>
-</div>
-{% endblock %}
-{% block javascripts %}
-	<script src="{{ asset('assets/appjs/client_show.js') }}"></script> 
-{% endblock %}
+</div>{% endblock %}{% block javascripts %}
+<script src="{{ asset('assets/appjs/client_show/init.js') }}"></script>
+<script src="{{ asset('assets/appjs/client_show/client_exchanges.js') }}"></script>
+<script src="{{ asset('assets/appjs/client_show/client_exchanges_form.js') }}"></script>
+<script src="{{ asset('assets/appjs/client_show/client_transferts.js') }}"></script>
+<script src="{{ asset('assets/appjs/client_show/client_transferts_form.js') }}"></script>
+<script src="{{ asset('assets/appjs/client_show/client_transactions.js') }}"></script>
+<script src="{{ asset('assets/appjs/client_show/client_transactions_form.js') }}"></script>
+<script src="{{ asset('assets/appjs/client_show/uniqView.js') }}"></script>
+
+<script src="{{ asset('assets/appjs/client_show/client_show.js') }}"></script>{% endblock %}

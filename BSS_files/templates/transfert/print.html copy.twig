@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>REÇU DE TRANSFERT - BSS</title>
+    <style>
+        /* Reset et base */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #fff;
+            color: #333;
+            size: A4 landscape;
+            margin: 0 auto;
+            padding: 15mm;
+        }
+        
+        /* Conteneur principal */
+        .receipt {
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            height: 180mm;
+            border: 3px solid #1a5276;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* En-tête */
+        .header {
+            background: #1a5276;
+            color: white;
+            padding: 8mm;
+            text-align: center;
+        }
+        .company-name {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .receipt-title {
+            font-size: 22px;
+            margin-top: 5px;
+            font-weight: 600;
+        }
+        .receipt-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 16px;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+        
+        /* Corps du reçu */
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5mm;
+            padding: 10mm;
+        }
+        .section {
+            margin-bottom: 8mm;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a5276;
+            border-bottom: 2px solid #1a5276;
+            padding-bottom: 3px;
+            margin-bottom: 8px;
+        }
+        .info-row {
+            display: flex;
+            margin-bottom: 6px;
+            font-size: 16px;
+        }
+        .info-label {
+            font-weight: 600;
+            min-width: 70mm;
+            color: #555;
+        }
+        
+        /* Section montants */
+        .amounts {
+            grid-column: span 2;
+            background: #f8f9fa;
+            padding: 8mm;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .amount-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 17px;
+        }
+        .total-row {
+            font-weight: 700;
+            font-size: 19px;
+            border-top: 2px solid #1a5276;
+            padding-top: 8px;
+            margin-top: 8px;
+        }
+        
+        /* Pied de page */
+        .footer {
+            background: #f8f9fa;
+            padding: 8mm;
+            text-align: center;
+            border-top: 3px solid #1a5276;
+        }
+        .signatures {
+            display: flex;
+            justify-content: space-around;
+            margin: 10mm 0 5mm;
+        }
+        .signature {
+            width: 40%;
+            text-align: center;
+        }
+        .signature-line {
+            border-top: 1px solid #333;
+            margin: 0 auto;
+            width: 80%;
+            padding-top: 5px;
+            font-size: 14px;
+        }
+        .company-info {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+        }
+        
+        /* Éléments visuels */
+        .watermark {
+            position: absolute;
+            font-size: 120px;
+            color: rgba(26, 82, 118, 0.1);
+            font-weight: 700;
+            transform: rotate(-30deg);
+            top: 30%;
+            left: 15%;
+            z-index: -1;
+            pointer-events: none;
+        }
+        .stamp {
+            position: absolute;
+            right: 15mm;
+            bottom: 15mm;
+            width: 60mm;
+            opacity: 0.8;
+        }
+        
+        /* Couleurs spécifiques */
+        .text-amount { color: #1a5276; font-weight: 600; }
+        .text-fees { color: #c0392b; }
+        .text-success { color: #27ae60; }
+        
+        /* Media print */
+        @media print {
+            body { padding: 0; }
+            .receipt { border: none; height: auto; }
+            .footer { break-inside: avoid; }
+        }
+
+        
+    </style>
+
+    <style id="print-styles">
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+        body { 
+            width: 297mm;
+            height: 210mm;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        .receipt {
+            height: 210mm;
+            margin: 0;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt">
+        <!-- Watermark -->
+        <div class="watermark">BSS</div>
+        
+        <!-- En-tête -->
+        <div class="header">
+            <div class="company-name">BUREAU DE SERVICES ET DE SOLUTIONS</div>
+            <div class="receipt-title">REÇU DE TRANSFERT MONÉTAIRE</div>
+            <div class="receipt-meta">
+                <span>Date: 15/05/2023 14:30</span>
+                <span>Référence: TRF-20230515-00123</span>
+                <span>Agent: M. Ndiaye</span>
+            </div>
+        </div>
+        
+        <!-- Corps du document -->
+        <div class="content">
+            <!-- Colonne gauche -->
+            <div class="column">
+                <div class="section">
+                    <div class="section-title">EXPÉDITEUR</div>
+                    <div class="info-row">
+                        <span class="info-label">Nom complet:</span>
+                        <span>Moussa Diallo</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Téléphone:</span>
+                        <span>+221 77 123 45 67</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Type client:</span>
+                        <span>Enregistré</span>
+                    </div> 
+                </div>
+            </div>
+            
+            <!-- Colonne droite -->
+            <div class="column">
+                <div class="section">
+                    <div class="section-title">BÉNÉFICIAIRE</div>
+                    <div class="info-row">
+                        <span class="info-label">Nom complet:</span>
+                        <span>Fatou Diop</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Téléphone:</span>
+                        <span>+971 50 123 4567</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Pays:</span>
+                        <span>Émirats Arabes Unis</span>
+                    </div> 
+                </div>
+            </div>
+            
+            <!-- Section montants -->
+            <div class="amounts">
+                <div class="section-title">DÉTAILS FINANCIERS</div>
+                
+                <div class="amount-row">
+                    <span>Montant transféré:</span>
+                    <span class="text-amount">150 000 F CFA</span>
+                </div>
+                <div class="amount-row">
+                    <span>Frais de transfert:</span>
+                    <span class="text-fees">5 000 F CFA</span>
+                </div>
+                <div class="amount-row">
+                    <span>Taux de change appliqué:</span>
+                    <span>1 USD = 562,50 F CFA</span>
+                </div>
+                <div class="amount-row">
+                    <span>Montant à recevoir:</span>
+                    <span class="text-success">263,16 USD</span>
+                </div>
+                <div class="amount-row total-row">
+                    <span>TOTAL À PAYER:</span>
+                    <span>155 000 F CFA</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pied de page -->
+        <div class="footer">
+            <div class="signatures">
+                <div class="signature">
+                    <div class="signature-line">Signature du client</div>
+                </div>
+                <div class="signature">
+                    <div class="signature-line">Signature de l'agent</div>
+                </div>
+            </div>
+            
+            <div class="company-info">
+                <div>BSS - Bureau de Services et de Solutions</div>
+                <div>123 Avenue de la République, Dakar | Tél: +221 33 123 45 67</div>
+                <div>Email: contact@bss.sn | Site: www.bss.sn</div>
+                <div style="margin-top: 5px; font-size: 13px;">Merci pour votre confiance !</div>
+            </div>
+        </div>
+        
+        <!-- Cachet (optionnel) -->
+        <svg class="stamp" viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="10" width="180" height="80" rx="10" fill="none" stroke="#c0392b" stroke-width="3"/>
+            <text x="100" y="55" font-family="Arial" font-size="16" fill="#c0392b" 
+                  text-anchor="middle" dominant-baseline="middle">PAYÉ • 15/05/2023</text>
+        </svg>
+    </div>
+
+    <script>
+        // Impression automatique avec délai pour le chargement
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                window.print();
+                // Fermer après impression si dans un nouvel onglet
+                setTimeout(function() { window.close(); }, 500);
+            }, 500);
+        });
+    </script>
+</body>
+</html>

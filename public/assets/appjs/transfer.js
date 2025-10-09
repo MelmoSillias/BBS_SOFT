@@ -108,15 +108,7 @@ $(document).ready(function () {
         tableTransfers.ajax.reload();
         chargerStatsTransferts();
     });
-
-    // Déclencher manuellement l'événement pour appliquer la semaine en cours
-    $('#filterDateRange').data('daterangepicker').setStartDate(moment().startOf('week'));
-    $('#filterDateRange').data('daterangepicker').setEndDate(moment().endOf('week'));
-    $('#filterDateRange').val(moment().startOf('week').format('YYYY-MM-DD') + ' - ' + moment().endOf('week').format('YYYY-MM-DD'));
-
-    // Mettre à jour les variables globales
-    startTransfertDate = moment().startOf('week').format('YYYY-MM-DD');
-    endTransfertDate = moment().endOf('week').format('YYYY-MM-DD'); 
+ 
 
     // Initialiser DataTable avec récupération des données via AJAX
     const tableTransfers = $('#transfersTable').DataTable({
@@ -134,27 +126,24 @@ $(document).ready(function () {
         },
         columns: [
             {
-                data: 'ref',
+                data: 'id', visible:false
+                
+            },
+            {
+                data: 'ref',orderable: false,
                 render: function (data) {
                     return `<span class="text-secondary fw-bold">${data}</span>`;
                 },
             },
             {
                 data: 'createdAt',
-                visible: false,
-            },
-            {
-                data: 'type',
                 render: function (data) {
-                    const types = {
-                        'standard': '<span class="badge bg-primary">Envoi Cash</span>',
-                        'byAccount': '<span class="badge bg-info">Retrait compte</span>'
-                    };
-                    return types[data] || data;
-                }
-            },
+                    return `<span class="text-muted fw-bold">${moment(data).format('DD/MM/YYYY')}</span>`;
+                },orderable: false,
+                visible: true,
+            }, 
             {
-                data: 'expediteur',
+                data: 'expediteur',orderable: false,
                 render: function (data, type, row) {
                     if (row.clientType === 'ephemeral') {
                         return `
@@ -173,26 +162,29 @@ $(document).ready(function () {
                 data: 'montantCFA',
                 render: function (data) {
                     return `<span class="text-success fw-bold">${parseFloat(data).toLocaleString('fr-FR')} F CFA</span>`;
-                },
+                },orderable: false,
                 className: 'text-end'
             },
             {
-                data: 'taux',
+                data: 'montantUSD',
                 render: function (data) {
-                    return `<span class="text-primary">${parseFloat(data).toLocaleString('fr-FR')}</span>`;
-                },
+                    return `<span class="text-primary fw-bold">${parseFloat(data).toLocaleString('fr-FR')} $</span>`;
+                },orderable: false,
                 className: 'text-end'
             },
             {
                 data: null,
+                orderable: false,
                 render: function (data, type, row) {
                     const total = parseFloat(row.montantCFA) + parseFloat(row.frais);
                     return `<span class="fw-bold">${total.toLocaleString('fr-FR')} F CFA</span>`;
                 },
-                className: 'text-end'
+                className: 'text-end',
+                orderable: false,
             },
             {
                 data: 'status',
+                orderable: false,
                 render: function (data) {
                     const statusMap = {
                         'completed': { class: 'badge-completed', text: 'Complété', icon: 'check-circle' },
@@ -232,18 +224,13 @@ $(document).ready(function () {
                     if (row.status === 'pending') {
                         actions += `
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item process-transfer" href="#" data-id="${row.id}"><i class="bi bi-arrow-repeat me-2"></i>Traiter</a></li>
-                <li><a class="dropdown-item validate-transfer" href="#" data-id="${row.id}"><i class="bi bi-check-circle me-2"></i>Valider</a></li>
+                <li><a class="dropdown-item process-transfer" href="#" data-id="${row.id}"><i class="bi bi-arrow-repeat me-2"></i>Traiter</a></li> 
                 <li><a class="dropdown-item cancel-transfer" href="#" data-id="${row.id}"><i class="bi bi-x-circle me-2"></i>Annuler</a></li>
             `;
-                    }
-                    if (row.status === 'completed') {
+                    } 
                         actions += `
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item delete-transfer" href="#" data-id="${row.id}"><i class="bi bi-trash me-2"></i>Supprimer</a></li>
-            `;
-                    }
-                    actions += `</ul></div>`;
+                <li><a class="dropdown-item delete-transfer" href="#" data-id="${row.id}"><i class="bi bi-trash me-2"></i>Supprimer</a></li> </ul></div>`;
                     return actions;
                 },
                 orderable: false,
@@ -251,7 +238,7 @@ $(document).ready(function () {
             }
 
         ],
-        order: [[1, 'desc']],
+        order: [[0, 'DESC']],
         dom: 'Bflrtip',
         buttons: [
             {
@@ -533,6 +520,7 @@ $(document).ready(function () {
                 newExpediteurNom: $('[name="newExpediteurNom"]').val(),
                 newExpediteurPhone: $('[name="newExpediteurPhone"]').val()
             }),
+            
             nomBeneficiaire: $('#nomBeneficiaire').val(),
             phoneBeneficiaire: $('#phoneBeneficiaire').val(),
             montantCash: $('#montantCash').val(),
@@ -561,6 +549,9 @@ $(document).ready(function () {
                 $('#moneyReceived').prop('disabled', false)
                 tableTransfers.ajax.reload()
                 calculerMontants();
+
+                transferId = response.transfertId;
+                setTimeout( () => {window.open('/api/transferts/' + transferId + '/receipt', '_blank')}, 2000 ) 
             },
             error: function (xhr, status, error) {
                 showToastModal({ message: !error && error != "" ? error : "Erreur de connexion", type: 'error' })
@@ -784,8 +775,13 @@ $(document).ready(function () {
                 $('#stat-attente').text(data.par_statut?.en_attente ?? 0);
                 $('#stat-annule').text(data.par_statut?.annule ?? 0);
 
-                $('#stat-enregistres').text(data.par_type_client?.enregistre ?? 0);
-                $('#stat-ephemeres').text(data.par_type_client?.ephemere ?? 0);
+                $('#stat-pending-cfa').text(`${parseFloat(data.pendings?.cfa).toLocaleString('fr-FR')} F CFA` ?? 0);
+                $('#stat-pending-usd').text(`${parseFloat(data.pendings?.usd).toFixed(2).toLocaleString('fr-FR')} USD` ?? 0);
+                $('#stat-pending-count').text(data.pendings?.count ?? 0);
+
+                $('#stat-processing-cfa').text(`${parseFloat(data.processings?.cfa).toLocaleString('fr-FR')} F CFA` ?? 0);
+                $('#stat-processing-usd').text(`${parseFloat(data.processings?.usd).toFixed(2).toLocaleString('fr-FR')} USD` ?? 0);
+                $('#stat-processing-count').text(data.processings?.count ?? 0);
 
                 $('#stat-montant').text(formatMontant(data.montant_total_cash ?? 0));
                 $('#stat-recu').text(formatMontant(data.montant_total_reception ?? 0));
@@ -854,7 +850,7 @@ $(document).ready(function () {
             $('#editMontantDeviseReception').val(data.montantReception);
 
 
-            const montantCash = parseFloat($('#editMontantCash').val()) || 0;
+        const montantCash = parseFloat($('#editMontantCash').val()) || 0;
         const fraisEnvoi = parseFloat($('#editFraisEnvoi').val()) || 0;
         const taux = parseFloat($('#editTaux').val()) || 1;
         const tauxReception = parseFloat($('#editTauxReception').val()) || 1;
@@ -894,13 +890,37 @@ $(document).ready(function () {
         const $btn = $form.find('button[type="submit"]');
         disableButton($btn);
 
+        const type = $('#editTypeOps').val();
+        const expediteurId = $('#editSelectExpediteur').find(':selected').val(); 
+        const isNewClient = expediteurId === 'vanish'; // Vérifie si l'option "Client éphémère" est sélectionnée
+
+        if (type === 'byAccount' && !expediteurId) {
+            $('#editTransferModal').modal('hide');
+            showToastModal({ message: "Pour un retrait sur compte, vous devez sélectionner un client existant.", type: 'error', duration: 1000 });
+            return;
+        }
+
+        if (isNewClient) {
+            const nom = $('#editNewExpediteurNom').val();
+            const phone = $('#editNewExpediteurPhone').val();
+            if (!nom) {
+                $('#editTransferModal').modal('hide');
+                showToastModal({ message: "Veuillez remplir les champs du client éphémère", type: 'error', duration: 1000 });
+                return;
+            }
+        }
+
         // Préparation des données
         const formData = {
             id: transferId, // Assurez-vous que transferId est défini globalement ou récupéré depuis le modal
             date: $('#editDateOps').val(),
             type: $('#editTypeOps').val(),
             destination: $('#editDestination').val(),
-            expediteur: $('#editSelectExpediteur').val(),
+            expediteur: expediteurId,
+            ...(isNewClient && {
+                newExpediteurNom: $('#editNewExpediteurNom').val(),
+                newExpediteurPhone: $('#editNewExpediteurPhone').val()
+            }),
             nomBeneficiaire: $('#editNomBeneficiaire').val(),
             phoneBeneficiaire: $('#editPhoneBeneficiaire').val(),
             montantCash: $('#editMontantCash').val(),

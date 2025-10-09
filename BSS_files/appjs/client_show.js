@@ -9,14 +9,14 @@ const countryCodeCurrency = {
   'ALG': { code: "ALG", countryName: "Algérie", capital: "Alger", currency: "DZD", currencyName: "Dinar algérien", USDValue: 133.40 }
 };
 
-const $destination = $('#destination');
-const $typeOps = $('#typeOps');
+const $destination = $('#destinationEchange');
+const $typeOps = $('#typeOpsEchange');
 const $deviseExchange = $('#deviseExchange');
-const $montant = $('#montant');
-const $taux = $('#taux');
-const $deviseAgenceDisplay = $('#deviseAgenceDisplay');
-const $devise = $('#devise');
-const $totalAPayer = $('#totalAPayer');
+const $montant = $('#montantEchange');
+const $taux = $('#tauxEchange');
+const $deviseAgenceDisplay = $('#deviseAgenceDisplayEchange');
+const $devise = $('#deviseEchange');
+const $totalAPayer = $('#totalAPayerEchange');
 const $exchangeButton = $('#exchangeButton');
 
 
@@ -844,6 +844,9 @@ function initTranferts(clientId) {
         $('#new-client-section').addClass('d-none');
         tableTransfers.ajax.reload()
         calculerMontants();
+
+        transferId = response.transfertId;
+                setTimeout( () => {window.open('/api/transferts/' + transferId + '/receipt', '_blank')}, 2000 ) 
       },
       error: function (xhr, status, error) {
         showToastModal({ message: !error && error != "" ? error : "Erreur de connexion", type: 'error' })
@@ -1072,9 +1075,40 @@ function initTranferts(clientId) {
   chargerStatsTransferts();
 }
 
-/** Initialise la DataTable des transactions */
 function initTransactions(clientId) {
   $('#filterTransactionType').on('change', () => transactionsTable.ajax.reload());
+  $('#filterTransactionDate').daterangepicker({
+    locale: {
+      format: 'YYYY-MM-DD',
+      applyLabel: 'Appliquer',
+      cancelLabel: 'Annuler',
+      daysOfWeek: ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa'],
+      monthNames: [
+        'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+      ],
+      firstDay: 1
+    },
+    autoUpdateInput: false,
+    opens: 'right'
+  });
+
+  let startTransactionDate = null;
+  let endTransactionDate = null;
+
+  $('#filterTransactionDate').on('apply.daterangepicker', function (ev, picker) {
+    $(this).val(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
+    startTransactionDate = picker.startDate.format('YYYY-MM-DD');
+    endTransactionDate = picker.endDate.format('YYYY-MM-DD');
+    transactionsTable.ajax.reload();
+  });
+
+  $('#filterTransactionDate').on('cancel.daterangepicker', function (ev, picker) {
+    $(this).val('');
+    startTransactionDate = null;
+    endTransactionDate = null;
+    transactionsTable.ajax.reload();
+  });
 
   const transactionsTable = $('#transactionsTable').DataTable({
     dom: 'Bflrtip',
@@ -1085,7 +1119,7 @@ function initTransactions(clientId) {
         className: 'btn btn-success',
         titleAttr: 'Exporter vers Excel',
         title: 'Transactions client',
-        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6, 7, 8] } // Inclure toutes les colonnes de devises
+        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6, 7, 8] }
       },
       {
         extend: 'pdfHtml5',
@@ -1093,17 +1127,35 @@ function initTransactions(clientId) {
         className: 'btn btn-danger',
         titleAttr: 'Exporter vers PDF',
         title: 'Transactions client',
-        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6, 7, 8] } // Inclure toutes les colonnes de devises
+        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6, 7, 8] }
+      },
+      {
+        text: '<i class="bi bi-printer"></i> Imprimer',
+        className: 'btn btn-primary',
+        action: function (e, dt, node, config) {
+          printTransactionReport(clientId);
+        }
       }
     ],
     ajax: {
       url: `/api/client/${clientId}/transactions`,
-      data: d => { d.type = $('#filterTransactionType').val(); }
+      data: d => { d.type = $('#filterTransactionType').val(); d.dateFrom = startTransactionDate; d.dateTo = endTransactionDate; },
     },
     columns: [
-      { data: 'id', title: 'Reference', render: (data) => { return 'BSS-C' + String(data).padStart(3, '0'); } },
-      { data: 'date', title: 'Date', render: (data) => { return data.split(" ")[0]; } },
-      { data: 'description', title: 'Description' },
+      {
+        data: 'id',
+        title: 'Reference',
+        render: (data) => { return 'BSS-C' + String(data).padStart(3, '0'); }
+      },
+      {
+        data: 'date',
+        title: 'Date',
+        render: (data) => { return data.split(" ")[0]; }
+      },
+      {
+        data: 'description',
+        title: 'Description'
+      },
       {
         data: 'amountCFA',
         title: 'CFA',
@@ -1203,10 +1255,10 @@ function initTransactions(clientId) {
                 <i class="bi bi-printer"></i>
               </button>
               <button class="btn btn-sm btn-outline-info modify-btn" data-id="${row.id}" title="Modifier">
-                  <i class="bi bi-pencil"></i>
+                <i class="bi bi-pencil"></i>
               </button>
               <button class="btn btn-sm btn-outline-danger cancel-btn" data-id="${row.id}" title="Cancel">
-                  <i class="bi bi-x-circle"></i>
+                <i class="bi bi-x-circle"></i>
               </button>
             `;
           } else {
@@ -1220,312 +1272,521 @@ function initTransactions(clientId) {
     language: { url: '/api/datatable_json_fr' }
   });
 
-  transactionsTable.on('click', '.print-btn', function () {
-    id = $(this).data('id');
-    window.open(`/api/transaction/${id}/receipt`, '_blank');
-  });
 
-  let selectedTransactionID
 
-  transactionsTable.on('click', '.modify-btn', function () {
-    selectedTransactionID = $(this).data('id');
-    $.get(`/api/transaction/${selectedTransactionID}/details`, function (data) {
-      $("#editTransDate").val(data.date)
-      $("#editTransAmount").val(data.montant)
-      $("#editTransType").val(data.type)
-    })
+// Fonction d'impression du relevé de compte complet
+function printTransactionReport(clientId) {
+  // Récupérer les données du client et des transactions
+  // Ajout des paramètres dateFrom et dateTo à la requête
+  const dateFrom = startTransactionDate;
+  const dateTo = endTransactionDate;
 
-    $("#editTransactionModal").modal('show')
-  });
+  Promise.all([
+    fetch(`/api/client/${clientId}/smalldetails`).then(r => r.json()),
+    fetch(`/api/client/${clientId}/transactions_report?dateFrom=${encodeURIComponent(dateFrom || '')}&dateTo=${encodeURIComponent(dateTo || '')}`).then(r => r.json())
+  ]).then(([clientData, transactionsData]) => {
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
 
-  $('#confirmEditTrans').on('click', () => {
-    $(this).prop('disabled', true)
-    $.post('/api/transaction/' + selectedTransactionID + '/update',
-      {
-        montant: $("#editTransAmount").val(),
-        date: $("#editTransDate").val()
-      },
-      () => {
-        transactionsTable.ajax.reload()
-        $("#editTransactionModal").modal('hide')
-        showToastModal({ message: "Transaction modifiée avec succès", type: "success" });
-        $(this).prop('disabled', false);
+    const currentDate = new Date().toLocaleDateString('fr-FR');
+    let transactionsHTML = ''; 
+    const solde = transactionsData.solde;
 
-      }
-    ).fail(function () {
-      showToastModal({ message: "Echec de modification", type: "error" });
-      $(this).prop('disabled', false);
-    })
-  }),
+    transactionsData.data.forEach(transaction => { 
 
-    transactionsTable.on('click', '.cancel-btn', function () {
-      selectedTransactionID = $(this).data('id');
-      console.log(selectedTransactionID);
-
-      $("#confirmCancelTransactionModal").modal('show')
+      transactionsHTML += `
+        <tr>
+          <td>BSS-C${String(transaction.id).padStart(3, '0')}</td>
+          <td>${transaction.date.split(' ')[0]}</td>
+          <td>${transaction.description}</td>
+          <td style="text-align: right;">${transaction.entree > 0 ? parseFloat(transaction.entree).toLocaleString('fr-FR') + ' FCFA' : ''}</td>
+          <td style="text-align: right;">${transaction.sortie > 0 ? parseFloat(transaction.sortie).toLocaleString('fr-FR') + ' FCFA' : ''}</td>
+          <td style="text-align: right;">${transaction.solde > 0 ? parseFloat(transaction.solde).toLocaleString('fr-FR') + ' FCFA' : ''}</td>
+        </tr>
+      `;
     });
 
-  $('#confirmCancelTransaction').on('click', () => {
-    console.log(selectedTransactionID);
-    $(this).prop('disabled', true)
-    $.post('/api/transaction/' + selectedTransactionID + '/cancel', { id: selectedTransactionID },
-      () => {
-        transactionsTable.ajax.reload();
-        $("#confirmCancelTransactionModal").modal('hide')
-        showToastModal({ message: "Transaction supprimée avec succès", type: "success" });
-        $(this).prop('disabled', false);
-      }
-    ).fail(function () {
-      showToastModal({ message: "Echec de suppression", type: "error" });
-      $(this).prop('disabled', false);
-    })
-  }),
-
-    $('#form-edit-client').on('submit', function (e) {
-      e.preventDefault();
-      const $form = $(this);
-      const $btn = $form.find('button[type="submit"]');
-      if ($btn.prop('disabled')) return;
-      $btn.prop('disabled', true);
-      const id = $('#editClientId').val();
-      const fd = new FormData(this);
-      $.ajax({
-        url: `/client/${id}/modify`,
-        method: 'POST',
-        data: fd,
-        processData: false,
-        contentType: false
-      })
-        .done(() => {
-          showToastModal({ message: 'Client modifié avec succès !', type: 'success' });
-          $('#modalEditClient').modal('hide');
-          table.ajax.reload();
-        })
-        .fail(xhr => {
-          const msg = xhr.responseJSON?.message || 'Erreur modification client';
-          showToastModal({ message: msg, type: 'error' });
-        })
-        .always(() => $btn.prop('disabled', false));
-    });
-
-  $('#btnAccompte').on('click', function (e) {
-    e.preventDefault();
-    const $btn = $(this);
-    if ($btn.prop('disabled')) return;
-    $btn.prop('disabled', true);
-    const id = extractClientId();
-    $('#accompteClientId').val(id);
-    $('#accompteAmount, #accompteNote, #accompteMode, #accompteReference').val('');
-    $('#accompteDate').val(new Date().toISOString().slice(0, 10));
-    const currency = $('#deviseA').find(':selected').val()
-    chargeCurrencySolde(id, currency, '#soldeDeviseA')
-    $('#modalAccompteClient').modal('show');
-    $btn.prop('disabled', false);
-  });
-
-  $('#deviseA').change(function () {
-    const currency = $(this).find(':selected').val();
-    const clientId = $('#accompteClientId').val();
-
-    if (currency && clientId) {
-      // Remplacez cette URL par l'endpoint de votre API pour obtenir le solde du client
-      chargeCurrencySolde(clientId, currency, '#soldeDeviseA')
+    // Déterminer la période à afficher
+    let periodeText = '';
+    if (!dateFrom && !dateTo) {
+      periodeText = "Depuis le début";
+    } else {
+      periodeText = `Période du ${dateFrom || ''} au ${dateTo || ''}`;
     }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+      <title>Relevé de Compte - ${clientData.nomComplet}</title>
+      <meta charset="UTF-8">
+      <style>
+        @page {
+        size: A5 portrait;
+        margin: 30px;
+        }
+        body {
+        font-family: Arial, sans-serif;
+        font-size: 10px;
+        margin: 0;
+        padding: 0;
+        line-height: 1.2;
+        }
+        .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 5px;
+        border-bottom: 2px solid #000;
+        padding-bottom: 5px;
+        }
+        .header img {
+        width: 80px;
+        height: auto;
+        }
+        .company-info {
+        text-align: right;
+        font-size: 9px;
+        }
+        .title {
+        text-align: center;
+        font-size: 14px;
+        font-weight: bold;
+        margin: 5px 0 10px;
+        text-transform: uppercase;
+        }
+        .client-info {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        font-size: 9px;
+        }
+        .transaction-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 8px;
+        margin-bottom: 10px;
+        }
+        .transaction-table th,
+        .transaction-table td {
+        border: 1px solid #000;
+        padding: 3px;
+        text-align: left;
+        }
+        .transaction-table th {
+        background-color: #f0f0f0;
+        font-weight: bold;
+        }
+        .footer {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 15px;
+        font-size: 9px;
+        }
+        .signature {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 9px;
+        }
+        .total-row {
+        font-weight: bold;
+        background-color: #f0f0f0;
+        }
+      </style>
+      </head>
+      <body>
+      <div class="header">
+        <div class="logo">
+        <img src="${window.location.origin}/assets/img/logo.png" alt="Logo">
+        </div>
+        <div class="company-info">
+        <small>Billeterie-Change-Transaction-Commerce Général</small><br>
+        BKO IMM. PETIT BAROU<br>
+        Tél: (+223) - 66626317 - 76260611<br>
+        DUBAI: (+971) - 55 426 2144
+        </div>
+      </div>
+      
+      <div class="title">
+        RELEVÉ DE COMPTE<br>
+        <small>${periodeText}</small>
+      </div>
+      
+      <div class="client-info">
+        <div>
+        <strong>Client:</strong> ${clientData.nomComplet}<br>
+        <strong>Téléphone:</strong> ${clientData.phoneNumber || 'Non renseigné'}
+        </div>
+        <div>
+        <strong>Adresse:</strong> ${clientData.address || 'Non renseignée'}<br>
+        <strong>Date d'édition:</strong> ${currentDate}
+        </div>
+      </div>
+      
+      <table class="transaction-table">
+        <thead>
+        <tr>
+          <th width="10%">Référence</th>
+          <th width="10%">Date</th>
+          <th width="33%">Description</th>
+          <th width="15%">Dépôt</th>
+          <th width="15%">Retrait</th>
+          <th width="17%">Solde</th>
+        </tr>
+        </thead>
+        <tbody>
+        ${transactionsHTML}
+        <tr class="total-row">
+          <td colspan="3">SOLDE FINAL</td>
+          <td></td>
+          <td></td>
+          <td style="text-align: right;">${solde.toLocaleString()} F CFA</td>
+        </tr>
+        </tbody>
+      </table>
+      
+      <div class="signature">
+        <p>Signature et cachet de l'entreprise</p>
+        <p style="margin-top: 20px;">_________________________________</p>
+      </div>
+      
+      <div class="footer">
+        <div>BSS Consulting - Système de gestion client</div>
+        <div>Page 1/1</div>
+      </div>
+      
+      <script>
+        window.onload = function() {
+        window.print();
+        setTimeout(function() {
+          window.close();
+        }, 1000);
+        };
+      </script>
+      </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+  }).catch(error => {
+    console.error('Erreur lors de la génération du rapport:', error);
+    alert('Erreur lors de la génération du rapport d\'impression');
+  });
+}
+
+transactionsTable.on('click', '.print-btn', function () {
+  id = $(this).data('id');
+  window.open(`/api/transaction/${id}/receipt`, '_blank');
+});
+
+let selectedTransactionID
+
+transactionsTable.on('click', '.modify-btn', function () {
+  selectedTransactionID = $(this).data('id');
+  $.get(`/api/transaction/${selectedTransactionID}/details`, function (data) {
+    $("#editTransDate").val(data.date)
+    $("#editTransAmount").val(data.montant)
+    $("#editTransType").val(data.type)
+  })
+
+  $("#editTransactionModal").modal('show')
+});
+
+$('#confirmEditTrans').on('click', () => {
+  $(this).prop('disabled', true)
+  $.post('/api/transaction/' + selectedTransactionID + '/update',
+    {
+      montant: $("#editTransAmount").val(),
+      date: $("#editTransDate").val()
+    },
+    () => {
+      transactionsTable.ajax.reload()
+      $("#editTransactionModal").modal('hide')
+      showToastModal({ message: "Transaction modifiée avec succès", type: "success" });
+      $(this).prop('disabled', false);
+
+    }
+  ).fail(function () {
+    showToastModal({ message: "Echec de modification", type: "error" });
+    $(this).prop('disabled', false);
+  })
+}),
+
+  transactionsTable.on('click', '.cancel-btn', function () {
+    selectedTransactionID = $(this).data('id');
+    console.log(selectedTransactionID);
+
+    $("#confirmCancelTransactionModal").modal('show')
   });
 
-  $('#form-accompte-client').on('submit', function (e) {
+$('#confirmCancelTransaction').on('click', () => {
+  console.log(selectedTransactionID);
+  $(this).prop('disabled', true)
+  $.post('/api/transaction/' + selectedTransactionID + '/cancel', { id: selectedTransactionID },
+    () => {
+      transactionsTable.ajax.reload();
+      $("#confirmCancelTransactionModal").modal('hide')
+      showToastModal({ message: "Transaction supprimée avec succès", type: "success" });
+      $(this).prop('disabled', false);
+    }
+  ).fail(function () {
+    showToastModal({ message: "Echec de suppression", type: "error" });
+    $(this).prop('disabled', false);
+  })
+}),
+
+  $('#form-edit-client').on('submit', function (e) {
     e.preventDefault();
     const $form = $(this);
     const $btn = $form.find('button[type="submit"]');
     if ($btn.prop('disabled')) return;
     $btn.prop('disabled', true);
-    const id = $('#accompteClientId').val();
-    const payload = {
-      amount: $('#accompteAmount').val(),
-      note: $('#accompteNote').val(),
-      date: $('#accompteDate').val(),
-      mode: $('#accompteMode').val(),
-      reference: $('#accompteReference').val(),
-      currency: $('#deviseA').find(':selected').val()
-    };
-    $.post(`/dashboard/client/${id}/accompte`, payload)
+    const id = $('#editClientId').val();
+    const fd = new FormData(this);
+    $.ajax({
+      url: `/client/${id}/modify`,
+      method: 'POST',
+      data: fd,
+      processData: false,
+      contentType: false
+    })
       .done(() => {
+        showToastModal({ message: 'Client modifié avec succès !', type: 'success' });
+        $('#modalEditClient').modal('hide');
+        table.ajax.reload();
+      })
+      .fail(xhr => {
+        const msg = xhr.responseJSON?.message || 'Erreur modification client';
+        showToastModal({ message: msg, type: 'error' });
+      })
+      .always(() => $btn.prop('disabled', false));
+  });
+
+$('#btnAccompte').on('click', function (e) {
+  e.preventDefault();
+  const $btn = $(this);
+  if ($btn.prop('disabled')) return;
+  $btn.prop('disabled', true);
+  const id = extractClientId();
+  $('#accompteClientId').val(id);
+  $('#accompteAmount, #accompteNote, #accompteMode, #accompteReference').val('');
+  $('#accompteDate').val(new Date().toISOString().slice(0, 10));
+  const currency = $('#deviseA').find(':selected').val()
+  chargeCurrencySolde(id, currency, '#soldeDeviseA')
+  $('#modalAccompteClient').modal('show');
+  $btn.prop('disabled', false);
+});
+
+$('#deviseA').change(function () {
+  const currency = $(this).find(':selected').val();
+  const clientId = $('#accompteClientId').val();
+
+  if (currency && clientId) {
+    // Remplacez cette URL par l'endpoint de votre API pour obtenir le solde du client
+    chargeCurrencySolde(clientId, currency, '#soldeDeviseA')
+  }
+});
+
+$('#form-accompte-client').on('submit', function (e) {
+  e.preventDefault();
+  const $form = $(this);
+  const $btn = $form.find('button[type="submit"]');
+  if ($btn.prop('disabled')) return;
+  $btn.prop('disabled', true);
+  const id = $('#accompteClientId').val();
+  const payload = {
+    amount: $('#accompteAmount').val(),
+    note: $('#accompteNote').val(),
+    date: $('#accompteDate').val(),
+    mode: $('#accompteMode').val(),
+    reference: $('#accompteReference').val(),
+    currency: $('#deviseA').find(':selected').val()
+  };
+  $.post(`/dashboard/client/${id}/accompte`, payload) 
+    .done(function(response, textStatus, jqXHR) {
         showToastModal({ message: 'Accompte enregistré !', type: 'success' });
         $('#modalAccompteClient').modal('hide');
         loadClientSoldes(extractClientId())
         exchangesTable.ajax.reload();
         transactionsTable.ajax.reload();
-      })
-      .fail(xhr => {
-        const msg = xhr.responseJSON?.message || 'Erreur enregistrement acompte';
-        showToastModal({ message: msg, type: 'error' });
-      })
-      .always(() => $btn.prop('disabled', false));
-  });
+        loadStats();
+        setTimeout(()=>{window.open(`/api/transaction/${response.id}/receipt`, '_blank');}, 2000)
+    })
+    .fail(xhr => {
+      const msg = xhr.responseJSON?.message || 'Erreur enregistrement acompte';
+      showToastModal({ message: msg, type: 'error' });
+    })
+    .always(() => $btn.prop('disabled', false));
+});
 
-  $('#btnWithdraw').on('click', function (e) {
-    e.preventDefault();
-    const $btn = $(this);
-    if ($btn.prop('disabled')) return;
-    $btn.prop('disabled', true);
-    const id = extractClientId();
-    $('#withdrawClientId').val(id);
-    $('#withdrawAmount, #withdrawNote, #withdrawMode, #withdrawReference').val('');
-    $('#withdrawDate').val(new Date().toISOString().slice(0, 10));
-    const currency = $('#deviseW').find(':selected').val()
-    chargeCurrencySolde(id, currency, '#soldeDeviseW')
-    $('#modalWithdrawClient').modal('show');
-    $btn.prop('disabled', false);
-  });
+$('#btnWithdraw').on('click', function (e) {
+  e.preventDefault();
+  const $btn = $(this);
+  if ($btn.prop('disabled')) return;
+  $btn.prop('disabled', true);
+  const id = extractClientId();
+  $('#withdrawClientId').val(id);
+  $('#withdrawAmount, #withdrawNote, #withdrawMode, #withdrawReference').val('');
+  $('#withdrawDate').val(new Date().toISOString().slice(0, 10));
+  const currency = $('#deviseW').find(':selected').val()
+  chargeCurrencySolde(id, currency, '#soldeDeviseW')
+  $('#modalWithdrawClient').modal('show');
+  $btn.prop('disabled', false);
+});
 
-  $('#deviseW').change(function () {
-    const currency = $(this).find(':selected').val();
-    const clientId = $('#withdrawClientId').val();
+$('#deviseW').change(function () {
+  const currency = $(this).find(':selected').val();
+  const clientId = $('#withdrawClientId').val();
 
-    if (currency && clientId) {
-      // Remplacez cette URL par l'endpoint de votre API pour obtenir le solde du client
-      chargeCurrencySolde(clientId, currency, '#soldeDeviseW')
-    }
-  });
+  if (currency && clientId) {
+    // Remplacez cette URL par l'endpoint de votre API pour obtenir le solde du client
+    chargeCurrencySolde(clientId, currency, '#soldeDeviseW')
+  }
+});
 
-  $('#form-withdraw-client').on('submit', function (e) {
-    e.preventDefault();
-    const $form = $(this);
-    const $btn = $form.find('button[type="submit"]');
-    if ($btn.prop('disabled')) return;
-    $btn.prop('disabled', true);
-    const id = $('#withdrawClientId').val();
-    const payload = {
-      amount: $('#withdrawAmount').val(),
-      note: $('#withdrawNote').val(),
-      date: $('#withdrawDate').val(),
-      mode: $('#withdrawMode').val(),
-      reference: $('#withdrawReference').val(),
-      currency: $('#deviseW').find(':selected').val()
-    };
-    $.post(`/dashboard/client/${id}/retrait`, payload)
-      .done(() => {
-        showToastModal({ message: 'Retrait effectué !', type: 'success' });
-        $('#modalWithdrawClient').modal('hide');
+$('#form-withdraw-client').on('submit', function (e) {
+  e.preventDefault();
+  const $form = $(this);
+  const $btn = $form.find('button[type="submit"]');
+  if ($btn.prop('disabled')) return;
+  $btn.prop('disabled', true);
+  const id = $('#withdrawClientId').val();
+  const payload = {
+    amount: $('#withdrawAmount').val(),
+    note: $('#withdrawNote').val(),
+    date: $('#withdrawDate').val(),
+    mode: $('#withdrawMode').val(),
+    reference: $('#withdrawReference').val(),
+    currency: $('#deviseW').find(':selected').val()
+  };
+  $.post(`/dashboard/client/${id}/retrait`, payload)
+    .done(function(response, textStatus, jqXHR) {
+     showToastModal({ message: 'Retrait effectué !', type: 'success' });
+      $('#modalWithdrawClient').modal('hide');
         loadClientSoldes(extractClientId())
         exchangesTable.ajax.reload();
         transactionsTable.ajax.reload();
-      })
-      .fail(xhr => {
-        const msg = xhr.responseJSON?.message || 'Erreur enregistrement retrait';
-        showToastModal({ message: msg, type: 'error' });
-      })
-      .always(() => $btn.prop('disabled', false));
-  });
-
-  // Fonction pour mettre à jour l'interface en fonction de l'agence sélectionnée
-  function updateUIByAgency() {
-    const selectedAgencyId = parseInt($destination.val());
-
-    if (selectedAgencyId === 1) {
-      // Agence d'id 1: tous les choix sont disponibles
-      $typeOps.prop('disabled', false).prop('readonly', false);
-      $deviseExchange.prop('disabled', false).prop('readonly', false);
-    } else {
-      // Autres agences: seulement vente et USD
-      $typeOps.val('vente').prop('disabled', true).prop('readonly', true);
-      $deviseExchange.val('USD').prop('disabled', true).prop('readonly', true);
-    }
-
-    // Mettre à jour l'affichage des devises
-    updateDeviseDisplay();
-  }
-
-  // Fonction pour mettre à jour l'affichage des devises
-  function updateDeviseDisplay() {
-    const selectedDevise = $deviseExchange.val();
-    $deviseAgenceDisplay.text(selectedDevise);
-
-    if ($typeOps.val() === 'achat') {
-      $devise.text('CFA');
-    } else {
-      $devise.text(selectedDevise);
-    }
-  }
-
-  // Fonction pour calculer le total
-  function calculateTotal() {
-    const montant = parseFloat($montant.val()) || 0;
-    const taux = parseFloat($taux.val()) || 0;
-    const type = $typeOps.val();
-    const devise = $deviseExchange.val();
-
-    let total = 0;
-
-    if (type === 'achat') {
-      // Pour l'achat: montant en devise * taux = montant en CFA
-      total = montant * taux;
-      $totalAPayer.removeClass('text-success text-danger').addClass('text-danger');
-      $totalAPayer.text(`-${total.toFixed(2)} CFA`);
-    } else {
-      // Pour la vente: montant en devise * taux = montant en CFA
-      total = montant * taux;
-      $totalAPayer.removeClass('text-success text-danger').addClass('text-success');
-      $totalAPayer.text(`+${total.toFixed(2)} CFA`);
-    }
-  }
-
-  // Événement lors du changement d'agence
-  $destination.on('change', function () {
-    updateUIByAgency();
-    calculateTotal();
-  });
-
-  // Événement lors du changement de type d'opération
-  $typeOps.on('change', function () {
-    updateDeviseDisplay();
-    calculateTotal();
-  });
-
-  // Événement lors du changement de devise
-  $deviseExchange.on('change', function () {
-    updateDeviseDisplay();
-    calculateTotal();
-  });
-
-  // Événements pour le calcul en temps réel
-  $montant.on('input', calculateTotal);
-  $taux.on('input', calculateTotal);
-
-  // Événement pour le bouton d'échange
-  $exchangeButton.on('click', function () {
-    // Validation des champs
-    if (!$montant.val() || !$taux.val()) {
-      showToastModal({ message: 'Veuillez remplir tous les champs obligatoires.', type: "warning" });
-      return;
-    }
-
-    // Récupération des données du formulaire
-    const formData = {
-      clientId: extractClientId(),
-      destination: $destination.find(":selected").val(),
-      type: $typeOps.val(),
-      deviseExchange: $deviseExchange.val(),
-      montant: $montant.val(),
-      date: $("dateOps").val(),
-      taux: $taux.val()
-    };
-
-    $.post(`/api/client/${formData.clientId}/exchange`, formData)
-      .done(() => {
-        showToastModal({ message: `${formData.type} effectué avec succès !`, type: 'success' });
-        table.ajax.reload();
         loadStats();
-      }).fail(() => {
-        showToastModal({ message: "L'opération a echouée !", type: 'error' })
-      })
+        setTimeout(()=>{window.open(`/api/transaction/${response.id}/receipt`, '_blank');}, 2000)
+    })
+    .fail(xhr => {
+      const msg = xhr.responseJSON?.message || 'Erreur enregistrement retrait';
+      showToastModal({ message: msg, type: 'error' });
+    })
+    .always(() => $btn.prop('disabled', false));
+});
 
-    // Fermer le modal après traitement
-    $('#currencyModal').modal('hide');
-  });
+// Fonction pour mettre à jour l'interface en fonction de l'agence sélectionnée
+function updateUIByAgency() {
+  const selectedAgencyId = parseInt($destination.val());
 
-  // Initialisation de l'interface au chargement
+  if (selectedAgencyId === 1) {
+    // Agence d'id 1: tous les choix sont disponibles
+    $typeOps.prop('disabled', false).prop('readonly', false);
+    $deviseExchange.prop('disabled', false).prop('readonly', false);
+  } else {
+    // Autres agences: seulement vente et USD
+    $typeOps.val('vente').prop('disabled', true).prop('readonly', true);
+    $deviseExchange.val('USD').prop('disabled', true).prop('readonly', true);
+  }
+
+  // Mettre à jour l'affichage des devises
+  updateDeviseDisplay();
+}
+
+// Fonction pour mettre à jour l'affichage des devises
+function updateDeviseDisplay() {
+  const selectedDevise = $deviseExchange.val();
+  $deviseAgenceDisplay.text(selectedDevise);
+
+  if ($typeOps.val() === 'achat') {
+    $devise.text('CFA');
+  } else {
+    $devise.text(selectedDevise);
+  }
+}
+
+// Fonction pour calculer le total
+function calculateTotal() {
+  const montant = parseFloat($montant.val()) || 0;
+  const taux = parseFloat($taux.val()) || 0;
+  const type = $typeOps.val();
+  const devise = $deviseExchange.val();
+
+  let total = 0;
+
+  if (type === 'achat') {
+    // Pour l'achat: montant en devise * taux = montant en CFA
+    total = montant * taux;
+    $totalAPayer.removeClass('text-success text-danger').addClass('text-danger');
+    $totalAPayer.text(`-${total.toFixed(2)} CFA`);
+  } else {
+    // Pour la vente: montant en devise * taux = montant en CFA
+    total = montant * taux;
+    $totalAPayer.removeClass('text-success text-danger').addClass('text-success');
+    $totalAPayer.text(`+${total.toFixed(2)} CFA`);
+  }
+}
+
+// Événement lors du changement d'agence
+$destination.on('change', function () {
   updateUIByAgency();
   calculateTotal();
+});
+
+// Événement lors du changement de type d'opération
+$typeOps.on('change', function () {
+  updateDeviseDisplay();
+  calculateTotal();
+});
+
+// Événement lors du changement de devise
+$deviseExchange.on('change', function () {
+  updateDeviseDisplay();
+  calculateTotal();
+});
+
+// Événements pour le calcul en temps réel
+$montant.on('input', calculateTotal);
+$taux.on('input', calculateTotal);
+
+// Événement pour le bouton d'échange
+$exchangeButton.on('click', function () {
+  // Validation des champs
+  if (!$montant.val() || !$taux.val()) {
+    showToastModal({ message: 'Veuillez remplir tous les champs obligatoires.', type: "warning" });
+    return;
+  }
+
+  // Récupération des données du formulaire
+  const formData = {
+    clientId: extractClientId(),
+    destination: $destination.find(":selected").val(),
+    type: $typeOps.val(),
+    deviseExchange: $deviseExchange.val(),
+    montant: $montant.val(),
+    date: $("#dateOpsEchange").val(),
+    taux: $taux.val(),
+    note: $('#exchangeNote').val()
+  };
+
+  $.post(`/api/client/${formData.clientId}/exchange`, formData)
+    .done(function(response, textStatus, jqXHR) {
+                showToastModal({ message: `${formData.type} effectué avec succès !`, type: 'success' });
+                table.ajax.reload();
+                loadStats();
+                setTimeout( () => {window.open('/api/exchanges/' + response.id + '/print', '_blank')}, 2000 ) 
+    }).fail(() => {
+      showToastModal({ message: "L'opération a echouée !", type: 'error' })
+    })
+
+  // Fermer le modal après traitement
+  $('#currencyModal').modal('hide');
+});
+
+
+
+// Initialisation de l'interface au chargement
+updateUIByAgency();
+calculateTotal();
 
 }
