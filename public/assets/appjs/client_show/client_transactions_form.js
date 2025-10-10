@@ -12,7 +12,7 @@ function initTransactionsForm(clientId) {
         const currency = $('#deviseA').find(':selected').val()
         chargeCurrencySolde(id, currency, '#soldeDeviseA')
 
-        $('#modalAccompteClients').modal('show');
+        $('#modalAccompteClient').modal('show');
         $btn.prop('disabled', false);
     });
 
@@ -46,8 +46,9 @@ function initTransactionsForm(clientId) {
                 showToastModal({ message: 'Accompte enregistré !', type: 'success' });
                 $('#modalAccompteClient').modal('hide');
                 loadClientSoldes(extractClientId())
-                exchangesTable.ajax.reload();
-                transactionsTable.ajax.reload();
+                ('#exchangesTab#le').ajax.reload();
+                ('#transactionsTable').ajax.reload();
+                $('#opsFilterDateRange').ajax.reload();
                 loadStats();
                 setTimeout(() => { window.open(`/api/transaction/${response.id}/receipt`, '_blank'); }, 2000)
             })
@@ -107,8 +108,9 @@ function initTransactionsForm(clientId) {
                 showToastModal({ message: 'Retrait effectué !', type: 'success' });
                 $('#modalWithdrawClient').modal('hide');
                 loadClientSoldes(extractClientId())
-                exchangesTable.ajax.reload();
-                transactionsTable.ajax.reload();
+                ('#exchangesTab#le').ajax.reload();
+                ('#transactionsTable').ajax.reload();
+                $('#opsFilterDateRange').ajax.reload();
                 loadStats();
                 setTimeout(() => { window.open(`/api/transaction/${response.id}/receipt`, '_blank'); }, 2000)
             })
@@ -119,115 +121,6 @@ function initTransactionsForm(clientId) {
             .always(() => $btn.prop('disabled', false));
     });
 
-    // Fonction pour mettre à jour l'interface en fonction de l'agence sélectionnée
-    function updateUIByAgency() {
-        const selectedAgencyId = parseInt($destination.val());
-
-        if (selectedAgencyId === 1) {
-            // Agence d'id 1: tous les choix sont disponibles
-            $typeOps.prop('disabled', false).prop('readonly', false);
-            $deviseExchange.prop('disabled', false).prop('readonly', false);
-        } else {
-            // Autres agences: seulement vente et USD
-            $typeOps.val('vente').prop('disabled', true).prop('readonly', true);
-            $deviseExchange.val('USD').prop('disabled', true).prop('readonly', true);
-        }
-
-        // Mettre à jour l'affichage des devises
-        updateDeviseDisplay();
-    }
-
-    // Fonction pour mettre à jour l'affichage des devises
-    function updateDeviseDisplay() {
-        const selectedDevise = $deviseExchange.val();
-        $deviseAgenceDisplay.text(selectedDevise);
-
-        if ($typeOps.val() === 'achat') {
-            $devise.text('CFA');
-        } else {
-            $devise.text(selectedDevise);
-        }
-    }
-
-    // Fonction pour calculer le total
-    function calculateTotal() {
-        const montant = parseFloat($montant.val()) || 0;
-        const taux = parseFloat($taux.val()) || 0;
-        const type = $typeOps.val();
-        const devise = $deviseExchange.val();
-
-        let total = 0;
-
-        if (type === 'achat') {
-            // Pour l'achat: montant en devise * taux = montant en CFA
-            total = montant * taux;
-            $totalAPayer.removeClass('text-success text-danger').addClass('text-danger');
-            $totalAPayer.text(`-${total.toFixed(2)} CFA`);
-        } else {
-            // Pour la vente: montant en devise * taux = montant en CFA
-            total = montant * taux;
-            $totalAPayer.removeClass('text-success text-danger').addClass('text-success');
-            $totalAPayer.text(`+${total.toFixed(2)} CFA`);
-        }
-    }
-
-    // Événement lors du changement d'agence
-    $destination.on('change', function () {
-        updateUIByAgency();
-        calculateTotal();
-    });
-
-    // Événement lors du changement de type d'opération
-    $typeOps.on('change', function () {
-        updateDeviseDisplay();
-        calculateTotal();
-    });
-
-    // Événement lors du changement de devise
-    $deviseExchange.on('change', function () {
-        updateDeviseDisplay();
-        calculateTotal();
-    });
-
-    // Événements pour le calcul en temps réel
-    $montant.on('input', calculateTotal);
-    $taux.on('input', calculateTotal);
-
-    // Événement pour le bouton d'échange
-    $exchangeButton.on('click', function () {
-        // Validation des champs
-        if (!$montant.val() || !$taux.val()) {
-            showToastModal({ message: 'Veuillez remplir tous les champs obligatoires.', type: "warning" });
-            return;
-        }
-
-        // Récupération des données du formulaire
-        const formData = {
-            clientId: extractClientId(),
-            destination: $destination.find(":selected").val(),
-            type: $typeOps.val(),
-            deviseExchange: $deviseExchange.val(),
-            montant: $montant.val(),
-            date: $("#dateOpsEchange").val(),
-            taux: $taux.val(),
-            note: $('#exchangeNote').val()
-        };
-
-        $.post(`/api/client/${formData.clientId}/exchange`, formData)
-            .done(function (response, textStatus, jqXHR) {
-                showToastModal({ message: `${formData.type} effectué avec succès !`, type: 'success' });
-                table.ajax.reload();
-                loadStats();
-                setTimeout(() => { window.open('/api/exchanges/' + response.id + '/print', '_blank') }, 2000)
-            }).fail(() => {
-                showToastModal({ message: "L'opération a echouée !", type: 'error' })
-            })
-
-        // Fermer le modal après traitement
-        $('#currencyModal').modal('hide');
-    });
-
-    // Initialisation de l'interface au chargement
-    updateUIByAgency();
-    calculateTotal();
+    
+ 
 }

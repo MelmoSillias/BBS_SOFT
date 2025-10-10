@@ -19,6 +19,19 @@ const $devise = $('#deviseEchange');
 const $totalAPayer = $('#totalAPayerEchange');
 const $exchangeButton = $('#exchangeButton');
 
+// Modal Edit
+const $editDestination = $('#editDestinationEchange');
+const $editTypeOps = $('#editTypeOpsEchange');
+const $editDeviseExchange = $('#editDeviseExchange');
+const $editMontant = $('#editMontantEchange');
+const $editTaux = $('#editTauxEchange');
+const $editDeviseAgenceDisplay = $('#editDeviseAgenceDisplayEchange');
+const $editDevise = $('#editDeviseEchange');
+const $editTotalAPayer = $('#editTotalAPayerEchange');
+const $editExchangeButton = $('#editExchangeButton');
+
+let selectedTransactionID
+
 /** Extrait l'ID client depuis l'URL : /client/{id}/... */
 function extractClientId() {
     const parts = window.location.pathname.split('/');
@@ -140,3 +153,58 @@ function disableButton(button) {
         button.prop('disabled', false);
     }, 10000); // Réactiver après 3 secondes
 }
+
+function populateEditModal(id) {
+    $.get('/api/transferts/' + id, function (data) {
+        $('#dateOpsEdit').val(data.createdAt);
+        $('#typeOpsTEdit').val(data.type);
+        $('#destinationEdit').val(data.destination.id);
+        $('#nomBeneficiaireEdit').val(data.receiverName);
+        $('#phoneBeneficiaireEdit').val(data.receiverPhone);
+        $('#montantCashEdit').val(data.montantCFA);
+        $('#fraisEnvoiEdit').val(data.fraisEnvoi);
+        $('#tauxEdit').val(data.taux);
+        $('#montantRecuEdit').val(data.montantUSD);
+        $('#tauxReceptionEdit').val(data.tauxReception);
+        $('#montantDeviseReceptionEdit').val(data.montantReception);
+        $('#totalAPayerEdit').text(data.montantCash + data.frais);
+
+        // Trigger destination change to update currency display
+        $.get(`/api/agence/${data.destination.id}`, function (data, status) {
+            const abg = data['abg'];
+            $('#deviseRecueDisplayEdit').text(countryCodeCurrency[abg].currency);
+            $('#nomDeviseReceptionTauxEdit').html(
+                `${countryCodeCurrency[abg].currencyName} <span class="text-danger">*</span>`
+            );
+            $('#tauxReceptionEdit').val(countryCodeCurrency[abg].USDValue);
+            calculerMontantsEdit();
+        });
+        $('#modalEditTransfert').data('id', id)
+        $('#modalEditTransfert').modal('show');
+    }).fail(function () {
+        showToastModal({ message: 'Erreur de connexion', type: 'error' });
+    });
+}// Function to calculate amounts for edit modal
+function calculerMontantsEdit() {
+    const montantCash = parseFloat($('#montantCashEdit').val()) || 0;
+    const fraisEnvoi = parseFloat($('#fraisEnvoiEdit').val()) || 0;
+    const taux = parseFloat($('#tauxEdit').val()) || 1;
+    const tauxReception = parseFloat($('#tauxReceptionEdit').val()) || 1;
+
+    let montantRecu = 0;
+    if (montantCash > 0 && taux > 0) {
+        montantRecu = montantCash / taux;
+    }
+
+    let montantReception = 0;
+    if (taux > 0) {
+        montantReception = montantRecu * tauxReception;
+    }
+
+    const totalAPayer = montantCash + fraisEnvoi;
+
+    $('#montantRecuEdit').val(montantRecu.toFixed(2));
+    $('#montantDeviseReceptionEdit').val(montantReception.toFixed(2));
+    $('#totalAPayerEdit').text(totalAPayer.toFixed(2) + ' CFA');
+}
+

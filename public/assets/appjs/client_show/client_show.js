@@ -6,4 +6,5 @@ $(document).ready(function () {
   initTransactionsForm(clientId);
   initTranferts(clientId);
   initTransfertsForm(clientId);
+  initOps(clientId);
 });

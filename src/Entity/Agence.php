@@ -43,11 +43,18 @@ class Agence
     private Collection $accountTransactions;
 
     #[ORM\Column(length: 5)]
-    private ?string $devise_local = null; 
+    private ?string $devise_local = null;
+
+    /**
+     * @var Collection<int, Exchange>
+     */
+    #[ORM\OneToMany(targetEntity: Exchange::class, mappedBy: 'Agence')]
+    private Collection $exchanges; 
     
     public function __construct()
     { 
-        $this->accountTransactions = new ArrayCollection();  
+        $this->accountTransactions = new ArrayCollection();
+        $this->exchanges = new ArrayCollection();  
     }
 
     public function getId(): ?int
@@ -154,6 +161,36 @@ class Agence
     public function setDeviseLocal(string $devise_local): static
     {
         $this->devise_local = $devise_local;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Exchange>
+     */
+    public function getExchanges(): Collection
+    {
+        return $this->exchanges;
+    }
+
+    public function addExchange(Exchange $exchange): static
+    {
+        if (!$this->exchanges->contains($exchange)) {
+            $this->exchanges->add($exchange);
+            $exchange->setAgence($this);
+        }
+
+        return $this;
+    }
+
+    public function removeExchange(Exchange $exchange): static
+    {
+        if ($this->exchanges->removeElement($exchange)) {
+            // set the owning side to null (unless already changed)
+            if ($exchange->getAgence() === $this) {
+                $exchange->setAgence(null);
+            }
+        }
 
         return $this;
     } 

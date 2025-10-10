@@ -144,6 +144,7 @@ function initTranferts(clientId) {
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end">
                                             <li><a class="dropdown-item view-transfer" href="#" data-id="${row.id}" ><i class="bi bi-eye me-2"></i>Voir</a></li>
+                                            <li><a class="dropdown-item modify-transfer" href="#" data-id="${row.id}" ><i class="bi bi-eye me-2"></i>Modifier</a></li>
                                             <li><a class="dropdown-item print-transfer" href="#" data-id="${row.id}"><i class="bi bi-printer me-2"></i>Imprimer</a></li>
                                 `;
 
@@ -438,6 +439,76 @@ function initTranferts(clientId) {
         });
     });
 
+     $('#destinationEdit').change(function () {
+        const destination = $(this).find(':selected').val();
+        $.get(`/api/agence/${destination}`, function (data, status) {
+            const abg = data['abg'];
+            $('#deviseRecueDisplayEdit').text(countryCodeCurrency[abg].currency);
+            $('#nomDeviseReceptionTauxEdit').html(
+                `${countryCodeCurrency[abg].currencyName} <span class="text-danger">*</span>`
+            );
+            $('#tauxReceptionEdit').val(countryCodeCurrency[abg].USDValue);
+            calculerMontantsEdit();
+        });
+    });
+
+    $("#resetFormEdit").on('click', () => {
+        $('#totalAPayerEdit').text('0.00 CFA');
+    });
+
+    
+
+    // Calculate amounts when inputs change in edit modal
+    $('#montantCashEdit, #fraisEnvoiEdit, #tauxEdit, #tauxReceptionEdit').on('input', calculerMontantsEdit);
+
+    // Submit handler for edit form
+    $('#btnEditClientTransfert').on('click', function (e) {
+        e.preventDefault();
+
+        const $form = $('#form-edit-transfer');
+        const $btn = $form.find('button[type="submit"]');
+        const id = $('#modalEditTransfert').data('id')
+        disableButton($btn);
+
+        const formData = {
+            date: $('#dateOpsEdit').val(),
+            type: $('#typeOpsTEdit').val(),
+            destination: $('#destinationEdit').val(),
+            expediteur: clientId,
+            nomBeneficiaire: $('#nomBeneficiaireEdit').val(),
+            phoneBeneficiaire: $('#phoneBeneficiaireEdit').val(),
+            montantCash: $('#montantCashEdit').val(),
+            fraisEnvoi: $('#fraisEnvoiEdit').val(),
+            taux: $('#tauxEdit').val(),
+            montantUSD: $('#montantRecuEdit').val(),
+            tauxReception: $('#tauxReceptionEdit').val(),
+            montantDeviseReception: $('#montantDeviseReceptionEdit').val(),
+            totalAPayer: $('#totalAPayerEdit').text(),
+            moneyReceived: $('#moneyReceivedEdit').prop('checked')
+        };
+
+        // Send data via AJAX
+        $.ajax({
+            url: `/api/transfert/update/${id}`,
+            type: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify(formData),
+            success: function (response) {
+                showToastModal({ message: 'Transfert modifié avec succès', type: 'success' });
+                $('#form-edit-transfer').trigger("reset");
+                $('#modalEditTransfert').modal('hide');
+                tableTransfers.ajax.reload();
+                calculerMontantsEdit();
+            },
+            error: function (xhr, status, error) {
+                showToastModal({ message: error || "Erreur de connexion", type: 'error' });
+            },
+            complete: function () {
+                enableButton($btn);
+            }
+        });
+    });
+
     $('#transfersTable').on('click', '.print-transfer', function () {
         transferId = $(this).data('id');
         window.open('/api/transferts/' + transferId + '/receipt', '_blank');
@@ -454,6 +525,16 @@ function initTranferts(clientId) {
         openViewTransferModal(id);
     });
 
+    $('#transfersTable').on('click', '.modify-transfer', function (e) {
+        e.preventDefault();
+        const id = $(this).data('id');
+        populateEditModal(id);
+    });
+
+    // Handlers for Edit Transfer Modal
+    let currentTransferId = null;
+
+   
     function chargerStatsTransferts() {
         $.ajax({
             url: `/api/client/${clientId}/transferts/stats`,
@@ -475,6 +556,25 @@ function initTranferts(clientId) {
             }
         });
     }
+
+    // Afficher/masquer les boutons d'action selon le statut
+  function toggleActionButtons(status) {
+    // Masquer tous les boutons d'abord
+    $('#validateTransferBtn, #cancelTransferBtn, #deleteTransferBtn').addClass('d-none');
+
+    // Afficher les boutons appropriés
+    switch (status) {
+      case 'pending':
+        $('#validateTransferBtn, #cancelTransferBtn').removeClass('d-none');
+        break;
+      case 'cancelled':
+        $('#deleteTransferBtn').removeClass('d-none');
+        break;
+      case 'completed':
+        // Aucun bouton supplémentaire pour les transferts complétés
+        break;
+    }
+  }
 
     chargerStatsTransferts();
 }

@@ -312,7 +312,7 @@ final class TransfertController extends AbstractController
         // Préparer les données de sortie
         $output =  [
             'id' => $transfert->getId(),
-            'createdAt' => $transfert->getCreatedAt()->format('Y-m-d H:i:s'),
+            'createdAt' => $transfert->getCreatedAt()->format('Y-m-d'),
             'type' => $transfert->getType(),
             'destination' => [
                 'id' => $transfert->getAgence()->getId(),

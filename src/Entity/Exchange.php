@@ -42,8 +42,7 @@ class Exchange
      * @var Collection<int, AccountTransaction>
      */
     #[ORM\OneToMany(targetEntity: AccountTransaction::class, mappedBy: 'exchange', cascade: ['persist', 'remove'])]
-    private Collection $transactions;
- 
+    private Collection $transactions; 
 
     #[ORM\Column(length: 255)]
     #[Groups(['agence:read'])]
@@ -236,6 +235,6 @@ class Exchange
         $this->ref = $ref;
 
         return $this;
-    } 
+    }
      
 }

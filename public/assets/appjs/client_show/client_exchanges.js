@@ -1,7 +1,9 @@
 $(document).ready(
-    () => { 
+    () => {
         let exchangeToDelete = null;
         let selectedExchange = null;
+
+        const clientId = extractClientId();
 
         // Initialisation de la table avec DataTables
         const exchangesTable = $('#exchangesTable').DataTable({
@@ -70,19 +72,71 @@ $(document).ready(
                     "render": function (data, type, row) {
                         // Boutons d'action
                         return `
-                            <button class="btn btn-info btn-sm view-btn text-white" data-id="${row.id}"> 
-                                <i class="bi bi-eye"></i> 
+                            <button class="btn btn-info btn-sm view-btn text-white" data-id="${row.id}">
+                                <i class="bi bi-eye"></i>
                             </button>
-                            <button class="btn btn-danger btn-sm delete-btn text-white" data-id="${row.id}"> 
-                                <i class="bi bi-trash"></i>  
+                            <button class="btn btn-warning btn-sm edit-btn text-white" data-id="${row.id}">
+                                <i class="bi bi-pencil"></i>
                             </button>
-                            <button class="btn btn-secondary btn-sm print-btn text-white" data-id="${row.id}"> 
-                                <i class="bi bi-printer"></i>  
+                            <button class="btn btn-danger btn-sm delete-btn text-white" data-id="${row.id}">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                            <button class="btn btn-secondary btn-sm print-btn text-white" data-id="${row.id}">
+                                <i class="bi bi-printer"></i>
                             </button>
                         `;
                     }
                 }
+
             ]
+        });
+
+
+        // --- Bouton ÉDITER ---
+        $('#exchangesTable tbody').on('click', '.edit-btn', function () {
+            let tr = $(this).closest('tr');
+            let row = exchangesTable.row(tr);
+            let exchangeData = row.data();
+
+            let exchangeId = exchangeData.id;
+            selectedExchange = exchangeId
+
+            // Appel à l'API Symfony pour récupérer les données complètes
+            $.ajax({
+                url: `/api/client/${clientId}/exchange/${exchangeId}`,
+                type: 'GET',
+                success: function (response) {
+                    if (!response.success) {
+                        alert("Erreur : " + response.message);
+                        return;
+                    }
+
+                    let data = response.data;
+
+                    // Remplir le modal Edit avec les données récupérées
+                    $('#editExchangeRef').val(data.ref || "EX-" + data.id.toString().padStart(5, '0'));
+                    $('#editDateOpsEchange').val(data.date.split(' ')[0]); // format YYYY-MM-DD
+                    $('#editDestinationEchange').val(data.agence ? data.agence.id : '');
+                    $('#editTypeOpsEchange').val(data.type);
+                    $('#editDeviseExchange').val(data.devise);
+                    $('#editMontantEchange').val(data.montant_devise);
+                    $('#editDeviseEchange').text(data.devise);
+                    $('#editTauxEchange').val(data.taux);
+                    $('#editExchangeNote').val(data.description || '');
+
+                    // Calculer et afficher le total
+                    let total = parseFloat(data.montant_devise) * parseFloat(data.taux);
+                    $('#editTotalAPayerEchange').text(total.toFixed(2) + " CFA");
+
+                    // Afficher le modal
+                    $('#editCurrencyModal').modal('show');
+                    $('#editCurrencyModal').data('id', data.id)
+                },
+                error: function (xhr) {
+                    console.error(xhr.responseText);
+                    alert("Impossible de récupérer les informations de l'échange.");
+                }
+            });
         });
 
 
@@ -91,23 +145,60 @@ $(document).ready(
             let row = exchangesTable.row(tr);
             let exchangeData = row.data();
 
-            // Remplir le modal avec les données
-            $('#detail-from-amount').text(exchangeData.fromAmount);
-            $('#detail-from-currency').text(exchangeData.fromCurrency);
-            $('#detail-to-amount').text(exchangeData.toAmount);
-            $('#detail-to-currency').text(exchangeData.toCurrency);
-            $('#detail-date').text(formatDate(exchangeData.date));
-            $('#detail-taux').text(exchangeData.taux);
-            $('#detail-reference').text("EX-" + exchangeData.id.toString().padStart(5, '0'));
-            $('#detail-status').text("Complété");
-            $('#detail-notes').text("Échange standard effectué sans problème.");
+            let exchangeId = exchangeData.id;
 
+            // Vérification basique
+            if (!exchangeId) {
+                alert("Informations manquantes pour afficher les détails de l’échange.");
+                return;
+            }
 
-            selectedExchange = exchangeData.id
-            // Afficher le modal
-            $('#exchangeDetailModal').modal('show');
+            // 🔄 Appel AJAX pour récupérer les détails complets de l’échange
+            $.ajax({
+                url: `/api/client/${clientId}/exchange/${exchangeId}`,
+                type: 'GET',
+                dataType: 'json',
+                success: function (response) {
+                    if (!response.success || !response.data) {
+                        alert("Erreur : " + (response.message || "Impossible de récupérer les informations."));
+                        return;
+                    }
+
+                    let data = response.data;
+
+                    // 🧾 Formatage sécurisé des champs
+                    const ref = data.ref || "EX-" + data.id.toString().padStart(5, '0');
+                    const date = data.date ? new Date(data.date).toLocaleString('fr-FR') : "—";
+                    const agence = data.agence ? data.agence.designation : "—";
+                    const type = data.type ? data.type.charAt(0).toUpperCase() + data.type.slice(1) : "—";
+                    const devise = data.devise || "—";
+                    const montant = data.montant_devise?.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) || "0.00";
+                    const taux = data.taux?.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) || "0.00";
+                    const total = (parseFloat(data.montant_devise) * parseFloat(data.taux) || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 });
+                    const note = data.description || "Aucune note.";
+
+                    // 🧩 Remplir le modal avec les données
+                    $('#viewRef').text(ref);
+                    $('#viewDateOpsEchange').text(date);
+                    $('#viewDestinationEchange').text(agence);
+                    $('#viewTypeOpsEchange').text(type);
+                    $('#viewDeviseExchange').text(devise);
+                    $('#viewMontantEchange').text(montant);
+                    $('#viewDeviseEchange').text(devise);
+                    $('#viewTauxEchange').text(taux);
+                    $('#viewTotalAPayerEchange').text(total + " CFA");
+                    $('#viewExchangeNote').text(note);
+
+                    // Afficher le modal
+                    $('#viewCurrencyModal').modal('show');
+                },
+                error: function (xhr) {
+                    console.error(xhr.responseText);
+                    alert("Erreur serveur : impossible de récupérer les informations de l'échange.");
+                }
+            });
         });
-
+ 
         $('#exchangesTable tbody').on('click', '.delete-btn', function () {
             let tr = $(this).closest('tr');
             let row = exchangesTable.row(tr);
@@ -115,7 +206,7 @@ $(document).ready(
             exchangeToDelete = exchangeData.id;
 
             // Remplir le modal de confirmation
-            $('#delete-reference').text("EX-" + exchangeData.id.toString().padStart(5, '0'));
+            $('#delete-reference').text(exchangeData.ref);
             $('#delete-date').text(formatDate(exchangeData.date));
             $('#delete-amount').text(`${exchangeData.fromAmount} ${exchangeData.fromCurrency}`);
 
@@ -135,7 +226,7 @@ $(document).ready(
             exchangeToDelete = exchangeData.id;
 
             // Remplir le modal de confirmation
-            $('#delete-reference').text(exchangeData.reference);
+            $('#delete-reference').text(exchangeData.ref);
             $('#delete-date').text(formatDate(exchangeData.date));
             $('#delete-amount').text(`${exchangeData.fromAmount} ${exchangeData.fromCurrency}`);
 
@@ -179,8 +270,8 @@ $(document).ready(
         $('#detail-print-btn').on('click', function () {
             let id = selectedExchange;
             window.open(`/api/exchanges/${id}/print`, '_blank');
-        }); 
+        });
 
-  
+
     }
 )

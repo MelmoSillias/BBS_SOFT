@@ -401,7 +401,7 @@ function initTransactions(clientId) {
         window.open(`/api/transaction/${id}/receipt`, '_blank');
     });
 
-    let selectedTransactionID
+    
 
     transactionsTable.on('click', '.modify-btn', function () {
         selectedTransactionID = $(this).data('id');

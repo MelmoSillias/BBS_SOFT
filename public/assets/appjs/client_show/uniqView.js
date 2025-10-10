@@ -91,15 +91,15 @@ function initOps(clientId) {
             {
                 data: null,
                 title: 'Actions',
-                render: function (data, type, row) {
+                render: function (data, type, row) { 
                        return `
-                            <button class="btn btn-sm btn-outline-primary print-btn" data-id="${row.id}" data-ops="${row.operation}" title="Imprimer">
+                            <button class="btn btn-sm btn-outline-primary print-btn" data-id="${row.ops_id}" data-ops="${row.operation}" title="Imprimer">
                                 <i class="bi bi-printer"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-info modify-btn" data-id="${row.id}" data-ops="${row.operation}" title="Modifier">
+                            <button class="btn btn-sm btn-outline-info modify-btn" data-id="${row.ops_id}" data-ops="${row.operation}" title="Modifier">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-danger cancel-btn" data-id="${row.id}" data-ops="${row.operation}" title="Cancel">
+                            <button class="btn btn-sm btn-outline-danger cancel-btn" data-id="${row.ops_id}" data-ops="${row.operation}" title="Cancel">
                                 <i class="bi bi-x-circle"></i>
                             </button>
                         `; 
@@ -111,12 +111,85 @@ function initOps(clientId) {
         language: { url: '/api/datatable_json_fr' }
     });
 
-    operationsTable.on("click", '.print-btn', () => {
-        const operation = $(this).data("ops")
-        const id =  $(this).data("id")
-        let url 
+    $("#opsTable tbody").on("click", ".print-btn", function () {
+        const operation = $(this).data("ops");
+        const id = $(this).data("id");
 
-        if (operation == "transfer") url = "/api/transfer/"
+        let url;
+
+        if (operation === "Transfert") url = `/api/transferts/${id}/receipt`;
+        else if (operation === "Change") url = `/api/exchanges/${id}/print`;
+        else if (operation === "Versement" || operation === "Retrait") url = `/api/transaction/${id}/receipt`;
+        else url = null;
+
+        if (url) {
+            window.open(url, "_blank");
+        } else {
+            alert("Type d’opération non reconnu.");
+        }
+    });
+
+    $("#opsTable tbody").on("click", ".modify-btn", function () {
+        const operation = $(this).data("ops");
+        const id = $(this).data("id");
+        
+
+        if (operation === "Transfert") { 
+            populateEditModal(id); 
+        }
+        else if (operation === "Change") {
+            let tr = $(this).closest('tr');  
+
+            // Appel à l'API Symfony pour récupérer les données complètes
+            $.ajax({
+                url: `/api/client/${clientId}/exchange/${id}`,
+                type: 'GET',
+                success: function (response) {
+                    if (!response.success) {
+                        alert("Erreur : " + response.message);
+                        return;
+                    }
+
+                    let data = response.data;
+
+                    // Remplir le modal Edit avec les données récupérées
+                    $('#editExchangeRef').val(data.ref || "EX-" + data.id.toString().padStart(5, '0'));
+                    $('#editDateOpsEchange').val(data.date.split(' ')[0]); // format YYYY-MM-DD
+                    $('#editDestinationEchange').val(data.agence ? data.agence.id : '');
+                    $('#editTypeOpsEchange').val(data.type);
+                    $('#editDeviseExchange').val(data.devise);
+                    $('#editMontantEchange').val(data.montant_devise);
+                    $('#editDeviseEchange').text(data.devise);
+                    $('#editTauxEchange').val(data.taux);
+                    $('#editExchangeNote').val(data.description || '');
+
+                    // Calculer et afficher le total
+                    let total = parseFloat(data.montant_devise) * parseFloat(data.taux);
+                    $('#editTotalAPayerEchange').text(total.toFixed(2) + " CFA");
+
+                    // Afficher le modal
+                    $('#editCurrencyModal').modal('show');
+                    $('#editCurrencyModal').data('id', data.id)
+                },
+                error: function (xhr) {
+                    console.error(xhr.responseText);
+                    alert("Impossible de récupérer les informations de l'échange.");
+                }
+            });
+        }
+        else if (operation === "Versement" || operation === "Retrait") {
+            selectedTransactionID = id
+            $.get(`/api/transaction/${id}/details`, function (data) {
+                $("#editTransDate").val(data.date)
+                $("#editTransAmount").val(data.montant)
+                $("#editTransType").val(data.type)
+            })
+
+            $("#editTransactionModal").modal('show')
+        }
     })
+
+    
+    
     
 }
