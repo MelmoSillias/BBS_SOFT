@@ -126,7 +126,11 @@ $(document).ready(function () {
         },
         columns: [
             {
-                data: 'ref',
+                data: 'id', visible:false
+                
+            },
+            {
+                data: 'ref',orderable: false,
                 render: function (data) {
                     return `<span class="text-secondary fw-bold">${data}</span>`;
                 },
@@ -135,11 +139,11 @@ $(document).ready(function () {
                 data: 'createdAt',
                 render: function (data) {
                     return `<span class="text-muted fw-bold">${moment(data).format('DD/MM/YYYY')}</span>`;
-                },
+                },orderable: false,
                 visible: true,
             }, 
             {
-                data: 'expediteur',
+                data: 'expediteur',orderable: false,
                 render: function (data, type, row) {
                     if (row.clientType === 'ephemeral') {
                         return `
@@ -158,26 +162,29 @@ $(document).ready(function () {
                 data: 'montantCFA',
                 render: function (data) {
                     return `<span class="text-success fw-bold">${parseFloat(data).toLocaleString('fr-FR')} F CFA</span>`;
-                },
+                },orderable: false,
                 className: 'text-end'
             },
             {
                 data: 'montantUSD',
                 render: function (data) {
                     return `<span class="text-primary fw-bold">${parseFloat(data).toLocaleString('fr-FR')} $</span>`;
-                },
+                },orderable: false,
                 className: 'text-end'
             },
             {
                 data: null,
+                orderable: false,
                 render: function (data, type, row) {
                     const total = parseFloat(row.montantCFA) + parseFloat(row.frais);
                     return `<span class="fw-bold">${total.toLocaleString('fr-FR')} F CFA</span>`;
                 },
-                className: 'text-end'
+                className: 'text-end',
+                orderable: false,
             },
             {
                 data: 'status',
+                orderable: false,
                 render: function (data) {
                     const statusMap = {
                         'completed': { class: 'badge-completed', text: 'Complété', icon: 'check-circle' },
@@ -231,7 +238,7 @@ $(document).ready(function () {
             }
 
         ],
-        order: [[1, 'desc']],
+        order: [[0, 'DESC']],
         dom: 'Bflrtip',
         buttons: [
             {
@@ -513,6 +520,7 @@ $(document).ready(function () {
                 newExpediteurNom: $('[name="newExpediteurNom"]').val(),
                 newExpediteurPhone: $('[name="newExpediteurPhone"]').val()
             }),
+            
             nomBeneficiaire: $('#nomBeneficiaire').val(),
             phoneBeneficiaire: $('#phoneBeneficiaire').val(),
             montantCash: $('#montantCash').val(),

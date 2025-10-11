@@ -149,6 +149,8 @@ final class TransfertController extends AbstractController
             $queryBuilder->andWhere('t.client IS NOT NULL');
         }
 
+        $queryBuilder->addOrderBy('t.id', ' DESC');
+
         // Récupérer les résultats sans le filtre de nom pour pouvoir filtrer sur le nom complet
         $transferts = $queryBuilder->getQuery()->getResult();
 
@@ -310,7 +312,7 @@ final class TransfertController extends AbstractController
         // Préparer les données de sortie
         $output =  [
             'id' => $transfert->getId(),
-            'createdAt' => $transfert->getCreatedAt()->format('Y-m-d H:i:s'),
+            'createdAt' => $transfert->getCreatedAt()->format('Y-m-d'),
             'type' => $transfert->getType(),
             'destination' => [
                 'id' => $transfert->getAgence()->getId(),

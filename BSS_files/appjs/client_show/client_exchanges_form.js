@@ -288,15 +288,15 @@ $(document).ready(
                 data: JSON.stringify(formData),
                 contentType: 'application/json',
                 success: function (response) {
-                    $('#editCurrencyModal').modal('hide');
                     showToastModal({ message: `${formData.type} modifié avec succès !`, type: 'success' });
                     $('#opsTable').DataTable().ajax.reload();
                      $('#exchangesTable').DataTable().ajax.reload(); 
                 },
                 error: function (xhr, status, error) {
-                    $('#editCurrencyModal').modal('hide');
                     showToastModal({ message: "La modification a échoué !", type: 'error' });
-                    $('#editCurrencyModal').modal('show');
+                },
+                complete: function () {
+                    $('#editCurrencyModal').modal('hide');
                 }
             });
         });
