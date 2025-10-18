@@ -147,40 +147,6 @@ $(document).ready(
         $montant.on('input', calculateTotal);
         $taux.on('input', calculateTotal);
 
-        // Événement pour le bouton d'échange
-        $exchangeButton.on('click', function () {
-            // Validation des champs
-            if (!$montant.val() || !$taux.val()) {
-                showToastModal({ message: 'Veuillez remplir tous les champs obligatoires.', type: "warning" });
-                return;
-            }
-
-            // Récupération des données du formulaire
-            const formData = {
-                clientId: extractClientId(),
-                destination: $destination.find(":selected").val(),
-                type: $typeOps.val(),
-                deviseExchange: $deviseExchange.val(),
-                montant: $montant.val(),
-                date: $("#dateOpsEchange").val(),
-                taux: $taux.val(),
-                note: $('#exchangeNote').val()
-            };
-
-            $.post(`/api/client/${formData.clientId}/exchange`, formData)
-                .done(function (response, textStatus, jqXHR) {
-                    showToastModal({ message: `${formData.type} effectué avec succès !`, type: 'success' });
-                    $('#exchangesTable').DataTable().ajax.reload();
-                    $('#opsTable').DataTable().ajax.reload(); 
-                    setTimeout(() => { window.open('/api/exchanges/' + response.id + '/print', '_blank') }, 2000)
-                }).fail(() => {
-                    showToastModal({ message: "L'opération a echouée !", type: 'error' })
-                })
-
-            // Fermer le modal après traitement
-            $('#currencyModal').modal('hide');
-        });
-
         // Initialisation de l'interface au chargement
         updateUIByAgency();
         calculateTotal();
@@ -288,15 +254,15 @@ $(document).ready(
                 data: JSON.stringify(formData),
                 contentType: 'application/json',
                 success: function (response) {
+                    $('#editCurrencyModal').modal('hide');
                     showToastModal({ message: `${formData.type} modifié avec succès !`, type: 'success' });
                     $('#opsTable').DataTable().ajax.reload();
                      $('#exchangesTable').DataTable().ajax.reload(); 
                 },
                 error: function (xhr, status, error) {
-                    showToastModal({ message: "La modification a échoué !", type: 'error' });
-                },
-                complete: function () {
                     $('#editCurrencyModal').modal('hide');
+                    showToastModal({ message: "La modification a échoué !", type: 'error' });
+                    $('#editCurrencyModal').modal('show');
                 }
             });
         });

@@ -387,6 +387,7 @@ function initTranferts(clientId) {
 
     $('#transfersTable').on('click', '.delete-transfer', function () {
         transferId = $(this).data('id');
+        $('#confirmDeleteModal').data('id', transferId)
         $('#confirmDeleteModal').modal('show');
     }); 
 
@@ -410,7 +411,7 @@ function initTranferts(clientId) {
         const button = $(this);
         disableButton(button);
 
-        $.post('/api/transferts/' + transferId + '/cancel', function () {
+        $.post('/api/transferts/' + $('#confirmDeleteModal').data('id') + '/cancel', function () {
             showToastModal({ message: 'Transfert annulé avec succès!', type: 'success' });
             $('#confirmCancelModal').modal('hide');
             $('#viewTransferModal').modal('hide');
@@ -455,8 +456,6 @@ function initTranferts(clientId) {
     $("#resetFormEdit").on('click', () => {
         $('#totalAPayerEdit').text('0.00 CFA');
     });
-
-    
 
     // Calculate amounts when inputs change in edit modal
     $('#montantCashEdit, #fraisEnvoiEdit, #tauxEdit, #tauxReceptionEdit').on('input', calculerMontantsEdit);

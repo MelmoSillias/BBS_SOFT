@@ -91,7 +91,7 @@ function initTransfertsForm(clientId) {
                 $('#form-add-transfer').trigger("reset");
                 $('#select-expediteur').val(null).trigger('change');
                 $('#new-client-section').addClass('d-none');
-                ('#transfersTable').DataTable().ajax.reload(); 
+                $('#transfersTable').DataTable().ajax.reload(); 
                 $('#opsTable').DataTable().ajax.reload();
                 calculerMontants();
                 const transferId = response.transfertId;

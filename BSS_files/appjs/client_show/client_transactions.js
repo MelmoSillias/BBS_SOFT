@@ -435,9 +435,7 @@ function initTransactions(clientId) {
     }),
 
     transactionsTable.on('click', '.cancel-btn', function () {
-        selectedTransactionID = $(this).data('id');
-        console.log(selectedTransactionID);
-
+        selectedTransactionID = $(this).data('id'); 
         $("#confirmCancelTransactionModal").modal('show')
     });
 

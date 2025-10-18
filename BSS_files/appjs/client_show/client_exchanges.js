@@ -203,17 +203,10 @@ $(document).ready(
             let tr = $(this).closest('tr');
             let row = exchangesTable.row(tr);
             let exchangeData = row.data();
-            exchangeToDelete = exchangeData.id;
-
-            // Remplir le modal de confirmation
-            $('#delete-reference').text(exchangeData.ref);
-            $('#delete-date').text(formatDate(exchangeData.date));
-            $('#delete-amount').text(`${exchangeData.fromAmount} ${exchangeData.fromCurrency}`);
-
+            exchangeToDelete = exchangeData.id; 
             // Afficher le modal de confirmation
             $('#deleteConfirmModal').modal('show');
-        });
-
+        }); 
 
         // Gestion des événements pour les boutons "Supprimer"
         $('#exchangesTable tbody').on('click', '.delete-btn', function () {
@@ -223,23 +216,19 @@ $(document).ready(
             let tr = $(this).closest('tr');
             let row = exchangesTable.row(tr);
             let exchangeData = row.data();
-            exchangeToDelete = exchangeData.id;
-
-            // Remplir le modal de confirmation
-            $('#delete-reference').text(exchangeData.ref);
-            $('#delete-date').text(formatDate(exchangeData.date));
-            $('#delete-amount').text(`${exchangeData.fromAmount} ${exchangeData.fromCurrency}`);
-
+            exchangeToDelete = exchangeData.id; 
+            $('#deleteConfirmModal').data('id', exchangeData.id)
             // Afficher le modal de confirmation
             $('#deleteConfirmModal').modal('show');
         });
 
         // Confirmation de suppression
-        $('#confirm-delete-btn').on('click', function () {
-            if (exchangeToDelete) {
+        $('#confirm-delete-btn').on('click', function () { 
+            const id = $('#deleteConfirmModal').data('id') ;
+            if (id) {
                 // Effectuer la suppression via AJAX
                 $.ajax({
-                    url: `/api/exchanges/${exchangeToDelete}`,
+                    url: `/api/exchanges/${id}`,
                     method: 'DELETE',
                     success: function (response) {
                         // Recharger le tableau

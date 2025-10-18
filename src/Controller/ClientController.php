@@ -473,9 +473,7 @@ final class ClientController extends AbstractController
     #[Route('/api/client/{id}/exchange', name: 'client_exchange_submit', methods: ['POST'])]
     public function exchangeSubmit(Client $client, Request $request, EntityManagerInterface $em): JsonResponse
     {
-        // Récupérer les données de la requête  
-        
-
+        // Récupérer les données de la requête   
         $type = $request->request->get('type', '');
         $montantdevise = (float) $request->request->get('montant', 0);
         $devise = $request->request->get('deviseExchange', '');
@@ -483,7 +481,7 @@ final class ClientController extends AbstractController
         $date = $request->request->get('date'); // Note de la transaction
         $taux = (float) $request->request->get('taux', 0); // Taux de change utilisé
         $agence = $em->getRepository(Agence::class)->findOneBy(['id' => $request->request->get('destination')]); // Agence de destination 
-  
+
         $note =  $request->request->get('note');
 
         $montantCfa = $montantdevise * $taux; // Montant en CFA
@@ -500,6 +498,7 @@ final class ClientController extends AbstractController
         $exchange->setClient($client);
         $exchange->setDescription($note ?? $type . " de " . $devise . " à " . $agence->getDesignation() . " sur compte");
         $exchange->setDate(!$date ? new DateTimeImmutable("now") : new DateTimeImmutable($date));
+        
 
         // 1. Créer un enregistrement de transaction pour le client
         $clientTx = new AccountTransaction();
@@ -509,7 +508,7 @@ final class ClientController extends AbstractController
             ->setCreatedAt(!$date ? new DateTimeImmutable("now") : new DateTimeImmutable($date))
             ->setExchange($exchange)
             ->setDescrib($note ?? $type . " de " . $devise . " à " . $agence->getDesignation() . " sur compte");
-
+         
 
         // 2. Créer un enregistrement pour l'agence
         if ($agence->getId() === 1) {
@@ -531,7 +530,7 @@ final class ClientController extends AbstractController
                 ->setExchange($exchange)
                 ->setDescrib($note ?? $type . " de " . $devise . " sur compte " . $client->getNomComplet())
                 ->setCreatedAt(!$date ? new DateTimeImmutable("now") : new DateTimeImmutable($date));
-        }
+        } 
 
         // Persister les transactions dans la base de données
         $em->persist($exchange);
@@ -560,81 +559,85 @@ final class ClientController extends AbstractController
             ];
         }, $exchanges));
     }
-#[Route('/api/client/{client}/exchange/{id}/update', name: 'client_exchange_update', methods: ['PUT'])]
-public function exchangeUpdate(
-    Client $client,
-    Exchange $exchange,
-    Request $request,
-    EntityManagerInterface $em
-): JsonResponse {
-    // 🔹 Décoder le JSON brut du corps de la requête
-    $data = json_decode($request->getContent(), true);
 
-    if (!$data) {
-        return $this->json(['success' => false, 'message' => 'Aucune donnée valide reçue.'], 400);
-    }
+    #[Route('/api/client/{client}/exchange/{id}/update', name: 'client_exchange_update', methods: ['PUT'])]
+    public function exchangeUpdate(
+        Client $client,
+        Exchange $exchange,
+        Request $request,
+        EntityManagerInterface $em
+    ): JsonResponse {
+        // 🔹 Décoder le JSON brut du corps de la requête
+        $data = json_decode($request->getContent(), true);
 
-    // 🔹 Récupération des champs avec valeurs par défaut
-    $type = $data['type'] ?? $exchange->getType();
-    $montantdevise = isset($data['montant']) ? (float)$data['montant'] : $exchange->getMontantDevise();
-    $devise = $data['deviseExchange'] ?? $exchange->getDevise();
-    $taux = isset($data['taux']) ? (float)$data['taux'] : $exchange->getTaux();
-    $date = $data['date'] ?? null;
-    $note = $data['note'] ?? $exchange->getDescription();
-    $agenceId = $data['destination'] ?? null;
-    $agence = $agenceId ? $em->getRepository(Agence::class)->find($agenceId) : null;
-
-    if (!$agence) {
-        return $this->json(['success' => false, 'message' => 'Agence non trouvée.'], 400);
-    }
-
-    // --- Recalcul du montant en CFA ---
-    $montantCfa = $montantdevise * $taux;
-
-    // --- Mise à jour de l'objet Exchange ---
-    $exchange->setMontantCFA($montantCfa);
-    $exchange->setMontantDevise($montantdevise);
-    $exchange->setDevise($devise);
-    $exchange->setType($type);
-    $exchange->setTaux($taux);
-    $exchange->setClient($client);
-    $exchange->setDescription($note ?? $type . " de " . $devise . " à " . $agence->getDesignation());
-    $exchange->setDate(!$date ? new \DateTimeImmutable("now") : new \DateTimeImmutable($date));
-
-    // --- Mise à jour des transactions liées ---
-    $transactions = $em->getRepository(AccountTransaction::class)->findBy(['exchange' => $exchange]);
-    foreach ($transactions as $tx) {
-        if ($tx->getClient()) {
-            $tx->setClient($client)
-                ->setDescrib($note ?? $type . " de " . $devise . " à " . $agence->getDesignation() . " sur compte")
-                ->setCreatedAt(!$date ? new \DateTimeImmutable("now") : new \DateTimeImmutable($date))
-                ->setAmount('CFA', $type === "achat" ? $montantCfa * -1 : $montantCfa);
-        } elseif ($tx->getAgence()) {
-            $tx->setAgence($agence)
-                ->setExchange($exchange)
-                ->setDescrib($note ?? $type . " de " . $devise . " sur compte " . $client->getNomComplet())
-                ->setCreatedAt(!$date ? new \DateTimeImmutable("now") : new \DateTimeImmutable($date));
-
-            if ($agence->getId() === 1) {
-                $tx->setAmount($devise, $type === "achat" ? $montantdevise * -1 : $montantdevise);
-            } else {
-                $tx->setUSD($montantdevise);
-            }
+        if (!$data) {
+            return $this->json(['success' => false, 'message' => 'Aucune donnée valide reçue.'], 400);
         }
-        $em->persist($tx);
+
+        // 🔹 Récupération des champs avec valeurs par défaut
+        $type = $data['type'] ?? $exchange->getType();
+        $montantdevise = isset($data['montant']) ? (float)$data['montant'] : $exchange->getMontantDevise();
+        $devise = $data['deviseExchange'] ?? $exchange->getDevise();
+        $taux = isset($data['taux']) ? (float)$data['taux'] : $exchange->getTaux();
+        $date = $data['date'] ?? null;
+        $note = $data['note'] ?? $exchange->getDescription();
+        $agenceId = $data['destination'] ?? null;
+        $agence = $agenceId ? $em->getRepository(Agence::class)->find($agenceId) : null;
+
+        if (!$agence) {
+            return $this->json(['success' => false, 'message' => 'Agence non trouvée.'], 400);
+        }
+
+        // --- Recalcul du montant en CFA ---
+        $montantCfa = $montantdevise * $taux;
+
+        // --- Mise à jour de l'objet Exchange ---
+        $exchange->setMontantCFA($montantCfa);
+        $exchange->setMontantDevise($montantdevise);
+        $exchange->setDevise($devise);
+        $exchange->setType($type);
+        $exchange->setTaux($taux);
+        $exchange->setClient($client);
+        $exchange->setDescription($note ?? $type . " de " . $devise . " à " . $agence->getDesignation());
+        $exchange->setDate(!$date ? new \DateTimeImmutable("now") : new \DateTimeImmutable($date));
+
+        // --- Mise à jour des transactions liées ---
+        $transactions = $em->getRepository(AccountTransaction::class)->findBy(['exchange' => $exchange]);
+        foreach ($transactions as $tx) {
+            if ($tx->getClient()) {
+                $tx->setClient($client)
+                    ->setExchange($exchange)
+                    ->setDescrib($note ?? $type . " de " . $devise . " à " . $agence->getDesignation() . " sur compte")
+                    ->setCreatedAt(!$date ? new \DateTimeImmutable("now") : new \DateTimeImmutable($date))
+                    ->setAmount('CFA', $type === "achat" ? $montantCfa * -1 : $montantCfa);
+                $exchange->addTransaction($tx);
+                
+            } elseif ($tx->getAgence()) {
+                $tx->setAgence($agence)
+                    ->setExchange($exchange) 
+                    ->setDescrib($note ?? $type . " de " . $devise . " sur compte " . $client->getNomComplet())
+                    ->setCreatedAt(!$date ? new \DateTimeImmutable("now") : new \DateTimeImmutable($date));
+
+                if ($agence->getId() === 1) {
+                    $tx->setAmount($devise, $type === "achat" ? $montantdevise * -1 : $montantdevise);
+                } else {
+                    $tx->setUSD($montantdevise);
+                }
+                $exchange->addTransaction($tx);
+            }
+            dump($tx);
+            $em->persist($tx);
+        }
+
+        $em->persist($exchange);
+        $em->flush();
+
+        return $this->json([
+            'success' => true,
+            'id' => $exchange->getId(),
+            'message' => 'Échange mis à jour avec succès.'
+        ]);
     }
-
-    $em->persist($exchange);
-    $em->flush();
-
-    return $this->json([
-        'success' => true,
-        'id' => $exchange->getId(),
-        'message' => 'Échange mis à jour avec succès.'
-    ]);
-}
-
-
 
     #[Route('/api/client/{client}/exchange/{id}', name: 'client_exchange_show', methods: ['GET'])]
     public function exchangeShow(
@@ -653,6 +656,8 @@ public function exchangeUpdate(
         // Récupérer toutes les transactions associées à cet échange
         $transactions = $em->getRepository(AccountTransaction::class)
             ->findBy(['exchange' => $exchange]);
+
+        dump($exchange);
 
         // Identifier l’agence à partir d’une transaction d’agence (s’il y en a)
         $agenceData = null;
@@ -775,7 +780,7 @@ public function exchangeUpdate(
         // Si la transaction a une "sœur" liée
         if ($linked = $transaction->getLinkedTransaction()) {
             $linked->setCFA($transaction->getCFA());
-            $linked->setDescrib($transaction->getDescrib() + " sur compte $clientName");
+            $linked->setDescrib($transaction->getDescrib() . " sur compte $clientName");
         }
 
         $em->persist($transaction);

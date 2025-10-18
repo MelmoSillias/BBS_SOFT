@@ -189,7 +189,25 @@ function initOps(clientId) {
         }
     })
 
-    
+    $("#opsTable tbody").on("click", ".cancel-btn", function () {
+        const operation = $(this).data("ops");
+        const id = $(this).data("id");
+        
+
+        if (operation === "Transfert") { 
+            $('#confirmDeleteModal').data('id', id) 
+            $('#confirmDeleteModal').modal('show');
+        }
+        else if (operation === "Change") { 
+            $('#deleteConfirmModal').data('id', id)
+            console.log($('#deleteConfirmModal').data('id')); 
+            $('#deleteConfirmModal').modal('show');
+        }
+        else if (operation === "Versement" || operation === "Retrait") {
+            selectedTransactionID = id 
+            $("#confirmCancelTransactionModal").modal('show')
+        }
+    })
     
     
 }
