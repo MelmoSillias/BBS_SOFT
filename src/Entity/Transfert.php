@@ -46,6 +46,12 @@ class Transfert
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $senderName = null;
 
+    // Nom réel de la personne ayant envoyé l'argent (optionnel) —
+    // utilisé pour afficher le nom qui a effectivement envoyé l'argent
+    // lorsqu'il est fourni (même si un client enregistré est lié)
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $senderActualName = null;
+
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $senderPhone = null;
 
@@ -67,6 +73,8 @@ class Transfert
     #[ORM\Column(length: 10)]
     private ?string $ref = null;  
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $motif = null;
     /**
      * @var Collection<int, AccountTransaction>
      */
@@ -207,6 +215,18 @@ class Transfert
         return $this;
     }
 
+    public function getSenderActualName(): ?string
+    {
+        return $this->senderActualName;
+    }
+
+    public function setSenderActualName(?string $senderActualName): static
+    {
+        $this->senderActualName = $senderActualName;
+
+        return $this;
+    }
+
     public function getReceiverName(): ?string
     {
         return $this->receiverName;
@@ -263,6 +283,18 @@ class Transfert
     public function setRef(string $ref): static
     {
         $this->ref = $ref;
+
+        return $this;
+    }
+
+    public function getMotif(): ?string
+    {
+        return $this->motif;
+    }
+
+    public function setMotif(?string $motif): static
+    {
+        $this->motif = $motif;
 
         return $this;
     }

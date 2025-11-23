@@ -29,9 +29,7 @@ final class ExchangeController extends AbstractController
 
     #[Route('/api/exchanges', name: 'api_exchange_index', methods: ['GET'])]
     public function APIindex(Request $request, ExchangeRepository $repository, AgenceRepository $agenceRepository): JsonResponse
-    {
-
-
+    { 
         $type = $request->query->get('type');
         $startDate = $request->query->get('startDate');
         $endDate = $request->query->get('endDate');
@@ -61,6 +59,7 @@ final class ExchangeController extends AbstractController
                 'id' => $ex->getId(),
                 'date' => $ex->getDate()->format('Y-m-d'),
                 'type' => $ex->getType(),
+                'clientId' => $ex->getClient() ? $ex->getClient()->getId() : null,
                 'description' => $ex->getDescription(),
                 'montantCFA' => $ex->getMontantCFA(),
                 'montantDevise' => $ex->getMontantDevise(),
@@ -73,6 +72,34 @@ final class ExchangeController extends AbstractController
         return new JsonResponse(['data' => $data]);
     }
 
+    #[Route('/api/exchanges/{exchange}', name: 'api_exchange_details', methods: ['GET'])]
+    public function getExchangeDetails(Exchange $exchange, Request $request, ExchangeRepository $repository, AgenceRepository $agenceRepository): JsonResponse
+    {  
+        if (!$exchange) {
+            return $this->Json(["error" => "Echange non disponible"], 404);
+        } 
+
+        $transactions = $exchange->getTransactions();
+        $destination = 0;
+        if (count($transactions) === 1){
+            $destination = 1;
+        } else if (count($transactions) === 2){
+            $destination = $transactions[0]->getAgence()->getId() === 1 ? $transactions[1]->getAgence()->getId() : $transactions[0]->getAgence()->getId() ;
+        }
+    
+        return new JsonResponse(['success' => true, 'data' => [
+            'id' => $exchange->getId(),
+            'date' => $exchange->getDate()->format('Y-m-d'),
+            'type' => $exchange->getType(),
+            'destination' => $destination,
+            'description' => $exchange->getDescription(),
+            'montantCFA' => $exchange->getMontantCFA(),
+            'montantDevise' => $exchange->getMontantDevise(),
+            'devise' => $exchange->getDevise(),
+            'taux' => $exchange->getTaux(),
+            'ref' => $exchange->getRef(),
+        ]]);
+    }
 
     #[Route('/api/exchanges', name: 'api_exchange_create', methods: ['POST'])]
     public function create(Request $request, EntityManagerInterface $em): JsonResponse
@@ -97,9 +124,7 @@ final class ExchangeController extends AbstractController
         $taux = isset($data['taux']) ? (float) $data['taux'] : 0.0; // Taux de change utilisé
 
         // 3. Calculer le montant en CFA
-        $montantCfa = $montantdevise * $taux;
-
-
+        $montantCfa = $montantdevise * $taux; 
         // 4. Créer l'échange
         $exchange = new Exchange();
         $exchange->setMontantCFA($montantCfa);
@@ -153,6 +178,93 @@ final class ExchangeController extends AbstractController
         return new JsonResponse([
             'id' => $exchange->getId(),
         ], Response::HTTP_CREATED);
+    }
+
+
+    #[Route('/api/exchanges/{exchange}', name: 'api_exchange_update', methods: ['PUT'])]
+    public function updateExchange(Exchange $exchange, Request $request, EntityManagerInterface $em): JsonResponse
+    {
+        if (!$exchange) {
+            return $this->Json(["error" => "Echange non disponible"], 404);
+        }
+
+        // 1. Récupérer le contenu JSON de la requête
+        $data = json_decode($request->getContent(), true);
+
+        // 2. Valider et extraire les données
+        $agenceId = isset($data['agence']) ? (int) $data['agence'] : null;
+        $agence = $em->getRepository(Agence::class)->findOneBy(['id' => $agenceId]);
+        $local = $em->getRepository(Agence::class)->findOneBy(['id' => 1]);
+
+        if (!$agence) {
+            return new JsonResponse(['error' => 'Agence introuvable'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $type = $data['type'] ?? '';
+        $montantdevise = isset($data['montant']) ? (float) $data['montant'] : 0.0;
+        $devise = $data['deviseExchange'] ?? '';
+        $description = $data['description'] ?? '';
+        $date = $data['date'] ?? null; // Date de la transaction
+        $taux = isset($data['taux']) ? (float) $data['taux'] : 0.0; // Taux de change utilisé
+
+        // 3. Calculer le montant en CFA
+        $montantCfa = $montantdevise * $taux;
+
+        $exchange->setMontantCFA($montantCfa);
+        $exchange->setMontantDevise($montantdevise); 
+        $exchange->setDevise($devise);
+        $exchange->setType($type);
+        $exchange->setTaux($taux);
+        $exchange->setDescription($description != "" ? $description : $type . " de " . $devise . " à " . $agence->getDesignation());
+        $exchange->setDate(!$date ? new DateTimeImmutable("now") : new DateTimeImmutable($date));
+
+        foreach($exchange->getTransactions() as $tx ){
+            $em->remove($tx);
+        }
+        $em->flush();
+
+        if ($agence->getId() == 1) {
+
+            $tx = new AccountTransaction();
+            $tx->setAgence($agence);
+            $tx->setCFA($type === "achat" ? $montantCfa * -1 : $montantCfa);
+            $tx->setAmount($devise, $type === "achat" ? $montantdevise : $montantdevise * -1);
+            $tx->setDescrib($description != "" ? $description : $type . " de " . $devise . " à " . $agence->getDesignation());
+            $tx->setExchange($exchange);
+            $tx->setCreatedAt(!$date ? new DateTimeImmutable("now") : new DateTimeImmutable($date));
+            $exchange->addTransaction($tx);
+            $em->persist($tx);
+
+        } else {
+            
+            $localtx = new AccountTransaction();
+            $localtx->setAgence($local);
+            $localtx->setCFA($type === "achat" ? $montantCfa * -1 : $montantCfa);
+            $localtx->setDescrib($description != "" ? $description : $type . " de " . $devise . " à " . $agence->getDesignation());
+            $localtx->setExchange($exchange);
+            $localtx->setCreatedAt(!$date ? new DateTimeImmutable("now") : new DateTimeImmutable($date));
+            $exchange->addTransaction($localtx);
+            $em->persist($localtx); 
+
+            $agencetx = new AccountTransaction();
+            $agencetx->setAgence($agence);
+            $agencetx->setAmount($devise, $type === "achat" ? $montantdevise : $montantdevise * -1);
+            $agencetx->setDescrib($description != "" ? $description : $type . " de " . $devise . " à " . $agence->getDesignation());
+            $agencetx->setExchange($exchange);
+            $agencetx->setCreatedAt(!$date ? new DateTimeImmutable("now") : new DateTimeImmutable($date));
+            $exchange->addTransaction($agencetx);
+            $em->persist($agencetx);
+        } 
+        // 7. Persister et sauvegarder en base de données
+        $em->persist($exchange);
+        // $em->persist($withdrawalTx);
+        // $em->persist($depositTx);
+        $em->flush();
+
+        // 8. Retourner la réponse
+        return new JsonResponse([
+            'id' => $exchange->getId(),
+        ], Response::HTTP_OK);
     }
 
     #[Route('/api/exchanges/{id}', name: 'api_exchange_delete', methods: ['DELETE'])]
@@ -267,4 +379,6 @@ final class ExchangeController extends AbstractController
         $ref = 'BSS-D' . $formattedTransferCount;
         return $ref;
     }
+
+    
 }

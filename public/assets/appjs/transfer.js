@@ -249,24 +249,7 @@ $(document).ready(function () {
                 title: 'Liste des transferts',
                 exportOptions: {
                     columns: [0, 1, 2, 3, 4, 5, 6, 7],
-                    format: {
-                        body: function (data, row, column, node) {
-                            // Nettoyer le contenu HTML pour Excel
-                            if (column === 1) { // Type
-                                return $(data).text() || data;
-                            }
-                            if (column === 2) { // Expéditeur
-                                return $(data).find('.fw-bold').text() || data;
-                            }
-                            if (column === 3 || column === 5 || column === 6) { // Montant, Frais, Total
-                                return data.replace(' F CFA', '').replace(/\s/g, '');
-                            }
-                            if (column === 7) { // Statut
-                                return $(data).text().trim() || data;
-                            }
-                            return data;
-                        }
-                    }
+                    
                 },
                 customize: function (xlsx) {
                     var sheet = xlsx.xl.worksheets['sheet1.xml'];
@@ -276,58 +259,181 @@ $(document).ready(function () {
                 }
             },
             {
-                extend: 'pdfHtml5',
                 text: '<i class="bi bi-file-earmark-pdf"></i> Exporter PDF',
                 className: 'btn btn-danger',
                 titleAttr: 'Exporter vers PDF',
-                title: 'Liste des transferts',
-                exportOptions: {
-                    columns: [0, 1, 2, 3, 4, 5, 6, 7],
-                    format: {
-                        body: function (data, row, column, node) {
-                            // Nettoyer le contenu HTML pour PDF
-                            if (column === 1) { // Type
-                                return $(data).text() || data;
-                            }
-                            if (column === 2) { // Expéditeur
-                                return $(data).find('.fw-bold').text() || data;
-                            }
-                            if (column === 3 || column === 5 || column === 6) { // Montant, Frais, Total
-                                return data.replace(' F CFA', '').replace(/\s/g, '');
-                            }
-                            if (column === 7) { // Statut
-                                return $(data).text().trim() || data;
-                            }
-                            return data;
-                        }
-                    }
-                },
-                customize: function (doc) {
-                    // Structure simple pour le PDF
-                    doc.content[1].table.widths = ['*', '*', '*', '*', '*', '*', '*', '*'];
-                    doc.styles.tableHeader.fillColor = '#007bff';
-                    doc.styles.tableHeader.color = '#ffffff';
-                    doc.styles.tableHeader.alignment = 'center';
+                action: function (e, dt, node, config) {
 
-                    // Personnaliser les cellules du corps
-                    doc.content[1].table.body.forEach(function (row, i) {
-                        if (i > 0) { // Ignorer l'en-tête
-                            // Alignement des colonnes numériques à droite
-                            row[3].alignment = 'right';
-                            row[4].alignment = 'right';
-                            row[5].alignment = 'right';
-                            row[6].alignment = 'right';
-                        }
+                    // 🕓 Récupération des dates sélectionnées (à adapter selon ton code)
+                    const start = startTransfertDate ? moment(startTransfertDate).format('DD/MM/YYYY') : '';
+                    const end = endTransfertDate ? moment(endTransfertDate).format('DD/MM/YYYY') : '';
+                    const periodeTexte = start && end ? `Période : du ${start} au ${end}` : 'Période : toutes les dates';
+
+                    // 💾 Nom de fichier dynamique
+                    const fileName = `Transferts_${start.replace(/\//g, '-')}_au_${end.replace(/\//g, '-')}.pdf`;
+
+                    // 📊 Récupération des données du DataTable
+                    const data = dt.rows({ search: 'applied' }).data().toArray();
+
+                    // 🧮 Calcul des totaux
+                    let totalCFA = 0;
+                    let totalUSD = 0;
+                    data.forEach(row => {
+                        totalCFA += parseFloat(row.montantCFA || 0);
+                        totalUSD += parseFloat(row.montantUSD || 0);
                     });
 
-                    // Ajouter "F CFA" aux montants
-                    for (var i = 1; i < doc.content[1].table.body.length; i++) {
-                        doc.content[1].table.body[i][3] = { text: doc.content[1].table.body[i][3] + ' F CFA', alignment: 'right' };
-                        doc.content[1].table.body[i][5] = { text: doc.content[1].table.body[i][5] + ' F CFA', alignment: 'right' };
-                        doc.content[1].table.body[i][6] = { text: doc.content[1].table.body[i][6] + ' F CFA', alignment: 'right' };
+                    // 🧰 Fonctions utilitaires
+                    function cleanText(str) {
+                        if (!str) return '';
+                        return String(str)
+                            .replace(/[^\x20-\x7E\u00A0\u20AC\u202F\u00C0-\u017F]/g, '')
+                            .replace(/\s+/g, ' ')
+                            .trim();
                     }
+
+                    function formatMontant(value, suffix = '') {
+                        if (isNaN(value)) return '-';
+                        const formatted = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0 }).format(value);
+                        return cleanText(`${formatted} ${suffix}`);
+                    }
+
+                    // 🧱 Construction du tableau
+                    const headers = [
+                        { text: 'Réf', style: 'tableHeader' },
+                        { text: 'Date', style: 'tableHeader' },
+                        { text: 'Expéditeur', style: 'tableHeader' },
+                        { text: 'Montant CFA', style: 'tableHeader' },
+                        { text: 'Montant USD', style: 'tableHeader' },
+                        { text: 'Total', style: 'tableHeader' },
+                        { text: 'Statut', style: 'tableHeader' }
+                    ];
+
+                    const body = [headers];
+
+                    data.forEach(row => {
+                        const total = parseFloat(row.montantCFA) + parseFloat(row.frais || 0);
+                        let statusText = '';
+                        switch (row.status) {
+                            case 'completed': statusText = '✅ Complété'; break;
+                            case 'pending': statusText = '⏳ En attente'; break;
+                            case 'cancelled': statusText = '❌ Annulé'; break;
+                            case 'processing': statusText = '🔄 En cours'; break;
+                            default: statusText = row.status;
+                        }
+
+                        body.push([
+                            { text: cleanText(row.ref), style: 'cell' },
+                            { text: moment(row.createdAt).format('DD/MM/YYYY'), style: 'cell' },
+                            { text: cleanText(row.expediteur), style: 'cell' },
+                            { text: formatMontant(row.montantCFA, 'F CFA'), style: 'amount' },
+                            { text: formatMontant(row.montantUSD, '$'), style: 'amount' },
+                            { text: formatMontant(total, 'F CFA'), style: 'amountBold' },
+                            { text: cleanText(statusText), style: 'status' }
+                        ]);
+                    });
+
+                    // 🧾 Définition du document PDF
+                    const docDefinition = {
+                        pageOrientation: 'landscape',
+                        pageSize: 'A4',
+                        content: [
+                            { text: 'Liste des transferts', style: 'header' },
+                            { text: periodeTexte, style: 'subHeader' },
+                            {
+                                text: `Total : ${formatMontant(totalUSD, '$')}`,
+                                style: 'totaux'
+                            },
+                            {
+                                text: `Généré le : ${moment().format('DD/MM/YYYY HH:mm')}`,
+                                alignment: 'right',
+                                margin: [0, 0, 0, 10],
+                                fontSize: 9,
+                                color: '#666'
+                            },
+                            {
+                                table: {
+                                    headerRows: 1,
+                                    widths: ['15%', '10%', '20%', '15%', '10%', '15%', '15%'],
+                                    body: body
+                                },
+                                layout: {
+                                    fillColor: function (rowIndex) {
+                                        return rowIndex === 0 ? '#007bff' : rowIndex % 2 === 0 ? '#f9f9f9' : null;
+                                    },
+                                    hLineWidth: function () { return 0.5; },
+                                    vLineWidth: function () { return 0.5; },
+                                    hLineColor: function () { return '#ccc'; },
+                                    vLineColor: function () { return '#ccc'; },
+                                    paddingLeft: function () { return 6; },
+                                    paddingRight: function () { return 6; },
+                                    paddingTop: function () { return 4; },
+                                    paddingBottom: function () { return 4; }
+                                }
+                            }
+                        ],
+                        styles: {
+                            header: {
+                                fontSize: 18,
+                                bold: true,
+                                alignment: 'center',
+                                color: '#007bff',
+                                margin: [0, 0, 0, 5]
+                            },
+                            subHeader: {
+                                alignment: 'center',
+                                fontSize: 12,
+                                color: '#333',
+                                margin: [0, 0, 0, 5]
+                            },
+                            totaux: {
+                                alignment: 'center',
+                                fontSize: 11,
+                                bold: true,
+                                color: '#28a745',
+                                margin: [0, 0, 0, 10]
+                            },
+                            tableHeader: {
+                                bold: true,
+                                color: 'white',
+                                alignment: 'center',
+                                fontSize: 11
+                            },
+                            cell: {
+                                fontSize: 10,
+                                color: '#333'
+                            },
+                            amount: {
+                                alignment: 'right',
+                                fontSize: 10,
+                                color: '#28a745'
+                            },
+                            amountBold: {
+                                alignment: 'right',
+                                fontSize: 10,
+                                bold: true,
+                                color: '#000'
+                            },
+                            status: {
+                                alignment: 'center',
+                                fontSize: 10
+                            }
+                        },
+                        footer: function (currentPage, pageCount) {
+                            return {
+                                text: `Page ${currentPage} sur ${pageCount}`,
+                                alignment: 'center',
+                                fontSize: 9,
+                                margin: [0, 10, 0, 0],
+                                color: '#666'
+                            };
+                        }
+                    };
+
+                    // 📄 Génération du PDF
+                    pdfMake.createPdf(docDefinition).download(fileName);
                 }
-            }
+            } 
         ],
         language: {
             url: '/api/datatable_json_fr'
@@ -520,6 +626,9 @@ $(document).ready(function () {
                 newExpediteurNom: $('[name="newExpediteurNom"]').val(),
                 newExpediteurPhone: $('[name="newExpediteurPhone"]').val()
             }),
+            // Nom effectif de l'expéditeur et motif (optionnels)
+            senderActualName: $('#senderActualName').val(),
+            motif: $('#motif').val(),
             
             nomBeneficiaire: $('#nomBeneficiaire').val(),
             phoneBeneficiaire: $('#phoneBeneficiaire').val(),
@@ -531,6 +640,8 @@ $(document).ready(function () {
             montantDeviseReception: $('#montantDeviseReception').val(),
             totalAPayer: $('#totalAPayer').text(),
             moneyReceived: $('#moneyReceived').prop('checked')
+
+            
         };
 
         // Envoi des données via AJAX
@@ -598,6 +709,9 @@ $(document).ready(function () {
             $('#senderPhone').text(data.phone || '--');
             $('#senderType').text(data.clientType === 'ephemeral' ? 'Client éphémère' : 'Client enregistré');
             $('#senderId').text(data.expediteurId || '--');
+            // Nom effectif et motif (affichage)
+            $('#senderActualNameView').text(data.senderActualName || '--');
+            $('#transferMotif').text(data.motif || '--');
 
             // Remplir les informations du bénéficiaire
             $('#beneficiaryName').text(data.receiverName || '--');
@@ -669,8 +783,7 @@ $(document).ready(function () {
         transferId = currentTransferData.id;
         $('#confirmDeleteModal').modal('show');
     });
-
-
+ 
     // Écouteurs pour ouvrir les modales de confirmation
     $('#transfersTable').on('click', '.validate-transfer', function () {
         transferId = $(this).data('id');
@@ -875,6 +988,10 @@ $(document).ready(function () {
         $('#editMontantDeviseReception').val(montantReception.toFixed(2));
         $('#editTotalAPayer').text(totalAPayer.toFixed(2) + ' CFA'); 
 
+            // remplir nom effectif/motif si fournis
+            $('#editSenderActualName').val(data.senderActualName || '');
+            $('#editMotif').val(data.motif || '');
+
             // Afficher le modal
             const modal = new bootstrap.Modal(document.getElementById('editTransferModal'));
             modal.show();
@@ -921,6 +1038,9 @@ $(document).ready(function () {
                 newExpediteurNom: $('#editNewExpediteurNom').val(),
                 newExpediteurPhone: $('#editNewExpediteurPhone').val()
             }),
+            // Nom effectif et motif (optionnels)
+            senderActualName: $('#editSenderActualName').val(),
+            motif: $('#editMotif').val(),
             nomBeneficiaire: $('#editNomBeneficiaire').val(),
             phoneBeneficiaire: $('#editPhoneBeneficiaire').val(),
             montantCash: $('#editMontantCash').val(),
@@ -1058,6 +1178,7 @@ $(document).ready(function () {
             $('#editNewClientSection').addClass('d-none');
         }
     });
+
 
 
 });

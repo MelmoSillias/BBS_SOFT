@@ -122,11 +122,18 @@
                     <span>{{ transfert.createdAt ? transfert.createdAt|date('d/m/Y') : '' }}</span>
                 </div>
 				<div>Nom Client :
-					<span>{{ transfert.client ? transfert.client.nomComplet }} {{" | "}} {{ transfert.client ? transfert.client.phoneNumber : transfert.senderName }}+ {{' | '  }} {{transfert.senderPhone  }}</span>
+					{# Prioriser le nom effectif de l'envoyeur s'il est renseigné, sinon nom du client ou senderName #}
+					{% set expediteurName = transfert.senderActualName ?: (transfert.client ? transfert.client.nomComplet : transfert.senderName) %}
+					{% set expediteurPhone = transfert.senderPhone ?: (transfert.client ? transfert.client.phoneNumber : '') %}
+					 <span>{{ expediteurName }} {#{{" | "}} {{ expediteurPhone }}#}</span> 
 				</div> 
+				{# <div>Motif :
+					<span>{{ transfert.motif ?: '-' }}</span>
+				</div> #}
 				<div>Destinataire :
-					<span>{{ transfert.receiverName }} {{" | "}} {{ transfert.receiverPhone }}</span>
+					<span>{{ transfert.receiverName }}  {#{{" | "}} {{ transfert.receiverPhone }} #}</span>
 				</div>
+				
                 <div>Destination :
 					<span>{{ transfert.agence.abg }}  </span>
 				</div>

@@ -103,8 +103,7 @@ function initOps(clientId) {
                                 <i class="bi bi-x-circle"></i>
                             </button>
                         `; 
-                },
-                orderable: false,
+                }, 
             }
         ],
         order: [[0, 'desc']],

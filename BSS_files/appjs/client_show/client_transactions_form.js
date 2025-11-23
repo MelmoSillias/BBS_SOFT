@@ -1,3 +1,74 @@
+function loadClientSoldes(clientId) {
+    $.ajax({
+        url: `/api/client/${clientId}/stats`,
+        method: 'GET',
+        success: function (response) {
+            // Supprimer l'indicateur de chargement
+            $('#clientBalances').empty();
+
+            // Parcourir toutes les devises dans la réponse
+            for (const [currencyCode, amount] of Object.entries(response)) {
+                // Trouver les informations de la devise
+
+                let currencyInfo = null;
+                for (const country in countryCodeCurrency) {
+                    if (countryCodeCurrency[country].currency === currencyCode) {
+                        currencyInfo = countryCodeCurrency[country];
+                        break;
+                    }
+                }
+
+                // Si nous n'avons pas d'info, utiliser des valeurs par défaut
+                if (!currencyInfo) {
+                    currencyInfo = {
+                        currency: currencyCode,
+                        currencyName: currencyCode,
+                        countryName: "Non spécifié",
+                        USDValue: 1
+                    };
+                }
+
+                // Calculer l'équivalent en USD
+                const usdEquivalent = (amount * currencyInfo.USDValue).toFixed(2);
+
+                // Générer le code HTML pour cette devise
+                const balanceCard = currencyCode == "CFA" ? `
+                            <div class="col-md-3 col-sm-6 mb-4">
+                                <div class="card balance-card border-0">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-3"> 
+                                    <div>
+                                        <div class="balance-currency">${currencyInfo.currencyName}</div>
+                                        <div class="balance-amount text-primary">${formatCurrency(amount, currencyCode)}</div>
+                                    </div>
+                                    </div> 
+                                    <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <span class="balance-trend bg-light text-dark">
+                                        <i class="bi bi-arrow-up-right text-success"></i> ${currencyInfo.currency}
+                                    </span> 
+                                    </div>
+                                </div>
+                                </div>
+                            </div>
+                            ` : ``;
+
+                // Ajouter la carte au conteneur
+                $('#clientBalances').append(balanceCard);
+            }
+        },
+        error: function (xhr, status, error) {
+            $('#clientBalances').html(`
+                        <div class="col-12 text-center py-4">
+                        <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+                        <p class="mt-2">Erreur lors du chargement des soldes</p>
+                        <button class="btn btn-sm btn-primary mt-2" onclick="loadClientSoldes(${clientId})">Réessayer</button>
+                        </div>
+                    `);
+        }
+    });
+
+}
+
 function initTransactionsForm(clientId) {
     $('#btnAccompte').on('click', function (e) {
         e.preventDefault();
@@ -45,10 +116,20 @@ function initTransactionsForm(clientId) {
             .done(function (response, textStatus, jqXHR) {
                 showToastModal({ message: 'Accompte enregistré !', type: 'success' });
                 $('#modalAccompteClient').modal('hide');
-                loadClientSoldes(extractClientId())
-                ('#exchangesTab#le').DataTable().ajax.reload();
-                ('#transactionsTable').DataTable().ajax.reload();
-                $('#opsTable').DataTable().ajax.reload(); 
+                
+                if ($.fn.DataTable && $.fn.DataTable.isDataTable('#exchangesTable')) {
+                    const _ex = $('#exchangesTable').DataTable();
+                    if (_ex.ajax && typeof _ex.ajax.reload === 'function') _ex.ajax.reload();
+                }
+                if ($.fn.DataTable && $.fn.DataTable.isDataTable('#transactionsTable')) {
+                    const _tr = $('#transactionsTable').DataTable();
+                    if (_tr.ajax && typeof _tr.ajax.reload === 'function') _tr.ajax.reload();
+                }
+                if ($.fn.DataTable && $.fn.DataTable.isDataTable('#opsTable')) {
+                    const _dt = $('#opsTable').DataTable();
+                    if (_dt.ajax && typeof _dt.ajax.reload === 'function') _dt.ajax.reload();
+                }
+                loadClientSoldes(extractClientId());
                 setTimeout(() => { window.open(`/api/transaction/${response.id}/receipt`, '_blank'); }, 2000)
             })
             .fail(xhr => {
@@ -107,9 +188,18 @@ function initTransactionsForm(clientId) {
                 showToastModal({ message: 'Retrait effectué !', type: 'success' });
                 $('#modalWithdrawClient').modal('hide');
                 loadClientSoldes(extractClientId())
-                ('#exchangesTab#le').DataTable().ajax.reload();
-                ('#transactionsTable').DataTable().ajax.reload();
-                $('#opsTable').DataTable().ajax.reload(); 
+                if ($.fn.DataTable && $.fn.DataTable.isDataTable('#exchangesTable')) {
+                    const _ex = $('#exchangesTable').DataTable();
+                    if (_ex.ajax && typeof _ex.ajax.reload === 'function') _ex.ajax.reload();
+                }
+                if ($.fn.DataTable && $.fn.DataTable.isDataTable('#transactionsTable')) {
+                    const _tr = $('#transactionsTable').DataTable();
+                    if (_tr.ajax && typeof _tr.ajax.reload === 'function') _tr.ajax.reload();
+                }
+                if ($.fn.DataTable && $.fn.DataTable.isDataTable('#opsTable')) {
+                    const _dt = $('#opsTable').DataTable();
+                    if (_dt.ajax && typeof _dt.ajax.reload === 'function') _dt.ajax.reload();
+                }
                 setTimeout(() => { window.open(`/api/transaction/${response.id}/receipt`, '_blank'); }, 2000)
             })
             .fail(xhr => {

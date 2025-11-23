@@ -221,6 +221,7 @@ final class ExchangeController extends AbstractController
         foreach($exchange->getTransactions() as $tx ){
             $em->remove($tx);
         }
+        $em->flush();
 
         if ($agence->getId() == 1) {
 

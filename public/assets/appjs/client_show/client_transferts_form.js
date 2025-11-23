@@ -92,7 +92,10 @@ function initTransfertsForm(clientId) {
                 $('#select-expediteur').val(null).trigger('change');
                 $('#new-client-section').addClass('d-none');
                 $('#transfersTable').DataTable().ajax.reload(); 
-                $('#opsTable').DataTable().ajax.reload();
+                if ($.fn.DataTable && $.fn.DataTable.isDataTable('#opsTable')) {
+                    const _dt = $('#opsTable').DataTable();
+                    if (_dt.ajax && typeof _dt.ajax.reload === 'function') _dt.ajax.reload();
+                }
                 calculerMontants();
                 const transferId = response.transfertId;
                 setTimeout(() => { window.open('/api/transferts/' + transferId + '/receipt', '_blank'); }, 2000);

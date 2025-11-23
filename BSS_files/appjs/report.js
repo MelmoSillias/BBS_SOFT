@@ -74,7 +74,7 @@ $(document).ready(function () {
                 className: 'btn-export-excel',
                 title: 'Rapport Transactions ' + $('#agenceSelect').val() + ' : ' + dateRange.startDate + ' - ' + dateRange.endDate,
                 exportOptions: { columns: [0, 1, 2, 3, 4, 5] },
-		filename: function() {
+		        filename: function() {
                     var agence = $('#agenceSelect').find(':selected').text();
                     var startDate = $('#dateRange').data('daterangepicker').startDate.format('YYYY-MM-DD');
                     var endDate = $('#dateRange').data('daterangepicker').endDate.format('YYYY-MM-DD');
@@ -104,7 +104,7 @@ $(document).ready(function () {
                     data.body = newBody;
                 }
             },
-{
+            {
                 extend: 'pdfHtml5',
                 text: '<i class="bi bi-file-earmark-pdf me-2"></i>PDF',
                 className: 'btn-export-pdf',

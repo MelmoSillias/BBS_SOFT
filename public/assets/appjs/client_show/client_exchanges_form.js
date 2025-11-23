@@ -62,7 +62,10 @@ $(document).ready(
             $.post(`/api/client/${formData.clientId}/exchange`, formData)
                 .done(function (response, textStatus, jqXHR) {
                     showToastModal({ message: `${formData.type} effectué avec succès !`, type: 'success' });
-                    table.ajax.reload(); 
+                    if ($.fn.DataTable && $.fn.DataTable.isDataTable('#exchangesTable')) {
+                        const _ex = $('#exchangesTable').DataTable();
+                        if (_ex.ajax && typeof _ex.ajax.reload === 'function') _ex.ajax.reload();
+                    }
                     setTimeout(() => { window.open('/api/exchanges/' + response.id + '/print', '_blank') }, 2000)
                 }).fail(() => {
                     showToastModal({ message: "L'opération a echouée !", type: 'error' })
@@ -170,8 +173,14 @@ $(document).ready(
             $.post(`/api/client/${formData.clientId}/exchange`, formData)
                 .done(function (response, textStatus, jqXHR) {
                     showToastModal({ message: `${formData.type} effectué avec succès !`, type: 'success' });
-                    $('#exchangesTable').DataTable().ajax.reload();
-                    $('#opsTable').DataTable().ajax.reload(); 
+                    if ($.fn.DataTable && $.fn.DataTable.isDataTable('#exchangesTable')) {
+                        const _ex = $('#exchangesTable').DataTable();
+                        if (_ex.ajax && typeof _ex.ajax.reload === 'function') _ex.ajax.reload();
+                    }
+                    if ($.fn.DataTable && $.fn.DataTable.isDataTable('#opsTable')) {
+                        const _dt = $('#opsTable').DataTable();
+                        if (_dt.ajax && typeof _dt.ajax.reload === 'function') _dt.ajax.reload();
+                    }
                     setTimeout(() => { window.open('/api/exchanges/' + response.id + '/print', '_blank') }, 2000)
                 }).fail(() => {
                     showToastModal({ message: "L'opération a echouée !", type: 'error' })
@@ -290,8 +299,14 @@ $(document).ready(
                 success: function (response) {
                     $('#editCurrencyModal').modal('hide');
                     showToastModal({ message: `${formData.type} modifié avec succès !`, type: 'success' });
-                    $('#opsTable').DataTable().ajax.reload();
-                     $('#exchangesTable').DataTable().ajax.reload(); 
+                    if ($.fn.DataTable && $.fn.DataTable.isDataTable('#opsTable')) {
+                        const _dt = $('#opsTable').DataTable();
+                        if (_dt.ajax && typeof _dt.ajax.reload === 'function') _dt.ajax.reload();
+                    }
+                    if ($.fn.DataTable && $.fn.DataTable.isDataTable('#exchangesTable')) {
+                        const _ex = $('#exchangesTable').DataTable();
+                        if (_ex.ajax && typeof _ex.ajax.reload === 'function') _ex.ajax.reload();
+                    }
                 },
                 error: function (xhr, status, error) {
                     $('#editCurrencyModal').modal('hide');

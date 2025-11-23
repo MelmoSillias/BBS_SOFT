@@ -60,6 +60,23 @@ final class TransfertController extends AbstractController
         $transfert->setReceiverName($data['nomBeneficiaire']);
         $transfert->setReceiverPhone($data['phoneBeneficiaire']);
         $transfert->setStatus($data['moneyReceived'] ? 'processing' : 'pending');
+        // Champ optionnel: nom effectif de l'envoyeur
+        if (!empty($data['senderActualName'])) {
+            $transfert->setSenderActualName($data['senderActualName']);
+        } elseif (!empty($data['expediteurEffectif'])) {
+            $transfert->setSenderActualName($data['expediteurEffectif']);
+        }
+        // Motif optionnel
+        $transfert->setMotif($data['motif'] ?? null);
+        // Champ optionnel: nom effectif de la personne qui a envoyé l'argent
+        if (!empty($data['senderActualName'])) {
+            $transfert->setSenderActualName($data['senderActualName']);
+        } elseif (!empty($data['expediteurEffectif'])) {
+            // support d'un champ en français si utilisé côté frontend
+            $transfert->setSenderActualName($data['expediteurEffectif']);
+        }
+        // Motif optionnel du transfert
+        $transfert->setMotif($data['motif'] ?? null);
 
         // Gérer le client éphémère
         if (isset($data['newExpediteurNom']) && isset($data['newExpediteurPhone'])) {
@@ -70,7 +87,7 @@ final class TransfertController extends AbstractController
             if ($transfert->getStatus() == 'processing') {
                 $ctx = new AccountTransaction();
                 $ctx->setCFA($amount)
-                    ->setDescrib('Envoi cash - ' . ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : $transfert->getSenderName()))
+                    ->setDescrib('Envoi cash - ' . ($transfert->getSenderActualName() ?: ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : $transfert->getSenderName())))
                     ->setAgence($local)
                     ->setCreatedAt(new \DateTimeImmutable($data['date']));
 
@@ -92,7 +109,7 @@ final class TransfertController extends AbstractController
                 if ($transfert->getStatus() == 'processing') {
                     $ctx = new AccountTransaction();
                     $ctx->setCFA($amount)
-                        ->setDescrib('Envoi cash - ' . ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : $transfert->getSenderName()))
+                        ->setDescrib('Envoi cash - ' . ($transfert->getSenderActualName() ?: ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : $transfert->getSenderName())))
                         ->setAgence($local)
                         ->setCreatedAt(new \DateTimeImmutable($data['date']));
 
@@ -157,7 +174,7 @@ final class TransfertController extends AbstractController
         // Filtrer les résultats par nom de client
         if ($clientName) {
             $transferts = array_filter($transferts, function ($transfert) use ($clientName) {
-                $nomComplet = $transfert->getSenderName() ?: ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : '');
+                $nomComplet = $transfert->getSenderActualName() ?: $transfert->getSenderName() ?: ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : '');
                 return stripos($nomComplet, $clientName) !== false;
             });
         }
@@ -165,7 +182,7 @@ final class TransfertController extends AbstractController
 
         // Préparer les données de sortie
         $output = array_map(function ($transfert) {
-            $nomComplet = $transfert->getSenderName() ?: ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : '');
+            $nomComplet = $transfert->getSenderActualName() ?: $transfert->getSenderName() ?: ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : '');
             $telephone = $transfert->getSenderPhone() ?: ($transfert->getClient() ? $transfert->getClient()->getPhoneNumber() : '');
 
             return [
@@ -307,8 +324,8 @@ final class TransfertController extends AbstractController
             return $this->json(['error' => 'Transfert invalide'], 404);
         }
 
-        $nomComplet = $transfert->getSenderName() ?: ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : '');
-        $telephone = $transfert->getSenderPhone() ?: ($transfert->getClient() ? $transfert->getClient()->getPhoneNumber() : '');
+    $nomComplet = $transfert->getSenderActualName() ?: $transfert->getSenderName() ?: ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : '');
+    $telephone = $transfert->getSenderPhone() ?: ($transfert->getClient() ? $transfert->getClient()->getPhoneNumber() : '');
         // Préparer les données de sortie
         $output =  [
             'id' => $transfert->getId(),
@@ -333,6 +350,8 @@ final class TransfertController extends AbstractController
             'frais' => $transfert->getFrais(),
             'receiverName' => $transfert->getReceiverName(),
             'receiverPhone' => $transfert->getReceiverPhone(),
+            'motif' => $transfert->getMotif(),
+            'senderActualName' => $transfert->getSenderActualName(),
             'status' => $transfert->getStatus(),
             'ref' => $transfert->getRef()
         ];
@@ -358,7 +377,7 @@ final class TransfertController extends AbstractController
 
         $ctx = new AccountTransaction();
         $ctx->setCFA($amount)
-            ->setDescrib('Envoi cash - ' . ($transfer->getClient() ? $transfer->getClient()->getNomComplet() : $transfer->getSenderName()))
+            ->setDescrib('Envoi cash - ' . ($transfer->getSenderActualName() ?: ($transfer->getClient() ? $transfer->getClient()->getNomComplet() : $transfer->getSenderName())))
             ->setAgence($local)
             ->setCreatedAt(new \DateTimeImmutable($date));
 
@@ -390,7 +409,7 @@ final class TransfertController extends AbstractController
         if ($transfer->getStatus() === Transfert::STATUS_PROCESSING) {
             $atx = new AccountTransaction();
             $atx->setUSD($transfer->getMontantUSD() * -1)
-                ->setDescrib('Transfert -- ' . ($transfer->getClient() ? $transfer->getClient()->getNomComplet() : $transfer->getSenderName()) . ' -- ' . $transfer->getMontantUSD() . ' USD')
+                ->setDescrib('Transfert -- ' . ($transfer->getSenderActualName() ?: ($transfer->getClient() ? $transfer->getClient()->getNomComplet() : $transfer->getSenderName())) . ' -- ' . $transfer->getMontantUSD() . ' USD')
                 ->setAgence($transfer->getAgence())
                 ->setCreatedAt(new \DateTimeImmutable($date));
 
@@ -421,7 +440,7 @@ final class TransfertController extends AbstractController
 
             $ctx = new AccountTransaction();
             $ctx->setCFA($amount)
-                ->setDescrib('Envoi cash - ' . ($transfer->getClient() ? $transfer->getClient()->getNomComplet() : $transfer->getSenderName()))
+                ->setDescrib('Envoi cash - ' . ($transfer->getSenderActualName() ?: ($transfer->getClient() ? $transfer->getClient()->getNomComplet() : $transfer->getSenderName())))
                 ->setAgence($local)
                 ->setCreatedAt(new \DateTimeImmutable($date));
 
@@ -430,7 +449,7 @@ final class TransfertController extends AbstractController
 
             $atx = new AccountTransaction();
             $atx->setUSD($transfer->getMontantUSD() * -1)
-                ->setDescrib('Transfert -- ' . ($transfer->getClient() ? $transfer->getClient()->getNomComplet() : $transfer->getSenderName()) . ' -- ' . $transfer->getMontantUSD() . ' USD')
+                ->setDescrib('Transfert -- ' . ($transfer->getSenderActualName() ?: ($transfer->getClient() ? $transfer->getClient()->getNomComplet() : $transfer->getSenderName())) . ' -- ' . $transfer->getMontantUSD() . ' USD')
                 ->setAgence($transfer->getAgence())
                 ->setCreatedAt(new \DateTimeImmutable($date));
 
@@ -587,6 +606,12 @@ final class TransfertController extends AbstractController
             $transfert->setSenderName($data['newExpediteurNom']);
             $transfert->setSenderPhone($data['newExpediteurPhone']);
             $clientName = $data['newExpediteurNom'];
+            // si un nom effectif est renseigné pour l'envoyeur (cas particulier), on le conserve
+            if (!empty($data['senderActualName'])) {
+                $transfert->setSenderActualName($data['senderActualName']);
+            } elseif (!empty($data['expediteurEffectif'])) {
+                $transfert->setSenderActualName($data['expediteurEffectif']);
+            }
             $transfert->setClient(null); // Pas de client associé pour un client éphémère
         } else {
             // Si un client existant est sélectionné, récupérer l'entité Client correspondante
@@ -598,14 +623,30 @@ final class TransfertController extends AbstractController
                 $transfert->setClient($client);
                 $clientName = $client->getNomComplet();
             }
+            // possibilité d'avoir un nom effectif même pour un client existant
+            if (!empty($data['senderActualName'])) {
+                $transfert->setSenderActualName($data['senderActualName']);
+            } elseif (!empty($data['expediteurEffectif'])) {
+                $transfert->setSenderActualName($data['expediteurEffectif']);
+            } else {
+                // si non fourni lors de l'édition, on peut conserver la valeur existante, donc ne rien faire
+            }
+        }
+
+        // Mettre à jour le motif (optionnel)
+        if (array_key_exists('motif', $data)) {
+            $transfert->setMotif($data['motif'] ?: null);
         }
 
         // Logique de création des transactions selon le type et le statut
-        $amount = $data['totalAPayer'];
+        // S'assurer que le total à payer est numérique (peut arriver sous forme "1 000 CFA")
+        $amount = is_string($data['totalAPayer'])
+            ? (float) preg_replace('/[^0-9\.\-]/', '', $data['totalAPayer'])
+            : $data['totalAPayer'];
         if ($transfert->getStatus() == 'processing' && $transfert->getType() === 'standard' ) {
             $ctx = new AccountTransaction();
             $ctx->setCFA($amount)
-                ->setDescrib('Transfert effectué par cash - ' . ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : $transfert->getSenderName()))
+                ->setDescrib('Transfert effectué par cash - ' . ($transfert->getSenderActualName() ?: ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : $transfert->getSenderName())))
                 ->setAgence($local)
                 ->setCreatedAt(new \DateTimeImmutable($data['date']));
             $ctx->setTransfert($transfert);

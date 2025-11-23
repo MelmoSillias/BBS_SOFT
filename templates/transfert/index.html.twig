@@ -415,6 +415,17 @@
 												<input type="text" id="newExpediteurPhone" name="newExpediteurPhone" class="form-control shadow-sm" placeholder="Numéro de téléphone">
 											</div>
 										</div>
+										<!-- Champ nom effectif de l'envoyeur (optionnel) -->
+										<div class="col-12 mt-3">
+											<label class="form-label">Nom effectif de l'envoyeur (optionnel)</label>
+											<input type="text" id="senderActualName" name="senderActualName" class="form-control" placeholder="Nom réel de la personne ayant envoyé l'argent">
+										</div>
+
+										<!-- Champ motif du transfert -->
+										<div class="col-12 mt-3">
+											<label class="form-label">Motif (optionnel)</label>
+											<input type="text" id="motif" name="motif" class="form-control" placeholder="Motif du transfert">
+										</div>
 									</div>
 								</div>
 							</div>
@@ -685,8 +696,8 @@
                                                 <div class="fw-bold">-</div>
                                             </div>
                                         </div>
-                                        <!-- Section pour le nouveau client (éphémère) -->
-                                        <div class="col-12 new-client-section d-none" id="editNewClientSection">
+										<!-- Section pour le nouveau client (éphémère) -->
+										<div class="col-12 new-client-section d-none" id="editNewClientSection">
                                             <h5 class="text-primary">Client Éphémère</h5>
                                             <div class="mb-3">
                                                 <label class="form-label fw-bold">Nom complet
@@ -701,6 +712,17 @@
                                                 <input type="text" id="editNewExpediteurPhone" name="newExpediteurPhone" class="form-control shadow-sm" placeholder="Numéro de téléphone">
                                             </div>
                                         </div>
+										<!-- Champ nom effectif de l'envoyeur (optionnel) -->
+										<div class="col-12 mt-3">
+											<label class="form-label">Nom effectif de l'envoyeur (optionnel)</label>
+											<input type="text" id="editSenderActualName" name="senderActualName" class="form-control" placeholder="Nom réel de la personne ayant envoyé l'argent">
+										</div>
+
+										<!-- Champ motif du transfert -->
+										<div class="col-12 mt-3">
+											<label class="form-label">Motif (optionnel)</label>
+											<input type="text" id="editMotif" name="motif" class="form-control" placeholder="Motif du transfert">
+										</div>
                                     </div>
                                 </div>
                             </div>
@@ -932,6 +954,10 @@
 										<small class="text-muted">Statut:</small>
 										<div id="transferStatus"></div>
 									</div>
+									<div class="mb-2">
+										<small class="text-muted">Motif:</small>
+										<div class="fw-bold" id="transferMotif">-</div>
+									</div>
 								</div>
 							</div>
 
@@ -945,6 +971,10 @@
 									<div class="mb-2">
 										<small class="text-muted">Nom complet:</small>
 										<div class="fw-bold" id="senderName"></div>
+									</div>
+									<div class="mb-2">
+										<small class="text-muted">Nom effectif:</small>
+										<div class="fw-bold" id="senderActualNameView">-</div>
 									</div>
 									<div class="mb-2">
 										<small class="text-muted">Téléphone:</small>
@@ -1150,6 +1180,8 @@
 
 {% endblock %}
 {% block javascripts %}
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 	<script src="{{ asset('assets/js/select2/select2.min.js') }}"></script>
 	<script src="{{ asset('assets/appjs/transfer.js') }}"></script>
 {% endblock %}

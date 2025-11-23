@@ -624,8 +624,7 @@ final class ClientController extends AbstractController
                     $tx->setUSD($montantdevise);
                 }
                 $exchange->addTransaction($tx);
-            }
-            dump($tx);
+            } 
             $em->persist($tx);
         }
 
@@ -656,8 +655,6 @@ final class ClientController extends AbstractController
         // Récupérer toutes les transactions associées à cet échange
         $transactions = $em->getRepository(AccountTransaction::class)
             ->findBy(['exchange' => $exchange]);
-
-        dump($exchange);
 
         // Identifier l’agence à partir d’une transaction d’agence (s’il y en a)
         $agenceData = null;
