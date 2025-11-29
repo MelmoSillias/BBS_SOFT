@@ -25,6 +25,43 @@ $(document).ready(function () {
                 phone: item.phoneNumber,
                 balanceCFA: item.balanceCFA
             }));
+            // Créer un datalist pour proposer des suggestions de noms indépendantes
+            try {
+                // Extraire les noms uniques
+                const clientNames = Array.from(new Set(data.data.map(i => i.nomComplet).filter(Boolean)));
+                // Construire le datalist
+                let datalist = document.getElementById('clients-names-list');
+                if (!datalist) {
+                    datalist = document.createElement('datalist');
+                    datalist.id = 'clients-names-list';
+                    document.body.appendChild(datalist);
+                } else {
+                    datalist.innerHTML = '';
+                }
+                clientNames.forEach(name => {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    datalist.appendChild(option);
+                });
+
+                // Lier les champs de nom au datalist sans autre comportement automatisé
+                const nameInputs = [
+                    'newExpediteurNom', 'senderActualName', 'nomBeneficiaire',
+                    'editNewExpediteurNom', 'editSenderActualName', 'editNomBeneficiaire'
+                ];
+                nameInputs.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.setAttribute('list', 'clients-names-list');
+                        // Ne pas propager d'événement qui remplirait d'autres champs
+                        el.addEventListener('input', function (e) {
+                            // simple sécurité : ne rien faire d'autre ici
+                        });
+                    }
+                });
+            } catch (e) {
+                console.error('Erreur création datalist noms clients:', e);
+            }
         }
     }).fail(function () {
         showToastModal({ message: 'Erreur de connexion', type: 'error' });
