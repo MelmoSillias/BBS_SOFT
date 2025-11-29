@@ -124,8 +124,7 @@ $(document).ready(function () {
                             </ul>
                         </div>
                     `;
-                },
-                orderable: false,
+                }, 
                 className: 'text-center'
             }
         ],
