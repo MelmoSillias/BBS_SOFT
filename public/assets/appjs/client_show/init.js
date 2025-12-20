@@ -147,6 +147,16 @@ function formatMontant(valeur) {
     return Number(valeur).toLocaleString('fr-FR', { minimumFractionDigits: 0 }) + ' FCFA';
 }
 
+// Arrondit un montant CFA au multiple de 50 le plus proche
+function roundCFA(amount) {
+    const value = parseFloat(amount) || 0;
+    return Math.round(value / 50) * 50;
+}
+
+function formatCFA(amount) {
+    return (parseFloat(amount) || 0).toLocaleString('fr-FR', { maximumFractionDigits: 0 });
+}
+
 function disableButton(button) {
     button.prop('disabled', true);
     setTimeout(() => {
@@ -163,9 +173,9 @@ function populateEditModal(id) {
         $('#phoneBeneficiaireEdit').val(data.receiverPhone);
         $('#montantCashEdit').val(data.montantCFA);
         $('#fraisEnvoiEdit').val(data.fraisEnvoi);
-        $('#tauxEdit').val(data.taux);
+        $('#tauxEdit').val((isFinite(data.taux) || !isNaN(parseFloat(data.taux))) ? parseFloat(data.taux).toFixed(6) : data.taux);
         $('#montantRecuEdit').val(data.montantUSD);
-        $('#tauxReceptionEdit').val(data.tauxReception);
+        $('#tauxReceptionEdit').val((isFinite(data.tauxReception) || !isNaN(parseFloat(data.tauxReception))) ? parseFloat(data.tauxReception).toFixed(6) : data.tauxReception);
         $('#montantDeviseReceptionEdit').val(data.montantReception);
         $('#totalAPayerEdit').text(data.montantCash + data.frais);
 
@@ -185,6 +195,7 @@ function populateEditModal(id) {
         showToastModal({ message: 'Erreur de connexion', type: 'error' });
     });
 }// Function to calculate amounts for edit modal
+
 function calculerMontantsEdit() {
     const montantCash = parseFloat($('#montantCashEdit').val()) || 0;
     const fraisEnvoi = parseFloat($('#fraisEnvoiEdit').val()) || 0;

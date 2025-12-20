@@ -1,0 +1,17 @@
+{# Macro pour formater un montant en affichant seulement les décimales significatives (0..6) #}
+{% macro format_amount(v, maxDecimals = 6) %}
+    {% if v is null %}
+        —
+    {% else %}
+        {% set found = null %}
+        {% set mult = 1 %}
+        {% for d in 0..maxDecimals %}
+            {% if (v * mult)|round(0, 'common') == (v * mult) and found is null %}
+                {% set found = d %}
+            {% endif %}
+            {% set mult = mult * 10 %}
+        {% endfor %}
+        {% set decimals = found is not null ? found : maxDecimals %}
+        {{ v|number_format(decimals, ',', ' ') }}
+    {% endif %}
+{% endmacro %}

@@ -42,7 +42,7 @@ function initTransactions(clientId) {
                 className: 'btn btn-success',
                 titleAttr: 'Exporter vers Excel',
                 title: 'Transactions client',
-                exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6, 7, 8] }
+                exportOptions: { columns: [1, 2, 3, 4, 5, 6, 7, 8, 9] }
             },
             {
                 extend: 'pdfHtml5',
@@ -50,7 +50,7 @@ function initTransactions(clientId) {
                 className: 'btn btn-danger',
                 titleAttr: 'Exporter vers PDF',
                 title: 'Transactions client',
-                exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6, 7, 8] }
+                exportOptions: { columns: [1, 2, 3, 4, 5, 6, 7, 8, 9] }
             },
             {
                 text: '<i class="bi bi-printer"></i> Imprimer',
@@ -65,6 +65,11 @@ function initTransactions(clientId) {
             data: d => { d.type = $('#filterTransactionType').val(); d.dateFrom = startTransactionDate; d.dateTo = endTransactionDate; },
         },
         columns: [
+            {
+                data: 'id',
+                visible: false,
+                searchable: false
+            },
             {
                 data: 'id',
                 title: 'Reference',
@@ -447,6 +452,11 @@ function initTransactions(clientId) {
                 transactionsTable.ajax.reload();
                 $("#confirmCancelTransactionModal").modal('hide')
                 showToastModal({ message: "Transaction supprimée avec succès", type: "success" });
+                // Recharger soldes et autres tables
+                try { loadClientSoldes(clientId); } catch (e) {}
+                if ($.fn.DataTable && $.fn.DataTable.isDataTable('#opsTable')) { const _dt = $('#opsTable').DataTable(); if (_dt.ajax && typeof _dt.ajax.reload === 'function') _dt.ajax.reload(); }
+                if ($.fn.DataTable && $.fn.DataTable.isDataTable('#exchangesTable')) { const _ex = $('#exchangesTable').DataTable(); if (_ex.ajax && typeof _ex.ajax.reload === 'function') _ex.ajax.reload(); }
+                if ($.fn.DataTable && $.fn.DataTable.isDataTable('#transfersTable')) { const _tt = $('#transfersTable').DataTable(); if (_tt.ajax && typeof _tt.ajax.reload === 'function') _tt.ajax.reload(); }
                 $(this).prop('disabled', false);
             }
         ).fail(function () {

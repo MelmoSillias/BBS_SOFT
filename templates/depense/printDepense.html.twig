@@ -89,6 +89,8 @@
 	</head>
 	<body>
 
+    {% import '_macros/amounts.html.twig' as amt %}
+
 		<!-- En-tête -->
 		<div class="header">
 			<div class="logo">
@@ -135,8 +137,8 @@
 					<span>{{ 'CFA' }} </span>
 				</div>
 				<div>Montant :
-					<span>{{ depense.montant|format_currency('CFA', {significant_digits_used:true, min_significant_digits_used:0, max_significant_digits_used:20}, 'fr') }}</span>
-				</div> 
+					<span>{{ amt.format_amount(depense.montant) }} F CFA</span>
+				</div>
 			</div>
 		</div>
 

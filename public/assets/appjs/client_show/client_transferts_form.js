@@ -96,6 +96,10 @@ function initTransfertsForm(clientId) {
                     const _dt = $('#opsTable').DataTable();
                     if (_dt.ajax && typeof _dt.ajax.reload === 'function') _dt.ajax.reload();
                 }
+                // Recharger soldes et autres tables
+                try { loadClientSoldes(clientId); } catch (e) {}
+                if ($.fn.DataTable && $.fn.DataTable.isDataTable('#transactionsTable')) { const _tr = $('#transactionsTable').DataTable(); if (_tr.ajax && typeof _tr.ajax.reload === 'function') _tr.ajax.reload(); }
+                if ($.fn.DataTable && $.fn.DataTable.isDataTable('#exchangesTable')) { const _ex = $('#exchangesTable').DataTable(); if (_ex.ajax && typeof _ex.ajax.reload === 'function') _ex.ajax.reload(); }
                 calculerMontants();
                 const transferId = response.transfertId;
                 setTimeout(() => { window.open('/api/transferts/' + transferId + '/receipt', '_blank'); }, 2000);

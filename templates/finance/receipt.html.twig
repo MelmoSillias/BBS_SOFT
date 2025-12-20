@@ -73,6 +73,7 @@
 	</head>
 	<body onload="window.print()">
 		<div class="page">
+			{% import '_macros/amounts.html.twig' as amt %}
 			<header>
 				<img src="{{ absolute_url(asset('assets/img/logo.png')) }}" alt="OFSET Consult" class="logo">
 				<div class="title-box">
@@ -97,16 +98,13 @@
 					</dd>
 
 					<dt>Entrée</dt>
-					<dd>{{ transaction.income|number_format(0, ',', ' ') }}
-						F CFA</dd>
+					<dd>{{ amt.format_amount(transaction.income) }} F CFA</dd>
 
 					<dt>Sortie</dt>
-					<dd>{{ transaction.outcome|number_format(0, ',', ' ') }}
-						F CFA</dd>
+					<dd>{{ amt.format_amount(transaction.outcome) }} F CFA</dd>
 
 					<dt>Solde</dt>
-					<dd>{{ transaction.balanceValue|number_format(0, ',', ' ') }}
-						F CFA</dd>
+					<dd>{{ amt.format_amount(transaction.balanceValue) }} F CFA</dd>
 
 					<dt>Mode de paiement</dt>
 					<dd>{{ transaction.paymentMethod }}</dd>

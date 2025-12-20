@@ -23,7 +23,6 @@ function initComponents() {
         loadExchanges();
     });
 
-
     // Initialisation de la date du jour
     $('#dateOps').val(new Date().toISOString().split('T')[0]);
 
@@ -65,11 +64,9 @@ function initExchangesTable() {
                     }
 
                     if (tableNode && tableNode.table && tableNode.table.body && tableNode.table.body.length) {
-                        // Calculer dynamiquement le nombre de colonnes et appliquer des largeurs égalisées
                         const colCount = tableNode.table.body[0].length;
                         tableNode.table.widths = Array(colCount).fill('*');
 
-                        // Colorer proprement les cellules d'entête (gérer string ou objets)
                         const header = tableNode.table.body[0];
                         for (let j = 0; j < header.length; j++) {
                             const cell = header[j];
@@ -130,12 +127,12 @@ function initExchangesTable() {
                 }
             },
             {
-                data: 'null',
+                data: null,
                 render: function (data, type, row) {
                     // Afficher le montant de la devise avec couleur en fonction du type
                     const color = row.type === 'achat' ? 'text-success' : 'text-danger';
                     const sign = row.type === 'achat' ? '+' : '-';
-                    return `<span class="${color}  fw-bold">${sign}${row.montantDevise} ${row.devise}</span>`;
+                    return `<span class="${color} fw-bold">${sign}${row.montantDevise} ${row.devise}</span>`;
                 }
             },
             {
@@ -144,14 +141,12 @@ function initExchangesTable() {
                     // Afficher le montant en CFA
                     const color = row.type === 'achat' ? 'text-danger' : 'text-success';
                     const sign = row.type === 'achat' ? '-' : '+';
-                    return `<span class="${color} fw-bold">${sign}${row.montantCFA} CFA</span>`;
+                    const roundedCFA = (typeof roundCFA === 'function') ? roundCFA(row.montantCFA) : row.montantCFA;
+                    return `<span class="${color} fw-bold">${sign}${formatCFA(roundedCFA)} CFA</span>`;
                 }
             },
             {
                 data: 'id', render: function (data, type, row) {
-                // <button class="btn btn-sm btn-outline-primary btn-table-action view-exchange" data-id="${data}" title="Voir">
-                //             <i class="bi bi-eye"></i>
-                //         </button> 
                     let buttons = `
                         
                         <button class="btn btn-sm btn-outline-info btn-table-action edit-exchange" data-id="${data}" data-client="${row.clientId}" title="Modifier">

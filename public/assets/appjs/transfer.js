@@ -957,7 +957,7 @@ $(document).ready(function () {
             // Montants
             $('#editMontantCash').val(data.montantCFA);
             $('#editFraisEnvoi').val(data.frais);
-            $('#editTaux').val(data.taux);
+            $('#editTaux').val((isFinite(data.taux) || !isNaN(parseFloat(data.taux))) ? parseFloat(data.taux).toFixed(6) : data.taux);
             $('#editMontantRecu').val(data.montantUSD);
             $('#editTauxReception').val(countryCodeCurrency[data.destination.abg]['USDValue']);
             $('#editMontantDeviseReception').val(data.montantReception);

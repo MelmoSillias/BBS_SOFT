@@ -30,7 +30,7 @@ class Exchange
     #[Groups(['agence:read'])]
     private ?string $montantCFA = null;
  
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 5)]
+    #[ORM\Column(type: Types::DECIMAL, precision: 12, scale: 6)]
     #[Groups(['agence:read'])]
     private ?string $taux = null;
 

@@ -3,11 +3,18 @@ $(document).ready(
         let exchangeToDelete = null;
         let selectedExchange = null;
 
+        // Fallback formatteur si les helpers globaux ne sont pas encore injectés
+        const safeFormatCFA = (value) => {
+            if (typeof formatCFA === 'function') return formatCFA(value);
+            const numeric = Number.isFinite(Number(value)) ? Number(value) : 0;
+            return numeric.toLocaleString('fr-FR', { minimumFractionDigits: 0 });
+        };
+
         const clientId = extractClientId();
 
         // Initialisation de la table avec DataTables
         const exchangesTable = $('#exchangesTable').DataTable({
-            "order": [[0, "desc"]], // Trier par la première colonne (Date) en ordre décroissant
+            "order": [[0, "desc"]], // Trier par l'id en ordre décroissant
             language: { url: '/api/datatable_json_fr' },
             "ajax": {
                 "url": `/api/client/${extractClientId()}/exchanges`,
@@ -33,6 +40,11 @@ $(document).ready(
             ],
             "columns": [
                 {
+                    "data": "id",
+                    "visible": false,
+                    "searchable": false
+                },
+                {
                     "data": "date",
                     "render": function (data, type, row) {
                         // Formater la date pour un affichage plus lisible
@@ -56,15 +68,16 @@ $(document).ready(
                 {
                     "data": null,
                     "render": function (data, type, row) {
-                        // Afficher le montant en CFA
-                        return `${row.montantCFA} CFA`;
+                        // Afficher le montant en CFA arrondi au pas de 50
+                        const rounded = (typeof roundCFA === 'function') ? roundCFA(row.montantCFA) : row.montantCFA;
+                        return `${safeFormatCFA(rounded)} CFA`;
                     }
                 },
                 {
                     "data": "taux",
                     "render": function (data, type, row) {
-                        // Formater le taux
-                        return parseFloat(data).toFixed(4);
+                        // Formater le taux avec 6 décimales
+                        return (isFinite(data) || !isNaN(parseFloat(data))) ? parseFloat(data).toFixed(6) : data;
                     }
                 },
                 {
@@ -121,12 +134,13 @@ $(document).ready(
                     $('#editDeviseExchange').val(data.devise);
                     $('#editMontantEchange').val(data.montant_devise);
                     $('#editDeviseEchange').text(data.devise);
-                    $('#editTauxEchange').val(data.taux);
+                    $('#editTauxEchange').val((isFinite(data.taux) || !isNaN(parseFloat(data.taux))) ? parseFloat(data.taux).toFixed(6) : data.taux);
                     $('#editExchangeNote').val(data.description || '');
 
                     // Calculer et afficher le total
                     let total = parseFloat(data.montant_devise) * parseFloat(data.taux);
-                    $('#editTotalAPayerEchange').text(total.toFixed(2) + " CFA");
+                    const totalRounded = (typeof roundCFA === 'function') ? roundCFA(total) : total;
+                    $('#editTotalAPayerEchange').text(safeFormatCFA(totalRounded) + " CFA");
 
                     // Afficher le modal
                     $('#editCurrencyModal').modal('show');
@@ -173,8 +187,10 @@ $(document).ready(
                     const type = data.type ? data.type.charAt(0).toUpperCase() + data.type.slice(1) : "—";
                     const devise = data.devise || "—";
                     const montant = data.montant_devise?.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) || "0.00";
-                    const taux = data.taux?.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) || "0.00";
-                    const total = (parseFloat(data.montant_devise) * parseFloat(data.taux) || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 });
+                    const taux = (typeof data.taux !== 'undefined' && data.taux !== null && !isNaN(parseFloat(data.taux))) ? parseFloat(data.taux).toLocaleString('fr-FR', { minimumFractionDigits: 6, maximumFractionDigits: 6 }) : "0.000000";
+                    const totalCalc = (parseFloat(data.montant_devise) * parseFloat(data.taux) || 0);
+                    const total = (typeof roundCFA === 'function') ? roundCFA(totalCalc) : totalCalc;
+                    const totalStr = total.toLocaleString('fr-FR', { minimumFractionDigits: 0 });
                     const note = data.description || "Aucune note.";
 
                     // 🧩 Remplir le modal avec les données
@@ -186,7 +202,7 @@ $(document).ready(
                     $('#viewMontantEchange').text(montant);
                     $('#viewDeviseEchange').text(devise);
                     $('#viewTauxEchange').text(taux);
-                    $('#viewTotalAPayerEchange').text(total + " CFA");
+                    $('#viewTotalAPayerEchange').text(totalStr + " CFA");
                     $('#viewExchangeNote').text(note);
 
                     // Afficher le modal
@@ -234,6 +250,10 @@ $(document).ready(
                         // Recharger le tableau
                         loadClientSoldes(extractClientId())
                         exchangesTable.ajax.reload();
+                        // Recharger autres tables liées
+                        if ($.fn.DataTable && $.fn.DataTable.isDataTable('#opsTable')) { const _dt = $('#opsTable').DataTable(); if (_dt.ajax && typeof _dt.ajax.reload === 'function') _dt.ajax.reload(); }
+                        if ($.fn.DataTable && $.fn.DataTable.isDataTable('#transactionsTable')) { const _tr = $('#transactionsTable').DataTable(); if (_tr.ajax && typeof _tr.ajax.reload === 'function') _tr.ajax.reload(); }
+                        if ($.fn.DataTable && $.fn.DataTable.isDataTable('#transfersTable')) { const _tt = $('#transfersTable').DataTable(); if (_tt.ajax && typeof _tt.ajax.reload === 'function') _tt.ajax.reload(); }
                         // Afficher un message de succès
                         showToastModal({ message: 'Échange supprimé avec succès.', type: 'success' });
                     },

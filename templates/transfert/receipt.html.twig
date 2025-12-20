@@ -26,6 +26,7 @@
   </style>
 </head>
 <body onload="window.print()">
+  {% import '_macros/amounts.html.twig' as amt %}
   <div class="page">
     <header>
       <img src="{{ absolute_url(asset('assets/img/logo-ofset.png')) }}" alt="OFSET Consult" class="logo">
@@ -44,7 +45,7 @@
         <dd>{{ transaction.client.companyName }}</dd>
 
         <dt>Montant payé</dt>
-        <dd>{{ transaction.income|number_format(0, ',', ' ') }} F CFA</dd>
+        <dd>{{ amt.format_amount(transaction.income) }} F CFA</dd>
 
         <dt>Mode de paiement</dt>
         <dd>{{ transaction.paymentMethod }}</dd>
@@ -53,7 +54,7 @@
         <dd>{{ transaction.paymentReference }}</dd>
 
         <dt>Solde restant</dt>
-        <dd>{{ transaction.invoice.remain|number_format(0, ',', ' ') }} F CFA</dd>
+        <dd>{{ amt.format_amount(transaction.invoice.remain) }} F CFA</dd>
       </dl>
     </div>
     <div style="display:flex; justify-content:space-between; margin-top:50px;">

@@ -72,6 +72,11 @@ function initTranferts(clientId) {
         },
         columns: [
             {
+                data: 'id',
+                visible: false,
+                searchable: false
+            },
+            {
                 data: 'createdAt',
                 visible: false,
             },
@@ -180,20 +185,20 @@ function initTranferts(clientId) {
                 titleAttr: 'Exporter vers Excel',
                 title: 'Liste des transferts',
                 exportOptions: {
-                    columns: [0, 1, 2, 3, 4, 5, 6, 7],
+                    columns: [1, 2, 3, 4, 5, 6, 7, 8],
                     format: {
                         body: function (data, row, column, node) {
                             // Nettoyer le contenu HTML pour Excel
-                            if (column === 1) { // Type
+                            if (column === 2) { // Type
                                 return $(data).text() || data;
                             }
-                            if (column === 2) { // Expéditeur
+                            if (column === 3) { // Expéditeur
                                 return $(data).find('.fw-bold').text() || data;
                             }
-                            if (column === 3 || column === 5 || column === 6) { // Montant, Frais, Total
+                            if (column === 4 || column === 6 || column === 7) { // Montant, Frais, Total
                                 return data.replace(' F CFA', '').replace(/\s/g, '');
                             }
-                            if (column === 7) { // Statut
+                            if (column === 8) { // Statut
                                 return $(data).text().trim() || data;
                             }
                             return data;
@@ -214,20 +219,20 @@ function initTranferts(clientId) {
                 titleAttr: 'Exporter vers PDF',
                 title: 'Liste des transferts',
                 exportOptions: {
-                    columns: [0, 1, 2, 3, 4, 5, 6, 7],
+                    columns: [1, 2, 3, 4, 5, 6, 7, 8],
                     format: {
                         body: function (data, row, column, node) {
                             // Nettoyer le contenu HTML pour PDF
-                            if (column === 1) { // Type
+                            if (column === 2) { // Type
                                 return $(data).text() || data;
                             }
-                            if (column === 2) { // Expéditeur
+                            if (column === 3) { // Expéditeur
                                 return $(data).find('.fw-bold').text() || data;
                             }
-                            if (column === 3 || column === 5 || column === 6) { // Montant, Frais, Total
+                            if (column === 4 || column === 6 || column === 7) { // Montant, Frais, Total
                                 return data.replace(' F CFA', '').replace(/\s/g, '');
                             }
-                            if (column === 7) { // Statut
+                            if (column === 8) { // Statut
                                 return $(data).text().trim() || data;
                             }
                             return data;
@@ -340,7 +345,7 @@ function initTranferts(clientId) {
             // Remplir les montants
             $('#transferAmount').text(data.montantCFA.toLocaleString('fr-FR') + ' F CFA');
             $('#transferFees').text(data.frais.toLocaleString('fr-FR') + ' F CFA');
-            $('#transferRate').text('1 USD = ' + data.taux.toLocaleString('fr-FR') + ' F CFA');
+            $('#transferRate').text('1 USD = ' + ((typeof data.taux !== 'undefined' && data.taux !== null && !isNaN(parseFloat(data.taux))) ? parseFloat(data.taux).toLocaleString('fr-FR', { minimumFractionDigits: 6, maximumFractionDigits: 6 }) : data.taux) + ' F CFA');
             $('#transferAmountUSD').text((data.montantUSD).toLocaleString('fr-FR') + ' USD');
             $('#deviseDestination').text(countryCodeCurrency[data.destination.abg]['currencyName']);
             $('#destinationRate').text('1 USD = ' + (destination.abg === "EAU" ? 3.67 : (data.montantReception / data.montantUSD).toLocaleString('fr-FR')) + ' ' + countryCodeCurrency[data.destination.abg]['currency']);
@@ -402,6 +407,11 @@ function initTranferts(clientId) {
             $('#confirmValidateModal').modal('hide');
             $('#viewTransferModal').modal('hide');
             tableTransfers.ajax.reload();
+            // Recharger soldes et autres tables
+            try { loadClientSoldes(clientId); } catch (e) {}
+            if ($.fn.DataTable && $.fn.DataTable.isDataTable('#opsTable')) { const _dt = $('#opsTable').DataTable(); if (_dt.ajax && typeof _dt.ajax.reload === 'function') _dt.ajax.reload(); }
+            if ($.fn.DataTable && $.fn.DataTable.isDataTable('#transactionsTable')) { const _tr = $('#transactionsTable').DataTable(); if (_tr.ajax && typeof _tr.ajax.reload === 'function') _tr.ajax.reload(); }
+            if ($.fn.DataTable && $.fn.DataTable.isDataTable('#exchangesTable')) { const _ex = $('#exchangesTable').DataTable(); if (_ex.ajax && typeof _ex.ajax.reload === 'function') _ex.ajax.reload(); }
         }).fail(function () {
             showToastModal({ message: 'Erreur lors de la validation du transfert', type: 'error' });
         });
@@ -416,6 +426,10 @@ function initTranferts(clientId) {
             $('#confirmCancelModal').modal('hide');
             $('#viewTransferModal').modal('hide');
             tableTransfers.ajax.reload();
+            try { loadClientSoldes(clientId); } catch (e) {}
+            if ($.fn.DataTable && $.fn.DataTable.isDataTable('#opsTable')) { const _dt = $('#opsTable').DataTable(); if (_dt.ajax && typeof _dt.ajax.reload === 'function') _dt.ajax.reload(); }
+            if ($.fn.DataTable && $.fn.DataTable.isDataTable('#transactionsTable')) { const _tr = $('#transactionsTable').DataTable(); if (_tr.ajax && typeof _tr.ajax.reload === 'function') _tr.ajax.reload(); }
+            if ($.fn.DataTable && $.fn.DataTable.isDataTable('#exchangesTable')) { const _ex = $('#exchangesTable').DataTable(); if (_ex.ajax && typeof _ex.ajax.reload === 'function') _ex.ajax.reload(); }
         }).fail(function () {
             showToastModal({ message: 'Erreur lors de l\'annulation du transfert', type: 'error' });
         });
@@ -433,6 +447,10 @@ function initTranferts(clientId) {
                 $('#confirmDeleteModal').modal('hide');
                 $('#viewTransferModal').modal('hide');
                 tableTransfers.ajax.reload();
+                try { loadClientSoldes(clientId); } catch (e) {}
+                if ($.fn.DataTable && $.fn.DataTable.isDataTable('#opsTable')) { const _dt = $('#opsTable').DataTable(); if (_dt.ajax && typeof _dt.ajax.reload === 'function') _dt.ajax.reload(); }
+                if ($.fn.DataTable && $.fn.DataTable.isDataTable('#transactionsTable')) { const _tr = $('#transactionsTable').DataTable(); if (_tr.ajax && typeof _tr.ajax.reload === 'function') _tr.ajax.reload(); }
+                if ($.fn.DataTable && $.fn.DataTable.isDataTable('#exchangesTable')) { const _ex = $('#exchangesTable').DataTable(); if (_ex.ajax && typeof _ex.ajax.reload === 'function') _ex.ajax.reload(); }
             },
             error: function () {
                 showToastModal({ message: 'Erreur lors de la suppression du transfert', type: 'error' });

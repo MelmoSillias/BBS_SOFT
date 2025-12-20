@@ -64,7 +64,7 @@
 				flex-direction: column;
 				justify-content: space-evenly;
 				font-size: 18px;
-               height: 180px;
+                height: 180px;
 			}
 
 			.box div {
@@ -87,6 +87,8 @@
 		</style>
 	</head>
 	<body>
+
+    {% import '_macros/amounts.html.twig' as amt %}
 
 		<!-- En-tête -->
 		<div class="header">
@@ -135,13 +137,15 @@
 			<!-- Cadre droit -->
 			<div class="box"> 
 				<div>Montant CFA :
-					<span>{{ exchange.montantCFA | format_currency('CFA', {significant_digits_used:true, min_significant_digits_used:0, max_significant_digits_used:20}, 'fr') }}</span>
+					{# Arrondi affiché au multiple de 50 #}
+					{% set rounded = ((exchange.montantCFA / 50)|round(0, 'common') * 50) %}
+					<span>{{ amt.format_amount(rounded) }} F CFA</span>
 				</div>
 				<div>Montant Devise :
-					<span>{{ exchange.montantDevise | format_currency(exchange.devise, {significant_digits_used:true, min_significant_digits_used:0, max_significant_digits_used:20}, 'fr') }}</span>
+					<span>{{ amt.format_amount(exchange.montantDevise) }} {{ exchange.devise }}</span>
 				</div> 
 				<div>Taux appliqué :
-					<span>{{ 1 | format_currency(exchange.devise, {significant_digits_used:true, min_significant_digits_used:0, max_significant_digits_used:20}, 'fr') }} ↔ {{ exchange.taux | format_currency('CFA', {significant_digits_used:true, min_significant_digits_used:0, max_significant_digits_used:20}, 'fr') }}</span>
+					<span>1 {{ exchange.devise }} ↔ {{ amt.format_amount(exchange.taux, 6) }} CFA</span>
 				</div>
 			</div>
 		</div>

@@ -484,7 +484,7 @@ final class ClientController extends AbstractController
 
         $note =  $request->request->get('note');
 
-        $montantCfa = $montantdevise * $taux; // Montant en CFA
+        $montantCfa = $this->roundCFA($montantdevise * $taux); // Montant en CFA arrondi
         // Vérifier que le client a un solde suffisant dans la devise de départ
 
         // 0 - créer l'échange pour l'opération
@@ -589,7 +589,7 @@ final class ClientController extends AbstractController
         }
 
         // --- Recalcul du montant en CFA ---
-        $montantCfa = $montantdevise * $taux;
+        $montantCfa = $this->roundCFA($montantdevise * $taux);
 
         // --- Mise à jour de l'objet Exchange ---
         $exchange->setMontantCFA($montantCfa);
@@ -808,6 +808,11 @@ final class ClientController extends AbstractController
         // Combiner pour former la référence
         $ref = 'BSS-D' . $formattedTransferCount;
         return $ref;
+    }
+
+    private function roundCFA(float $amount): float
+    {
+        return round($amount / 50) * 50;
     }
 
 

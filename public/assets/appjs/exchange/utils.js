@@ -10,9 +10,10 @@ function populateExchangeModal(exchange) {
     // Détails financiers
     $('#exchangeDevise').text(exchange.montantDevise + ' ' + exchange.devise);
 
-    $('#exchangeRate').text(parseFloat(exchange.taux).toFixed(2) + ' FCFA');
+    $('#exchangeRate').text((isFinite(exchange.taux) || !isNaN(parseFloat(exchange.taux))) ? parseFloat(exchange.taux).toFixed(6) + ' FCFA' : exchange.taux + ' FCFA');
 
-    $('#exchangeAmount').text((exchange.type === 'achat' ? '-' : '+') + formatMoney(parseFloat(exchange.montantCFA).toFixed(2)) + ' ' + "CFA");
+    const montantCfaRounded = roundCFA(exchange.montantCFA);
+    $('#exchangeAmount').text((exchange.type === 'achat' ? '-' : '+') + formatCFA(montantCfaRounded) + ' ' + "CFA");
     if (exchange.type === 'achat') {
         $('#exchangeAmount').removeClass('text-success').addClass('text-danger');
     } else {
@@ -51,7 +52,8 @@ function populateModExchangeDirectModal(exchangeId) {
             $descriptionDirectMod.text(data.description)
             $deviseAgenceDisplayDirectMod.val(data.devise);
             $deviseDirectMod.val(data.devise);
-            $totalAPayerDirectMod.val(data.montantCFA);  
+            const roundedCFA = roundCFA(data.montantCFA);
+            $totalAPayerDirectMod.val(roundedCFA);
             $dateOpsDirectMod.val(data.date);
 
             updateDeviseDisplayDirectMod()  
@@ -89,7 +91,7 @@ function populateModExchangeClientModal(exchangeId, clientId) {
             $('#editDeviseExchange').val(data.devise);
             $('#editMontantEchange').val(data.montant_devise);
             $('#editDeviseEchange').text(data.devise);
-            $('#editTauxEchange').val(data.taux);
+            $('#editTauxEchange').val((isFinite(data.taux) || !isNaN(parseFloat(data.taux))) ? parseFloat(data.taux).toFixed(6) : data.taux);
             $('#editExchangeNote').val(data.description || '');
 
             // Calculer et afficher le total
@@ -151,13 +153,15 @@ function calculateTotal() {
     if (type === 'achat') {
         // Pour l'achat: montant en devise * taux = montant en CFA (négatif)
         total = montant * taux;
+        const totalRounded = roundCFA(total);
         $totalAPayer.removeClass('text-success text-danger').addClass('text-danger');
-        $totalAPayer.text(`-${total.toFixed(2)} CFA`);
+        $totalAPayer.text(`-${formatCFA(totalRounded)} CFA`);
     } else {
         // Pour la vente: montant en devise * taux = montant en CFA (positif)
         total = montant * taux;
+        const totalRounded = roundCFA(total);
         $totalAPayer.removeClass('text-success text-danger').addClass('text-success');
-        $totalAPayer.text(`+${total.toFixed(2)} CFA`);
+        $totalAPayer.text(`+${formatCFA(totalRounded)} CFA`);
     }
 }
 
@@ -200,13 +204,17 @@ function calculateTotalDirectMod() {
     if (type === 'achat') {
         // Pour l'achat: montant en devise * taux = montant en CFA (négatif)
         total = montant * taux;
+        const totalRounded = roundCFA(total);
         $totalAPayerDirectMod.removeClass('text-success text-danger').addClass('text-danger');
-        $totalAPayerDirectMod.text(`-${total.toFixed(2)} CFA`);
+        $totalAPayerDirectMod.text(`-${formatCFA(totalRounded)} CFA`);
+        $totalAPayerDirectMod.val(totalRounded);
     } else {
         // Pour la vente: montant en devise * taux = montant en CFA (positif)
         total = montant * taux;
+        const totalRounded = roundCFA(total);
         $totalAPayerDirectMod.removeClass('text-success text-danger').addClass('text-success');
-        $totalAPayerDirectMod.text(`+${total.toFixed(2)} CFA`);
+        $totalAPayerDirectMod.text(`+${formatCFA(totalRounded)} CFA`);
+        $totalAPayerDirectMod.val(totalRounded);
     }
 }
 
@@ -259,12 +267,14 @@ function calculateEditTotal() {
     let total = 0;
     if (type === 'achat') {
         total = montant * taux;
+        const totalRounded = roundCFA(total);
         $editTotalAPayer.removeClass('text-success text-danger').addClass('text-danger');
-        $editTotalAPayer.text(`-${total.toFixed(2)} CFA`);
+        $editTotalAPayer.text(`-${formatCFA(totalRounded)} CFA`);
     } else {
         total = montant * taux;
+        const totalRounded = roundCFA(total);
         $editTotalAPayer.removeClass('text-success text-danger').addClass('text-success');
-        $editTotalAPayer.text(`+${total.toFixed(2)} CFA`);
+        $editTotalAPayer.text(`+${formatCFA(totalRounded)} CFA`);
     }
 }
 
@@ -281,4 +291,14 @@ function formatDate(dateString) {
 // Helper: Formatage d'argent
 function formatMoney(amount) {
     return parseFloat(amount).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$& ');
+}
+
+// Arrondir le CFA à l'entier le plus proche par pas de 50
+function roundCFA(amount) {
+    const value = parseFloat(amount) || 0;
+    return Math.round(value / 50) * 50;
+}
+
+function formatCFA(amount) {
+    return (parseFloat(amount) || 0).toLocaleString('fr-FR', { maximumFractionDigits: 0 });
 }

@@ -88,6 +88,9 @@ $(document).ready(function () {
             }
         },
         columns: [
+            { 
+                data: 'id', visible : false
+            },
             {
                 data: 'date',
                 render: function (data) {

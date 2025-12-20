@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Repository\AccountTransactionRepository;
 use App\Repository\AgenceRepository;
 use App\Repository\ExchangeRepository;
+use App\Entity\AccountTransaction;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -98,6 +99,7 @@ final class ReportController extends AbstractController
 
                 $formattedTransactions[] = [
                     'id' => $transaction->getId(),
+                    'reference' => $this->buildReference($transaction),
                     'description' => $transaction->getDescrib(),
                     'date' => $transaction->getCreatedAt()->format('Y-m-d'),
                     'entree' => $entree,
@@ -109,5 +111,22 @@ final class ReportController extends AbstractController
         }
 
         return new JsonResponse(["data" => $formattedTransactions, "initial" => $init]);
+    }
+
+    private function buildReference(AccountTransaction $transaction): string
+    {
+        if ($transaction->getTransfert() && $transaction->getTransfert()->getRef()) {
+            return $transaction->getTransfert()->getRef();
+        }
+
+        if ($transaction->getExchange() && $transaction->getExchange()->getRef()) {
+            return $transaction->getExchange()->getRef();
+        }
+
+        if ($transaction->getType() === 'Versement' || $transaction->getType() === 'Retrait') {
+            return 'BSS-C' . str_pad((string) $transaction->getId(), 3, '0', STR_PAD_LEFT);
+        }
+
+        return 'BSS-TX-' . str_pad((string) $transaction->getId(), 3, '0', STR_PAD_LEFT);
     }
 }

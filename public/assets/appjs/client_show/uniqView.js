@@ -42,7 +42,7 @@ function initOps(clientId) {
                 className: 'btn btn-success',
                 titleAttr: 'Exporter vers Excel',
                 title: 'Operationss client',
-                exportOptions: { columns: [0, 1, 2, 3, 4] }
+                exportOptions: { columns: [1, 2, 3, 4] }
             },
             {
                 extend: 'pdfHtml5',
@@ -50,7 +50,7 @@ function initOps(clientId) {
                 className: 'btn btn-danger',
                 titleAttr: 'Exporter vers PDF',
                 title: 'Operationss client',
-                exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6, 7, 8] }
+                exportOptions: { columns: [1, 2, 3, 4] }
             }, 
         ],
         ajax: {
@@ -58,6 +58,11 @@ function initOps(clientId) {
             data: d => { d.type = $('#filterOperationsType').val(); d.dateFrom = startOperationDate; d.dateTo = endOperationDate; },
         },
         columns: [
+            {
+                data: 'id',
+                visible: false,
+                searchable: false
+            },
             {
                 data: 'id',
                 title: 'Reference',
@@ -159,7 +164,7 @@ function initOps(clientId) {
                     $('#editDeviseExchange').val(data.devise);
                     $('#editMontantEchange').val(data.montant_devise);
                     $('#editDeviseEchange').text(data.devise);
-                    $('#editTauxEchange').val(data.taux);
+                    $('#editTauxEchange').val((isFinite(data.taux) || !isNaN(parseFloat(data.taux))) ? parseFloat(data.taux).toFixed(6) : data.taux);
                     $('#editExchangeNote').val(data.description || '');
 
                     // Calculer et afficher le total

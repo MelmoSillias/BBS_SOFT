@@ -326,7 +326,7 @@
 			</div>
 			<div class="card-body">
 				<form
-					id="form-add-transfer">
+					id="form-add-transfer" autocomplete="on">
 					<!-- Section Opération -->
 					<div class="section mb-4 p-3 border rounded">
 						<h4 class="text-primary mb-3">
@@ -377,7 +377,7 @@
 											<label class="form-label fw-bold">Sélectionner l'expéditeur
 												<span class="text-danger">*</span>
 											</label>
-											<select id="select-expediteur" name="expediteur" class="form-select shadow-sm" required>
+											<select id="select-expediteur" name="expediteur" class="form-select shadow-sm" autocomplete="off" required>
 												<option value="">-- Choisir un expéditeur --</option>
 												<option value="vanish">
 													<strong>
@@ -400,25 +400,25 @@
 											</div>
 										</div>
 										<!-- Section pour le nouveau client (éphémère) -->
-										<div class="col-12 new-client-section d-none" id="new-client-section">
+											<div class="col-12 new-client-section d-none" id="new-client-section">
 											<h5 class="text-primary">Client Éphémère</h5>
 											<div class="mb-3">
 												<label class="form-label fw-bold">Nom complet
 													<span class="text-danger">*</span>
 												</label>
-												<input type="text" id="newExpediteurNom" name="newExpediteurNom" class="form-control shadow-sm" placeholder="Nom du client">
+												<input type="text" id="newExpediteurNom" name="newExpediteurNom" autocomplete="section-add-expediteur name" class="form-control shadow-sm" placeholder="Nom du client">
 											</div>
 											<div>
 												<label class="form-label fw-bold">Téléphone
 													<span class="text-danger">*</span>
 												</label>
-												<input type="text" id="newExpediteurPhone" name="newExpediteurPhone" class="form-control shadow-sm" placeholder="Numéro de téléphone">
+												<input type="text" id="newExpediteurPhone" name="newExpediteurPhone" class="form-control shadow-sm" autocomplete="section-add-expediteur tel" placeholder="Numéro de téléphone">
 											</div>
 										</div>
 										<!-- Champ nom effectif de l'envoyeur (optionnel) -->
 										<div class="col-12 mt-3">
 											<label class="form-label">Nom effectif de l'envoyeur (optionnel)</label>
-											<input type="text" id="senderActualName" name="senderActualName" class="form-control" placeholder="Nom réel de la personne ayant envoyé l'argent">
+											<input type="text" id="senderActualName" name="senderActualName" autocomplete="section-add-expediteur name" class="form-control" placeholder="Nom réel de la personne ayant envoyé l'argent">
 										</div>
 
 										<!-- Champ motif du transfert -->
@@ -438,7 +438,7 @@
 									<div class="row g-2">
 										<div class="col-12">
 											<label class="form-label fw-bold">Nom complet</label>
-											<input type="text" id="nomBeneficiaire" name="nomBeneficiaire" class="form-control shadow-sm" placeholder="Nom du bénéficiaire">
+											<input type="text" id="nomBeneficiaire" name="nomBeneficiaire" autocomplete="section-add-beneficiary name" class="form-control shadow-sm" placeholder="Nom du bénéficiaire">
 										</div>
 										<div class="col-12">
 											<label class="form-label fw-bold">Téléphone
@@ -448,7 +448,7 @@
 												<span class="input-group-text">
 													<i class="bi bi-phone"></i>
 												</span>
-												<input type="text" id="phoneBeneficiaire" name="phoneBeneficiaire" class="form-control shadow-sm" placeholder="+1234567890">
+												<input type="text" id="phoneBeneficiaire" name="phoneBeneficiaire" class="form-control shadow-sm" autocomplete="section-add-beneficiary tel" placeholder="+1234567890">
 											</div>
 										</div>
 
@@ -471,7 +471,7 @@
 								</label>
 								<div class="input-group shadow-sm">
 									<span class="input-group-text bg-light">CFA</span>
-									<input type="number" id="montantCash" name="montantCash" class="form-control" placeholder="0.00" step="0.01" required>
+									<input type="number" id="montantCash" name="montantCash" class="form-control" placeholder="0.00" step="0.01" autocomplete="off" required>
 								</div>
 							</div>
 							<!-- Frais d'envoi -->
@@ -480,7 +480,7 @@
 									<span class="text-danger">*</span>
 								</label>
 								<div class="input-group shadow-sm">
-									<input type="number" id="fraisEnvoi" name="fraisEnvoi" class="form-control shadow-sm" placeholder="0.00" step="0.01">
+									<input type="number" id="fraisEnvoi" name="fraisEnvoi" class="form-control shadow-sm" placeholder="0.00" step="0.01" autocomplete="off">
 									<span class="input-group-text bg-light">CFA</span>
 								</div>
 							</div>
@@ -493,7 +493,7 @@
 									<span class="input-group-text">1</span>
 									<span class="input-group-text bg-light">USD</span>
 									<span class="input-group-text">=</span>
-									<input type="number" id="taux" name="taux" class="form-control" placeholder="0.00" step="0.0001" value="562.58" required>
+									<input type="number" id="taux" name="taux" class="form-control" placeholder="0.00" step="0.000001" value="562.580000" autocomplete="off" required>
 									<span class="input-group-text bg-light">CFA</span>
 								</div>
 							</div>
@@ -502,7 +502,7 @@
 								<label class="form-label fw-bold">Montant Reçu</label>
 								<div class="input-group shadow-sm">
 									<span class="input-group-text bg-light">USD</span>
-									<input type="number" id="montantRecu" name="montantRecu" class="form-control" placeholder="0.00" step="0.01" readonly>
+									<input type="number" id="montantRecu" name="montantRecu" class="form-control" placeholder="0.00" step="0.01" autocomplete="off" readonly>
 								</div>
 							</div>
 
@@ -515,9 +515,9 @@
 									<span class="input-group-text">1</span>
 									<span id="deviseOrigineDisplay" class="input-group-text bg-light">USD</span>
 									<span class="input-group-text">=</span>
-									<input type="number" id="tauxReception" name="tauxReception" class="form-control" placeholder="0.00" step="0.0001" value="3.67" required>
+									<input type="number" id="tauxReception" name="tauxReception" class="form-control" placeholder="0.00" step="0.000001" value="3.670000" autocomplete="off" required>
 									<span class="input-group-text bg-light" id="deviseRecueDisplay">AED</span>
-									<input type="number" id="montantDeviseReception" name="montantDevise" class="form-control bg-info" placeholder="0.00" step="0.01" readonly>
+									<input type="number" id="montantDeviseReception" name="montantDevise" class="form-control bg-info" placeholder="0.00" step="0.01" autocomplete="off" readonly>
 								</div>
 							</div>
 
@@ -561,8 +561,8 @@
 	{# Modal Paiement Transfert #}
 	<div class="modal fade" id="modalTransferPayment" tabindex="-1" aria-hidden="true" data-id='' data-remain="0">
 		<div class="modal-dialog">
-			<div class="modal-content">
-				<form id="form-transfer-payment">
+				<div class="modal-content">
+					<form id="form-transfer-payment" autocomplete="on">
 					<div class="modal-header">
 						<h5 class="modal-title">Paiement du Transfert</h5>
 						<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -577,13 +577,13 @@
 							<label class="form-label">
 								<strong>Montant à payer</strong>
 							</label>
-							<input type="number" name="amount" class="form-control" id="paymentAmount" min="0" step="0.01" required>
+							<input type="number" name="amount" class="form-control" id="paymentAmount" min="0" step="0.01" autocomplete="off" required>
 						</div>
 						<div class="mb-3">
 							<label class="form-label">
 								<strong>Mode de paiement</strong>
 							</label>
-							<select name="paymentMethod" class="form-select" required>
+							<select name="paymentMethod" class="form-select" autocomplete="off" required>
 								<option value="">
 									-- Sélectionner --
 								</option>
@@ -597,7 +597,7 @@
 							<label class="form-label">
 								<strong>Référence (optionnel)</strong>
 							</label>
-							<input type="text" name="reference" class="form-control" placeholder="Référence du paiement">
+							<input type="text" name="reference" class="form-control" autocomplete="off" placeholder="Référence du paiement">
 						</div>
 						<div class="mb-2 text-end">
 							<small class="text-muted">Montant restant à payer :
@@ -625,7 +625,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
             <div class="modal-body">
-                <form id="form-edit-transfer">
+				<form id="form-edit-transfer" autocomplete="on">
                     <!-- Section Opération -->
                     <div class="section mb-4 p-3 border rounded">
                         <h4 class="text-primary mb-3">
@@ -678,7 +678,7 @@
                                             <label class="form-label fw-bold">Sélectionner l'expéditeur
                                                 <span class="text-danger">*</span>
                                             </label>
-                                            <select id="editSelectExpediteur" name="expediteur" class="form-select shadow-sm" required>
+											<select id="editSelectExpediteur" name="expediteur" class="form-select shadow-sm" autocomplete="off" required>
                                                 <option value="">-- Choisir un expéditeur --</option>
                                                 <option value="vanish">
                                                     <strong>++ Client éphémère</strong>
@@ -703,19 +703,19 @@
                                                 <label class="form-label fw-bold">Nom complet
                                                     <span class="text-danger">*</span>
                                                 </label>
-                                                <input type="text" id="editNewExpediteurNom" name="newExpediteurNom" class="form-control shadow-sm" placeholder="Nom du client">
+												<input type="text" id="editNewExpediteurNom" name="newExpediteurNom" autocomplete="section-edit-expediteur name" class="form-control shadow-sm" placeholder="Nom du client">
                                             </div>
                                             <div>
                                                 <label class="form-label fw-bold">Téléphone
                                                     <span class="text-danger">*</span>
                                                 </label>
-                                                <input type="text" id="editNewExpediteurPhone" name="newExpediteurPhone" class="form-control shadow-sm" placeholder="Numéro de téléphone">
+												<input type="text" id="editNewExpediteurPhone" name="newExpediteurPhone" class="form-control shadow-sm" autocomplete="section-edit-expediteur tel" placeholder="Numéro de téléphone">
                                             </div>
                                         </div>
 										<!-- Champ nom effectif de l'envoyeur (optionnel) -->
 										<div class="col-12 mt-3">
 											<label class="form-label">Nom effectif de l'envoyeur (optionnel)</label>
-											<input type="text" id="editSenderActualName" name="senderActualName" class="form-control" placeholder="Nom réel de la personne ayant envoyé l'argent">
+											<input type="text" id="editSenderActualName" name="senderActualName" autocomplete="section-edit-expediteur name" class="form-control" placeholder="Nom réel de la personne ayant envoyé l'argent">
 										</div>
 
 										<!-- Champ motif du transfert -->
@@ -735,7 +735,7 @@
                                     <div class="row g-2">
                                         <div class="col-12">
                                             <label class="form-label fw-bold">Nom complet</label>
-                                            <input type="text" id="editNomBeneficiaire" name="nomBeneficiaire" class="form-control shadow-sm" placeholder="Nom du bénéficiaire">
+											<input type="text" id="editNomBeneficiaire" name="nomBeneficiaire" autocomplete="section-edit-beneficiary name" class="form-control shadow-sm" placeholder="Nom du bénéficiaire">
                                         </div>
                                         <div class="col-12">
                                             <label class="form-label fw-bold">Téléphone
@@ -745,7 +745,7 @@
                                                 <span class="input-group-text">
                                                     <i class="bi bi-phone"></i>
                                                 </span>
-                                                <input type="text" id="editPhoneBeneficiaire" name="phoneBeneficiaire" class="form-control shadow-sm" placeholder="+1234567890">
+												<input type="text" id="editPhoneBeneficiaire" name="phoneBeneficiaire" class="form-control shadow-sm" autocomplete="section-edit-beneficiary tel" placeholder="+1234567890">
                                             </div>
                                         </div>
                                     </div>
@@ -766,7 +766,7 @@
                                 </label>
                                 <div class="input-group shadow-sm">
                                     <span class="input-group-text bg-light">CFA</span>
-                                    <input type="number" id="editMontantCash" name="montantCash" class="form-control" placeholder="0.00" step="0.01" required>
+									<input type="number" id="editMontantCash" name="montantCash" class="form-control" placeholder="0.00" step="0.01" autocomplete="off" required>
                                 </div>
                             </div>
                             <!-- Frais d'envoi -->
@@ -775,7 +775,7 @@
                                     <span class="text-danger">*</span>
                                 </label>
                                 <div class="input-group shadow-sm">
-                                    <input type="number" id="editFraisEnvoi" name="fraisEnvoi" class="form-control shadow-sm" placeholder="0.00" step="0.01">
+									<input type="number" id="editFraisEnvoi" name="fraisEnvoi" class="form-control shadow-sm" placeholder="0.00" step="0.01" autocomplete="off">
                                     <span class="input-group-text bg-light">CFA</span>
                                 </div>
                             </div>
@@ -788,7 +788,7 @@
                                     <span class="input-group-text">1</span>
                                     <span class="input-group-text bg-light">USD</span>
                                     <span class="input-group-text">=</span>
-                                    <input type="number" id="editTaux" name="taux" class="form-control" placeholder="0.00" step="0.0001" value="562.58" required>
+									<input type="number" id="editTaux" name="taux" class="form-control" placeholder="0.00" step="0.000001" value="562.580000" autocomplete="off" required>
                                     <span class="input-group-text bg-light">CFA</span>
                                 </div>
                             </div>
@@ -797,7 +797,7 @@
                                 <label class="form-label fw-bold">Montant Reçu</label>
                                 <div class="input-group shadow-sm">
                                     <span class="input-group-text bg-light">USD</span>
-                                    <input type="number" id="editMontantRecu" name="montantRecu" class="form-control" placeholder="0.00" step="0.01" readonly>
+									<input type="number" id="editMontantRecu" name="montantRecu" class="form-control" placeholder="0.00" step="0.01" autocomplete="off" readonly>
                                 </div>
                             </div>
                             <div class="col-md-8">
@@ -808,9 +808,9 @@
                                     <span class="input-group-text">1</span>
                                     <span id="editDeviseOrigineDisplay" class="input-group-text bg-light">USD</span>
                                     <span class="input-group-text">=</span>
-                                    <input type="number" id="editTauxReception" name="tauxReception" class="form-control" placeholder="0.00" step="0.0001" value="3.67" required>
-                                    <span class="input-group-text bg-light" id="editDeviseRecueDisplay">AED</span>
-                                    <input type="number" id="editMontantDeviseReception" name="montantDevise" class="form-control bg-info" placeholder="0.00" step="0.01" readonly>
+									<input type="number" id="editTauxReception" name="tauxReception" class="form-control" placeholder="0.00" step="0.000001" value="3.670000" autocomplete="off" required>
+									<span class="input-group-text bg-light" id="editDeviseRecueDisplay">AED</span>
+									<input type="number" id="editMontantDeviseReception" name="montantDevise" class="form-control bg-info" placeholder="0.00" step="0.01" autocomplete="off" readonly>
                                 </div>
                             </div>
                             <!-- Total à payer -->

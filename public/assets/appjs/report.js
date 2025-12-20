@@ -48,7 +48,13 @@ $(document).ready(function () {
             },
         },
         columns: [
-            { data: 'id', orderable: false },
+            {
+                data: 'reference',
+                orderable: false,
+                render: function (data) {
+                    return data || '—';
+                }
+            },
             { data: 'description', orderable: false },
             { data: 'date', orderable: false },
             {
@@ -206,11 +212,21 @@ $(document).ready(function () {
                         const soldeFin = rows[rows.length - 1][5].text || rows[0][5];
 
                         // Ligne de regroupement par date
+                        // colorer les montants selon leur signe
+                        const sdNum = parseFloat(rawRow.initial) || 0;
+                        const sfNum = parseFloat(String(soldeFin).replace(/[^0-9\-,.\s]/g, '').replace(',', '.')) || 0;
+                        const sdColor = sdNum >= 0 ? '#0d6efd' : '#c62828'; // bleu pour positif, rouge pour négatif
+                        const sfColor = sfNum >= 0 ? '#2e7d32' : '#c62828'; // vert pour positif, rouge pour négatif
+
                         newBody.push([
                             {
-                                text: `${date} | Solde départ: ${soldeDepart} ${$('#deviseSelect').val()} | Solde fin: ${soldeFin} `,
+                                text: [
+                                    { text: `📅 ${date} | Solde départ: ` },
+                                    { text: `${soldeDepart} ${$('#deviseSelect').val()}`, color: sdColor, bold: true },
+                                    { text: ` | Solde fin: ` },
+                                    { text: `${soldeFin}`, color: sfColor, bold: true }
+                                ],
                                 colSpan: 6,
-                                bold: true,
                                 fillColor: '#f8f9fa',
                                 alignment: 'center',
                                 fontSize: 10,
@@ -241,7 +257,7 @@ $(document).ready(function () {
                     content.push({
                         table: {
                             headerRows: 1,
-                            widths: ['5%', '35%', '15%', '15%', '15%', '15%'],
+                            widths: ['10%', '35%', '15%', '12%', '13%', '15%'],
                             body: newBody
                         },
                         layout: {

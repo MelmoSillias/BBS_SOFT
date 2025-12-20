@@ -123,8 +123,8 @@ final class ExchangeController extends AbstractController
         $date = $data['date'] ?? null; // Date de la transaction
         $taux = isset($data['taux']) ? (float) $data['taux'] : 0.0; // Taux de change utilisé
 
-        // 3. Calculer le montant en CFA
-        $montantCfa = $montantdevise * $taux; 
+        // 3. Calculer le montant en CFA (arrondi au pas de 50)
+        $montantCfa = $this->roundCFA($montantdevise * $taux); 
         // 4. Créer l'échange
         $exchange = new Exchange();
         $exchange->setMontantCFA($montantCfa);
@@ -208,7 +208,7 @@ final class ExchangeController extends AbstractController
         $taux = isset($data['taux']) ? (float) $data['taux'] : 0.0; // Taux de change utilisé
 
         // 3. Calculer le montant en CFA
-        $montantCfa = $montantdevise * $taux;
+        $montantCfa = $this->roundCFA($montantdevise * $taux);
 
         $exchange->setMontantCFA($montantCfa);
         $exchange->setMontantDevise($montantdevise); 
@@ -331,7 +331,7 @@ final class ExchangeController extends AbstractController
             $tauxSum += $exchange->getTaux();
         }
 
-        $tauxMoyen = $total > 0 ? round($tauxSum / $total, 2) : 0;
+        $tauxMoyen = $total > 0 ? round($tauxSum / $total, 6) : 0;
 
         // calcul du solde local (entrées - sorties)
         $localSolde = 0;
@@ -378,6 +378,11 @@ final class ExchangeController extends AbstractController
         // Combiner pour former la référence
         $ref = 'BSS-D' . $formattedTransferCount;
         return $ref;
+    }
+
+    private function roundCFA(float $amount): float
+    {
+        return round($amount / 50) * 50;
     }
 
     
