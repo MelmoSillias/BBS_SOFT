@@ -31,13 +31,13 @@ class Transfert
     #[ORM\ManyToOne(inversedBy: 'transferts')]
     private ?Client $client = null;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
+    #[ORM\Column(type: Types::DECIMAL, precision: 18, scale: 2)]
     private ?string $montantCFA = null;
  
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
+    #[ORM\Column(type: Types::DECIMAL, precision: 18, scale: 2)]
     private ?string $montantUSD = null; 
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 12, scale: 6)]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 6)]
     private ?string $taux = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]

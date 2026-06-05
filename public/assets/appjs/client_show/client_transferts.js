@@ -272,26 +272,26 @@ function initTranferts(clientId) {
         initComplete: function () {
             // Ajout des filtres personnalisés
             $('#transfersTable_filter').prepend(`
-                            <div class="btn-group ms-2">
-                                <select id="filterStatus" class="form-select form-select-sm">
-                                    <option value="">Tous statuts</option>
-                                    <option value="completed">Complété</option>
-                                    <option value="pending">En attente</option>
-                                    <option value="cancelled">Annulé</option>
-                                    <option value="processing">En cours</option>
-                                </select>
-                                <select id="filterType" class="form-select form-select-sm">
-                                    <option value="">Tous types</option>
-                                    <option value="standard">Envoi Cash</option>
-                                    <option value="byAccount">Retrait compte</option>
-                                </select>
-                                <select id="filterClientType" class="form-select form-select-sm">
-                                    <option value="">Tous clients</option>
-                                    <option value="regular">Clients enregistrés</option>
-                                    <option value="ephemeral">Clients éphémères</option>
-                                </select>
-                            </div>
-                        `);
+                <div class="btn-group ms-2">
+                    <select id="filterStatus" class="form-select form-select-sm">
+                        <option value="">Tous statuts</option>
+                        <option value="completed">Complété</option>
+                        <option value="pending">En attente</option>
+                        <option value="cancelled">Annulé</option>
+                        <option value="processing">En cours</option>
+                    </select>
+                    <select id="filterType" class="form-select form-select-sm">
+                        <option value="">Tous types</option>
+                        <option value="standard">Envoi Cash</option>
+                        <option value="byAccount">Retrait compte</option>
+                    </select>
+                    <select id="filterClientType" class="form-select form-select-sm">
+                        <option value="">Tous clients</option>
+                        <option value="regular">Clients enregistrés</option>
+                        <option value="ephemeral">Clients éphémères</option>
+                    </select>
+                </div>
+            `);
 
             // Écouteurs d'événements pour les filtres
             $('#filterStatus, #filterType, #filterClientType, #filterDateRange').on('change', function () {

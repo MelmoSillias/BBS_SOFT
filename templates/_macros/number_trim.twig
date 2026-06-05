@@ -1,0 +1,24 @@
+{# Macro pour afficher un nombre avec au plus `decimals` décimales
+   en supprimant les zéros non significatifs en fin de chaîne.
+   Renvoie la chaîne avec la virgule décimale ',' pour l'affichage FR.
+#}
+{% macro trim_decimal(value, decimals=6) %}
+    {% if value is null %}
+        
+    {% else %}
+        {% set s = ('%.' ~ decimals ~ 'f')|format(value) %}
+        {% set len = s|length %}
+        {% set cut = len %}
+        {% for i in 0..(len - 1) %}
+            {% set ch = s[(len - 1) - i] %}
+            {% if ch == '0' %}
+                {% set cut = cut - 1 %}
+            {% endif %}
+        {% endfor %}
+        {% set s2 = s[:cut] %}
+        {% if s2 ends with '.' %}
+            {% set s2 = s2|slice(0, s2|length - 1) %}
+        {% endif %}
+        {{ s2|replace({'.':','}) }}
+    {% endif %}
+{% endmacro %}
