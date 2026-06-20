@@ -27,7 +27,7 @@ SET time_zone = "+00:00";
 -- Structure de la table `account_transaction`
 --
 
-CREATE TABLE `account_transaction` (
+CREATE TABLE IF NOT EXISTS `account_transaction` (
   `id` int(11) NOT NULL,
   `client_id` int(11) DEFAULT NULL,
   `created_at` datetime NOT NULL COMMENT '(DC2Type:datetime_immutable)',
@@ -117,7 +117,7 @@ INSERT INTO `account_transaction` (`id`, `client_id`, `created_at`, `describ`, `
 -- Structure de la table `agence`
 --
 
-CREATE TABLE `agence` (
+CREATE TABLE IF NOT EXISTS `agence` (
   `id` int(11) NOT NULL,
   `designation` varchar(255) NOT NULL,
   `localite` varchar(255) NOT NULL,
@@ -147,7 +147,7 @@ INSERT INTO `agence` (`id`, `designation`, `localite`, `created_at`, `is_active`
 -- Structure de la table `approvisionnement`
 --
 
-CREATE TABLE `approvisionnement` (
+CREATE TABLE IF NOT EXISTS `approvisionnement` (
   `id` int(11) NOT NULL,
   `user_id` int(11) DEFAULT NULL,
   `transaction_id` int(11) DEFAULT NULL,
@@ -172,7 +172,7 @@ INSERT INTO `approvisionnement` (`id`, `user_id`, `transaction_id`, `date`, `mot
 -- Structure de la table `client`
 --
 
-CREATE TABLE `client` (
+CREATE TABLE IF NOT EXISTS `client` (
   `id` int(11) NOT NULL,
   `nom_complet` varchar(255) NOT NULL,
   `address` varchar(255) NOT NULL,
@@ -194,7 +194,7 @@ INSERT INTO `client` (`id`, `nom_complet`, `address`, `phone_number`, `is_active
 -- Structure de la table `depense`
 --
 
-CREATE TABLE `depense` (
+CREATE TABLE IF NOT EXISTS `depense` (
   `id` int(11) NOT NULL,
   `user_id` int(11) DEFAULT NULL,
   `transaction_id` int(11) DEFAULT NULL,
@@ -219,7 +219,7 @@ INSERT INTO `depense` (`id`, `user_id`, `transaction_id`, `date`, `motif`, `type
 -- Structure de la table `doctrine_migration_versions`
 --
 
-CREATE TABLE `doctrine_migration_versions` (
+CREATE TABLE IF NOT EXISTS `doctrine_migration_versions` (
   `version` varchar(191) NOT NULL,
   `executed_at` datetime DEFAULT NULL,
   `execution_time` int(11) DEFAULT NULL
@@ -242,7 +242,7 @@ INSERT INTO `doctrine_migration_versions` (`version`, `executed_at`, `execution_
 -- Structure de la table `exchange`
 --
 
-CREATE TABLE `exchange` (
+CREATE TABLE IF NOT EXISTS `exchange` (
   `id` int(11) NOT NULL,
   `client_id` int(11) DEFAULT NULL,
   `taux` decimal(10,5) NOT NULL,
@@ -281,7 +281,7 @@ INSERT INTO `exchange` (`id`, `client_id`, `taux`, `description`, `vanish_client
 -- Structure de la table `messenger_messages`
 --
 
-CREATE TABLE `messenger_messages` (
+CREATE TABLE IF NOT EXISTS `messenger_messages` (
   `id` bigint(20) NOT NULL,
   `body` longtext NOT NULL,
   `headers` longtext NOT NULL,
@@ -297,7 +297,7 @@ CREATE TABLE `messenger_messages` (
 -- Structure de la table `transfert`
 --
 
-CREATE TABLE `transfert` (
+CREATE TABLE IF NOT EXISTS `transfert` (
   `id` int(11) NOT NULL,
   `client_id` int(11) DEFAULT NULL,
   `created_at` datetime NOT NULL COMMENT '(DC2Type:datetime_immutable)',
@@ -343,7 +343,7 @@ INSERT INTO `transfert` (`id`, `client_id`, `created_at`, `type`, `montant_cfa`,
 -- Structure de la table `user`
 --
 
-CREATE TABLE `user` (
+CREATE TABLE IF NOT EXISTS `user` (
   `id` int(11) NOT NULL,
   `username` varchar(180) NOT NULL,
   `roles` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '(DC2Type:json)' CHECK (json_valid(`roles`)),

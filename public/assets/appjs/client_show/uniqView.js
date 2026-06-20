@@ -78,7 +78,8 @@ function initOps(clientId) {
             },
             {
                 data: 'description',
-                title: 'Description'
+                title: 'Description',
+                render: (data) => data ? $('<div/>').text(data).html().replace(/\n/g, '<br>') : '',
             },
             {
                 data: 'montant',
@@ -121,7 +122,7 @@ function initOps(clientId) {
 
         if (operation === "Transfert") url = `/api/transferts/${id}/receipt`;
         else if (operation === "Change") url = `/api/exchanges/${id}/print`;
-        else if (operation === "Versement" || operation === "Retrait") url = `/api/transaction/${id}/receipt`;
+        else if (operation === "Versement" || operation === "Retrait" || operation === "transfert-intercompte") url = `/api/transaction/${id}/receipt`;
         else url = null;
 
         if (url) {
@@ -179,12 +180,13 @@ function initOps(clientId) {
                 }
             });
         }
+        else if (operation === "transfert-intercompte") {
+            openInterclientEditModal(id);
+        }
         else if (operation === "Versement" || operation === "Retrait") {
             selectedTransactionID = id
             $.get(`/api/transaction/${id}/details`, function (data) {
-                $("#editTransDate").val(data.date)
-                $("#editTransAmount").val(data.montant)
-                $("#editTransType").val(data.type)
+                fillEditTransactionModal(data);
             })
 
             $("#editTransactionModal").modal('show')
@@ -205,9 +207,9 @@ function initOps(clientId) {
             console.log($('#deleteConfirmModal').data('id')); 
             $('#deleteConfirmModal').modal('show');
         }
-        else if (operation === "Versement" || operation === "Retrait") {
-            selectedTransactionID = id 
-            $("#confirmCancelTransactionModal").modal('show')
+        else if (operation === "Versement" || operation === "Retrait" || operation === "transfert-intercompte") {
+            selectedTransactionID = id
+            showCancelTransactionModal(operation === "transfert-intercompte")
         }
     })
 

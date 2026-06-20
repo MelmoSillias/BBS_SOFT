@@ -21,6 +21,7 @@ use Symfony\Polyfill\Intl\Icu\DateFormat\SecondTransformer;
 
 final class ClientController extends AbstractController
 {
+    private const INTERCOMPTE_LABEL = 'transfert-intercompte';
 
     #[Route('/dashboard/client', name: 'app_client')]
     public function index(EntityManagerInterface $em): Response
@@ -153,6 +154,57 @@ final class ClientController extends AbstractController
         return $this->json(['success' => true, 'id' => $tx->getId()]);
     }
 
+    #[Route('/dashboard/client/{id}/transfert-interclient', name: 'client_transfert_interclient_submit', methods: ['POST'])]
+    public function transfertInterclientSubmit(Client $client, Request $request, EntityManagerInterface $em): JsonResponse
+    {
+        $amount = (float) $request->request->get('amount', 0);
+        $receiverId = (int) $request->request->get('receiverId', 0);
+        $senderNote = trim((string) $request->request->get('senderNote', ''));
+        $receiverNote = trim((string) $request->request->get('receiverNote', ''));
+        $cur = $request->request->get('currency', 'CFA');
+        $date = $request->request->get('date');
+
+        if ($amount <= 0) {
+            return $this->json(['error' => 'Montant invalide'], 400);
+        }
+
+        if ($receiverId <= 0 || $receiverId === $client->getId()) {
+            return $this->json(['error' => 'Client destinataire invalide'], 400);
+        }
+
+        $receiver = $em->getRepository(Client::class)->find($receiverId);
+        if (!$receiver) {
+            return $this->json(['error' => 'Client destinataire introuvable'], 404);
+        }
+
+        $senderName = $client->getNomComplet();
+        $receiverName = $receiver->getNomComplet();
+        $createdAt = !$date ? new DateTimeImmutable('now') : new DateTimeImmutable($date);
+
+        $senderTx = new AccountTransaction();
+        $senderTx->setClient($client)
+            ->setAmount($cur, (string) ($amount * -1))
+            ->setDescrib($senderNote !== '' ? $senderNote : "Transfert vers $receiverName")
+            ->setCreatedAt($createdAt)
+            ->setType('Retrait');
+
+        $receiverTx = new AccountTransaction();
+        $receiverTx->setClient($receiver)
+            ->setAmount($cur, (string) $amount)
+            ->setDescrib($receiverNote !== '' ? $receiverNote : "Transfert de $senderName")
+            ->setCreatedAt($createdAt)
+            ->setType('Versement');
+
+        $senderTx->setLinkedTransaction($receiverTx);
+        $receiverTx->setLinkedTransaction($senderTx);
+
+        $em->persist($senderTx);
+        $em->persist($receiverTx);
+        $em->flush();
+
+        return $this->json(['success' => true, 'id' => $senderTx->getId()]);
+    }
+
 
     #[Route('/api/clients', name: 'api_clients_list', methods: ['GET'])]
     public function clientsList(EntityManagerInterface $em): JsonResponse
@@ -253,10 +305,11 @@ final class ClientController extends AbstractController
 
         $list = [];
         foreach ($transactions as $tx) {
+            $isInterClient = $tx->isInterClientTransfer();
             $list[] = [
                 'id'          => $tx->getId(),
                 'date'        => $tx->getCreatedAt()->format('Y-m-d H:i:s'),
-                'type'        => $tx->getType(),
+                'type'        => $isInterClient ? self::INTERCOMPTE_LABEL : $tx->getType(),
                 'description' => $tx->getDescrib(),
                 'amountCFA'   => $tx->getCFA(),
                 'amountAED'   => $tx->getAED(),
@@ -266,6 +319,9 @@ final class ClientController extends AbstractController
                 'amountCNY'   => $tx->getCNY(),
                 'amountMAD'   => $tx->getMAD(),
                 'amountDZD'   => $tx->getDZD(),
+                'isInterClient' => $isInterClient,
+                'currency'    => $tx->getActiveCurrency(),
+                'montant'     => $tx->getActiveAmount(),
             ];
         }
 
@@ -758,7 +814,60 @@ final class ClientController extends AbstractController
             return $this->json([false, "La transaction n'existe pas"], 404);
         }
 
-        return $this->json(['id' => $transaction->getId(), 'type' => $transaction->getType(), 'montant' => $transaction->getCFA(), 'date' => $transaction->getCreatedAt()->format('Y-m-d')]);
+        $currency = $transaction->getActiveCurrency() ?? 'CFA';
+        $activeAmount = $transaction->getActiveAmount();
+        $montant = $activeAmount !== null ? abs($activeAmount) : abs((float) ($transaction->getCFA() ?? 0));
+
+        $otherClient = null;
+        $senderClient = null;
+        $receiverClient = null;
+        $senderNote = null;
+        $receiverNote = null;
+
+        if ($transaction->isInterClientTransfer()) {
+            $linked = $transaction->getLinkedTransaction();
+            if ($linked) {
+                $senderTx = $transaction->getType() === 'Retrait' ? $transaction : $linked;
+                $receiverTx = $transaction->getType() === 'Versement' ? $transaction : $linked;
+
+                if ($senderTx->getClient()) {
+                    $senderClient = [
+                        'id' => $senderTx->getClient()->getId(),
+                        'nomComplet' => $senderTx->getClient()->getNomComplet(),
+                    ];
+                }
+                if ($receiverTx->getClient()) {
+                    $receiverClient = [
+                        'id' => $receiverTx->getClient()->getId(),
+                        'nomComplet' => $receiverTx->getClient()->getNomComplet(),
+                    ];
+                    $otherClient = $senderClient;
+                    if ($transaction->getType() === 'Retrait') {
+                        $otherClient = $receiverClient;
+                    } else {
+                        $otherClient = $senderClient;
+                    }
+                }
+
+                $senderNote = $senderTx->getDescrib();
+                $receiverNote = $receiverTx->getDescrib();
+            }
+        }
+
+        return $this->json([
+            'id' => $transaction->getId(),
+            'type' => $transaction->isInterClientTransfer() ? self::INTERCOMPTE_LABEL : $transaction->getType(),
+            'montant' => $montant,
+            'currency' => $currency,
+            'date' => $transaction->getCreatedAt()->format('Y-m-d'),
+            'note' => $transaction->getDescrib(),
+            'isInterClient' => $transaction->isInterClientTransfer(),
+            'otherClient' => $otherClient,
+            'senderClient' => $senderClient,
+            'receiverClient' => $receiverClient,
+            'senderNote' => $senderNote,
+            'receiverNote' => $receiverNote,
+        ]);
     }
 
     #[Route('/api/transaction/{id}/update', name: 'transaction_update')]
@@ -768,16 +877,56 @@ final class ClientController extends AbstractController
             return $this->json([false, "La transaction n'existe pas"], 404);
         }
 
-        $amount = $request->get('montant');
+        $amount = (float) ($request->get('amount') ?? $request->get('montant') ?? 0);
+        $senderNote = trim((string) $request->get('senderNote', ''));
+        $receiverNote = trim((string) $request->get('receiverNote', ''));
+        $note = $request->get('note', '');
+        $date = $request->get('date');
+        $currency = strtoupper((string) ($request->get('currency') ?? ''));
         $clientName = $transaction->getClient() ? $transaction->getClient()->getNomComplet() : 'N/A';
 
+        if ($transaction->isInterClientTransfer()) {
+            $linked = $transaction->getLinkedTransaction();
+            if (!$linked) {
+                return $this->json(['error' => 'Transaction jumelle introuvable'], 400);
+            }
+
+            $senderTx = $transaction->getType() === 'Retrait' ? $transaction : $linked;
+            $receiverTx = $transaction->getType() === 'Versement' ? $transaction : $linked;
+            $activeCurrency = $currency !== '' ? $currency : ($transaction->getActiveCurrency() ?? 'CFA');
+            $absAmount = abs($amount);
+            $senderName = $senderTx->getClient()?->getNomComplet() ?? 'N/A';
+            $receiverName = $receiverTx->getClient()?->getNomComplet() ?? 'N/A';
+
+            $senderDesc = $senderNote !== '' ? $senderNote : "Transfert vers $receiverName";
+            $receiverDesc = $receiverNote !== '' ? $receiverNote : "Transfert de $senderName";
+
+            $senderTx->setExclusiveAmount($activeCurrency, (string) (-$absAmount))
+                ->setDescrib($senderDesc);
+            $receiverTx->setExclusiveAmount($activeCurrency, (string) $absAmount)
+                ->setDescrib($receiverDesc);
+
+            if ($date) {
+                $createdAt = new DateTimeImmutable($date);
+                $senderTx->setCreatedAt($createdAt);
+                $receiverTx->setCreatedAt($createdAt);
+            }
+
+            $em->persist($senderTx);
+            $em->persist($receiverTx);
+            $em->flush();
+
+            return $this->json(['success' => true]);
+        }
+
         $transaction->setCFA($amount);
-        $transaction->setDescrib($transaction->getType() === "Versement" ? "Depot $amount F CFA" : ($transaction->getType() === "Retrait" ? "Retrait $amount F CFA" : $transaction->getDescrib()));
+
+        $transaction->setDescrib($note == '' ? ($transaction->getType() === "Versement" ? "Depot $amount F CFA" : ($transaction->getType() === "Retrait" ? "Retrait $amount F CFA" : $transaction->getDescrib())) : $note);
 
         // Si la transaction a une "sœur" liée
         if ($linked = $transaction->getLinkedTransaction()) {
             $linked->setCFA($transaction->getCFA());
-            $linked->setDescrib($transaction->getDescrib() . " sur compte $clientName");
+            $linked->setDescrib($note == '' ? ($transaction->getType() === "Versement" ? "Depot $amount F CFA" : ($transaction->getType() === "Retrait" ? "Retrait $amount F CFA" : $transaction->getDescrib())) : $note . " sur compte $clientName");
         }
 
         $em->persist($transaction);
@@ -845,7 +994,10 @@ final class ClientController extends AbstractController
             $operation = '';
             $ops_id = '';
 
-            if ($tx->getType() && $tx->getType() !== "") {
+            if ($tx->isInterClientTransfer()) {
+                $operation = self::INTERCOMPTE_LABEL;
+                $ops_id = $tx->getId();
+            } else if ($tx->getType() && $tx->getType() !== "") {
                 $operation = $tx->getType();
                 $ops_id = $tx->getId();
             } else if ($tx->getTransfert()) {
@@ -865,7 +1017,9 @@ final class ClientController extends AbstractController
                 'date'        => $tx->getCreatedAt()->format('Y-m-d H:i:s'),
                 'operation'   => $operation,
                 'description' => $tx->getDescrib(),
-                'montant'   => $tx->getCFA(),
+                'montant'     => $tx->getActiveAmount() ?? $tx->getCFA(),
+                'currency'    => $tx->getActiveCurrency(),
+                'isInterClient' => $tx->isInterClientTransfer(),
             ];
         }
 

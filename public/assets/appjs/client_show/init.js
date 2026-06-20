@@ -39,6 +39,34 @@ function extractClientId() {
     return (idx >= 0 && parts.length > idx + 1) ? parts[idx + 1] : null;
 }
 
+function fillEditTransactionModal(data) {
+    $("#editTransDate").val(data.date);
+    $("#editTransAmount").val(data.montant);
+    $("#editTransNote").val(data.note);
+
+    if (data.isInterClient) {
+        const typeLabel = data.type === 'Retrait'
+            ? 'transfert-intercompte (Retrait)'
+            : 'transfert-intercompte (Versement)';
+        $("#editTransType").val(typeLabel);
+        $("#editTransOtherClient").val(data.otherClient ? data.otherClient.nomComplet : '');
+        $("#editTransCurrency").val(data.currency || 'CFA');
+        $("#editTransOtherClientGroup, #editTransCurrencyGroup").removeClass('d-none');
+    } else {
+        $("#editTransType").val(data.type);
+        $("#editTransOtherClientGroup, #editTransCurrencyGroup").addClass('d-none');
+    }
+}
+
+function showCancelTransactionModal(isInterClient) {
+    if (isInterClient) {
+        $("#confirmCancelInterclientHint").removeClass('d-none');
+    } else {
+        $("#confirmCancelInterclientHint").addClass('d-none');
+    }
+    $("#confirmCancelTransactionModal").modal('show');
+}
+
 function chargeCurrencySolde(idClient, currency, input) {
     $.get(`/api/client/${idClient}/stats/${currency}`, function (data) {
         $(input).text(`${data.balance} ${currency}`);

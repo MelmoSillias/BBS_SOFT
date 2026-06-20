@@ -55,7 +55,7 @@ $(document).ready(function () {
                     return data || '—';
                 }
             },
-            { data: 'description', orderable: false },
+            { data: 'description', orderable: false, render: (data) => data ? $('<div/>').text(data).html().replace(/\n/g, '<br>') : '' },
             { data: 'date', orderable: false },
             {
                 data: 'entree', render: function (data) {

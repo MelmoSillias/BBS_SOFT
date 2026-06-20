@@ -87,7 +87,7 @@ final class TransfertController extends AbstractController
             if ($transfert->getStatus() == 'processing') {
                 $ctx = new AccountTransaction();
                 $ctx->setCFA($amount)
-                    ->setDescrib('Envoi cash - ' . ($transfert->getSenderActualName() ?: ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : $transfert->getSenderName())))
+                    ->setDescrib($this->buildTransfertDescription($transfert, 'Envoi cash - '))
                     ->setAgence($local)
                     ->setCreatedAt(new \DateTimeImmutable($data['date']));
 
@@ -109,7 +109,7 @@ final class TransfertController extends AbstractController
                 if ($transfert->getStatus() == 'processing') {
                     $ctx = new AccountTransaction();
                     $ctx->setCFA($amount)
-                        ->setDescrib('Envoi cash - ' . ($transfert->getSenderActualName() ?: ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : $transfert->getSenderName())))
+                        ->setDescrib($this->buildTransfertDescription($transfert, 'Envoi cash - '))
                         ->setAgence($local)
                         ->setCreatedAt(new \DateTimeImmutable($data['date']));
 
@@ -377,7 +377,7 @@ final class TransfertController extends AbstractController
 
         $ctx = new AccountTransaction();
         $ctx->setCFA($amount)
-            ->setDescrib('Envoi cash - ' . ($transfer->getSenderActualName() ?: ($transfer->getClient() ? $transfer->getClient()->getNomComplet() : $transfer->getSenderName())))
+            ->setDescrib($this->buildTransfertDescription($transfer, 'Envoi cash - '))
             ->setAgence($local)
             ->setCreatedAt(new \DateTimeImmutable($date));
 
@@ -408,8 +408,9 @@ final class TransfertController extends AbstractController
 
         if ($transfer->getStatus() === Transfert::STATUS_PROCESSING) {
             $atx = new AccountTransaction();
+            $senderName = $this->getTransfertSenderName($transfer);
             $atx->setUSD($transfer->getMontantUSD() * -1)
-                ->setDescrib('Transfert -- ' . ($transfer->getSenderActualName() ?: ($transfer->getClient() ? $transfer->getClient()->getNomComplet() : $transfer->getSenderName())) . ' -- ' . $transfer->getMontantUSD() . ' USD')
+                ->setDescrib($this->appendReceiverName($transfer, 'Transfert -- ' . $senderName . ' -- ' . $transfer->getMontantUSD() . ' USD'))
                 ->setAgence($transfer->getAgence())
                 ->setCreatedAt(new \DateTimeImmutable($date));
 
@@ -423,7 +424,7 @@ final class TransfertController extends AbstractController
 
                 $ctx = new AccountTransaction();
                 $ctx->setCFA($amount * -1)
-                    ->setDescrib('Retrait compte - ' . $transfer->getClient()->getNomComplet())
+                    ->setDescrib($this->appendReceiverName($transfer, 'Retrait compte - ' . $transfer->getClient()->getNomComplet()))
                     ->setClient($client)
                     ->setCreatedAt(new \DateTimeImmutable($date));
 
@@ -440,7 +441,7 @@ final class TransfertController extends AbstractController
 
             $ctx = new AccountTransaction();
             $ctx->setCFA($amount)
-                ->setDescrib('Envoi cash - ' . ($transfer->getSenderActualName() ?: ($transfer->getClient() ? $transfer->getClient()->getNomComplet() : $transfer->getSenderName())))
+                ->setDescrib($this->buildTransfertDescription($transfer, 'Envoi cash - '))
                 ->setAgence($local)
                 ->setCreatedAt(new \DateTimeImmutable($date));
 
@@ -448,8 +449,9 @@ final class TransfertController extends AbstractController
             $em->persist($ctx);
 
             $atx = new AccountTransaction();
+            $senderName = $this->getTransfertSenderName($transfer);
             $atx->setUSD($transfer->getMontantUSD() * -1)
-                ->setDescrib('Transfert -- ' . ($transfer->getSenderActualName() ?: ($transfer->getClient() ? $transfer->getClient()->getNomComplet() : $transfer->getSenderName())) . ' -- ' . $transfer->getMontantUSD() . ' USD')
+                ->setDescrib($this->appendReceiverName($transfer, 'Transfert -- ' . $senderName . ' -- ' . $transfer->getMontantUSD() . ' USD'))
                 ->setAgence($transfer->getAgence())
                 ->setCreatedAt(new \DateTimeImmutable($date));
 
@@ -566,6 +568,28 @@ final class TransfertController extends AbstractController
         return $ref;
     }
 
+    private function getTransfertSenderName(Transfert $transfert): string
+    {
+        return $transfert->getSenderActualName()
+            ?: ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : ($transfert->getSenderName() ?? ''));
+    }
+
+    private function buildTransfertDescription(Transfert $transfert, string $prefix): string
+    {
+        return $this->appendReceiverName($transfert, $prefix . $this->getTransfertSenderName($transfert));
+    }
+
+    private function appendReceiverName(Transfert $transfert, string $description): string
+    {
+        $receiverName = trim((string) ($transfert->getReceiverName() ?? ''));
+
+        if ($receiverName !== '') {
+            $description .= "\n" . $receiverName;
+        }
+
+        return $description;
+    }
+
 
     #[Route('/api/transfert/update/{id}', name: 'api_transfert_update', methods: ['PUT'])]
     public function updateTransfert(Transfert $transfert, EntityManagerInterface $em, Request $req): JsonResponse
@@ -646,7 +670,7 @@ final class TransfertController extends AbstractController
         if ($transfert->getStatus() == 'processing' && $transfert->getType() === 'standard' ) {
             $ctx = new AccountTransaction();
             $ctx->setCFA($amount)
-                ->setDescrib('Transfert effectué par cash - ' . ($transfert->getSenderActualName() ?: ($transfert->getClient() ? $transfert->getClient()->getNomComplet() : $transfert->getSenderName())))
+                ->setDescrib($this->buildTransfertDescription($transfert, 'Transfert effectué par cash - '))
                 ->setAgence($local)
                 ->setCreatedAt(new \DateTimeImmutable($data['date']));
             $ctx->setTransfert($transfert);

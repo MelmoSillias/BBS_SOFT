@@ -4,6 +4,7 @@
 {% endblock %}
 
 {% block stylesheets %}
+	<link rel="stylesheet" href="{{ asset('assets/css/select2/select2.min.css') }}">
 	<style>
 		/* Style des cartes de statistiques */
 		.stat-card {
@@ -267,6 +268,9 @@
 			<i class="bi bi-paypal"></i>
 		</button>
 
+		<button class="btn btn-lg btn-dark" id="btnTransfertInterclient" data-id="{{client.id}}" style="position: fixed; bottom: 320px; right: 20px; z-index: 1000;" title="transfert-intercompte">
+			<i class="bi bi-arrow-left-right"></i>
+		</button>
 
 		<button class="btn btn-lg btn-info exchange" id="btnExchangeFloat" data-id="{{client.id}}" style="position: fixed; bottom: 140px; right: 20px; z-index: 1000;" title="Echanger">
 			<i class="bi bi-currency-exchange"></i>
@@ -291,6 +295,9 @@
 <!-- Modal Versement Client -->
 
 </div>{% endblock %}{% block javascripts %}
+<script src="{{ asset('assets/js/select2/select2.min.js') }}"></script>
+<script src="{{ asset('assets/js/select2/i18n/fr.js') }}"></script>
+<script src="{{ asset('assets/appjs/interclient_modal.js') }}"></script>
 <script src="{{ asset('assets/appjs/client_show/init.js') }}"></script>
 <script src="{{ asset('assets/appjs/client_show/client_exchanges.js') }}"></script>
 <script src="{{ asset('assets/appjs/client_show/client_exchanges_form.js') }}"></script>

@@ -104,6 +104,7 @@ function initTransactions(clientId) {
       {
         data: "description",
         title: "Description",
+        render: (data) => data ? $('<div/>').text(data).html().replace(/\n/g, '<br>') : '',
       },
       {
         data: "amountCFA",
@@ -204,15 +205,15 @@ function initTransactions(clientId) {
         data: null,
         title: "Actions",
         render: function (data, type, row) {
-          if (row.type === "Versement" || row.type === "Retrait") {
+          if (row.type === "Versement" || row.type === "Retrait" || row.type === "transfert-intercompte") {
             return `
               <button class="btn btn-sm btn-outline-primary print-btn" data-id="${row.id}" title="Imprimer">
                 <i class="bi bi-printer"></i>
               </button>
-              <button class="btn btn-sm btn-outline-info modify-btn" data-id="${row.id}" title="Modifier">
+              <button class="btn btn-sm btn-outline-info modify-btn" data-id="${row.id}" data-intercompte="${row.isInterClient ? '1' : '0'}" title="Modifier">
                 <i class="bi bi-pencil"></i>
               </button>
-              <button class="btn btn-sm btn-outline-danger cancel-btn" data-id="${row.id}" title="Cancel">
+              <button class="btn btn-sm btn-outline-danger cancel-btn" data-id="${row.id}" data-intercompte="${row.isInterClient ? '1' : '0'}" title="Cancel">
                 <i class="bi bi-x-circle"></i>
               </button>
             `;
@@ -518,10 +519,15 @@ function initTransactions(clientId) {
 
   transactionsTable.on("click", ".modify-btn", function () {
     selectedTransactionID = $(this).data("id");
+    const isIntercompte = $(this).data("intercompte") === 1 || $(this).data("intercompte") === "1";
+
+    if (isIntercompte) {
+      openInterclientEditModal(selectedTransactionID);
+      return;
+    }
+
     $.get(`/api/transaction/${selectedTransactionID}/details`, function (data) {
-      $("#editTransDate").val(data.date);
-      $("#editTransAmount").val(data.montant);
-      $("#editTransType").val(data.type);
+      fillEditTransactionModal(data);
     });
 
     $("#editTransactionModal").modal("show");
@@ -534,9 +540,15 @@ function initTransactions(clientId) {
       {
         montant: $("#editTransAmount").val(),
         date: $("#editTransDate").val(),
+        note: $("#editTransNote").val(),
       },
       () => {
         transactionsTable.ajax.reload();
+        if ($.fn.DataTable && $.fn.DataTable.isDataTable("#opsTable")) {
+          const _dt = $("#opsTable").DataTable();
+          if (_dt.ajax && typeof _dt.ajax.reload === "function")
+            _dt.ajax.reload();
+        }
         $("#editTransactionModal").modal("hide");
         showToastModal({
           message: "Transaction modifiée avec succès",
@@ -551,7 +563,7 @@ function initTransactions(clientId) {
   }),
     transactionsTable.on("click", ".cancel-btn", function () {
       selectedTransactionID = $(this).data("id");
-      $("#confirmCancelTransactionModal").modal("show");
+      showCancelTransactionModal($(this).data("intercompte") === 1 || $(this).data("intercompte") === "1");
     }));
 
   $("#confirmCancelTransaction").on("click", () => {

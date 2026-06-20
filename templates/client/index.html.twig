@@ -3,6 +3,10 @@
 {% block title %}Gestion des Clients
 {% endblock %}
 
+{% block stylesheets %}
+	<link rel="stylesheet" href="{{ asset('assets/css/select2/select2.min.css') }}">
+{% endblock %}
+
 {% block main %}
 	<div
 		class="container-fluid">
@@ -338,5 +342,11 @@
 			</div>
 		</div>
 	</div>
-</div>{% endblock %}{% block javascripts %}
+</div>
+
+{% include "client/client_show/interclient_modal.html.twig" %}
+{% endblock %}{% block javascripts %}
+<script src="{{ asset('assets/js/select2/select2.min.js') }}"></script>
+<script src="{{ asset('assets/js/select2/i18n/fr.js') }}"></script>
+<script src="{{ asset('assets/appjs/interclient_modal.js') }}"></script>
 <script src="{{ asset('assets/appjs/client.js') }}"></script>{% endblock %}

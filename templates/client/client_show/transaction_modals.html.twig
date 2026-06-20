@@ -10,6 +10,14 @@
 					<label class="form-label">Type :</label>
 					<input type="text" id="editTransType" class="form-control" readonly>
 				</div>
+				<div class="mb-3 d-none" id="editTransOtherClientGroup">
+					<label class="form-label">Client correspondant :</label>
+					<input type="text" id="editTransOtherClient" class="form-control" readonly>
+				</div>
+				<div class="mb-3 d-none" id="editTransCurrencyGroup">
+					<label class="form-label">Devise :</label>
+					<input type="text" id="editTransCurrency" class="form-control" readonly>
+				</div>
 				<div class='mb-3'>
 					<label class="form-label">Date :</label>
 					<input type="date" id="editTransDate" class="form-select form-control">
@@ -17,6 +25,10 @@
 				<div>
 					<label class="form-label">Montant :</label>
 					<input type="number" id="editTransAmount" class="form-control">
+				</div>
+				<div>
+					<label class="form-label">Note :</label>
+					<textarea id="editTransNote" class="form-control" rows="3"></textarea>
 				</div>
 			</div>
 
@@ -37,6 +49,7 @@
 			</div>
 			<div class="modal-body">
 				Êtes-vous sûr de vouloir annuler cette transaction ?
+				<p class="text-muted small mb-0 d-none" id="confirmCancelInterclientHint">La transaction jumelle chez l'autre client sera également supprimée.</p>
 			</div>
 			<div class="modal-footer">
 				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
@@ -188,3 +201,5 @@
 		</form>
 	</div>
 </div>
+
+{% include "client/client_show/interclient_modal.html.twig" %}

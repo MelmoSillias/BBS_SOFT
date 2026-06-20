@@ -209,6 +209,32 @@ function initTransactionsForm(clientId) {
             .always(() => $btn.prop('disabled', false));
     });
 
+    $('#btnTransfertInterclient').on('click', function (e) {
+        e.preventDefault();
+        const $btn = $(this);
+        if ($btn.prop('disabled')) return;
+        $btn.prop('disabled', true);
+        openInterclientModal(extractClientId());
+        $btn.prop('disabled', false);
+    });
+
+    bindInterclientModalEvents({
+        onSuccess: function (response) {
+            loadClientSoldes(extractClientId());
+            if ($.fn.DataTable && $.fn.DataTable.isDataTable('#transactionsTable')) {
+                const _tr = $('#transactionsTable').DataTable();
+                if (_tr.ajax && typeof _tr.ajax.reload === 'function') _tr.ajax.reload();
+            }
+            if ($.fn.DataTable && $.fn.DataTable.isDataTable('#opsTable')) {
+                const _dt = $('#opsTable').DataTable();
+                if (_dt.ajax && typeof _dt.ajax.reload === 'function') _dt.ajax.reload();
+            }
+            setTimeout(function () {
+                window.open('/api/transaction/' + response.id + '/receipt', '_blank');
+            }, 2000);
+        }
+    });
+
     
  
 }

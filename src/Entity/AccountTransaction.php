@@ -283,6 +283,27 @@ class AccountTransaction
         return $this;
     }
 
+    public function clearAllCurrencies(): static
+    {
+        $this->setCFA(null);
+        $this->setAED(null);
+        $this->setEUR(null);
+        $this->setUSD(null);
+        $this->setGBP(null);
+        $this->setCNY(null);
+        $this->setMAD(null);
+        $this->setDZD(null);
+
+        return $this;
+    }
+
+    public function setExclusiveAmount(string $currency, string $amount): static
+    {
+        $this->clearAllCurrencies();
+
+        return $this->setAmount($currency, $amount);
+    }
+
     public function getCurrencyName(): ?string
     {
         // Check each currency in a logical order (you can adjust the priority)
@@ -354,5 +375,62 @@ class AccountTransaction
         return $this;
     }
 
-    
+    public function isInterClientTransfer(): bool
+    {
+        $linked = $this->getLinkedTransaction();
+
+        return $linked !== null
+            && $this->getClient() !== null
+            && $linked->getClient() !== null;
+    }
+
+    public function getActiveCurrency(): ?string
+    {
+        if ($this->getCFA() !== null) {
+            return 'CFA';
+        }
+        if ($this->getAED() !== null) {
+            return 'AED';
+        }
+        if ($this->getEUR() !== null) {
+            return 'EUR';
+        }
+        if ($this->getUSD() !== null) {
+            return 'USD';
+        }
+        if ($this->getGBP() !== null) {
+            return 'GBP';
+        }
+        if ($this->getCNY() !== null) {
+            return 'CNY';
+        }
+        if ($this->getMAD() !== null) {
+            return 'MAD';
+        }
+        if ($this->getDZD() !== null) {
+            return 'DZD';
+        }
+
+        return null;
+    }
+
+    public function getActiveAmount(): ?float
+    {
+        $currency = $this->getActiveCurrency();
+        if ($currency === null) {
+            return null;
+        }
+
+        return match ($currency) {
+            'CFA' => $this->getCFA() !== null ? (float) $this->getCFA() : null,
+            'AED' => $this->getAED() !== null ? (float) $this->getAED() : null,
+            'EUR' => $this->getEUR() !== null ? (float) $this->getEUR() : null,
+            'USD' => $this->getUSD() !== null ? (float) $this->getUSD() : null,
+            'GBP' => $this->getGBP() !== null ? (float) $this->getGBP() : null,
+            'CNY' => $this->getCNY() !== null ? (float) $this->getCNY() : null,
+            'MAD' => $this->getMAD() !== null ? (float) $this->getMAD() : null,
+            'DZD' => $this->getDZD() !== null ? (float) $this->getDZD() : null,
+            default => null,
+        };
+    }
 }

@@ -7,7 +7,8 @@
 /public/bundles/
 /var/
 /vendor/
-/BSS_files
+/BSS_files*
+/toshare/
 ###< symfony/framework-bundle ###
 
 ###> phpunit/phpunit ###

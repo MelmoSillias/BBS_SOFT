@@ -75,6 +75,9 @@ $(document).ready(function() {
       <button class="btn btn-sm btn-primary exchange" data-id="${id}" title="Echanger">
         <i class="bi bi-currency-exchange"></i>
       </button>
+      <button class="btn btn-sm btn-dark transfert-interclient" data-id="${id}" title="transfert-intercompte">
+        <i class="bi bi-arrow-left-right"></i>
+      </button>
     `;
   }
 
@@ -281,7 +284,7 @@ $(document).ready(function() {
       .always(() => $btn.prop('disabled', false));
   });
 
-   $('#clientsTable tbody').on('click', '.exchange', function(e) {
+    $('#clientsTable tbody').on('click', '.exchange', function(e) {
         e.preventDefault();
         const $btn = $(this);
         if ($btn.prop('disabled')) return;
@@ -297,6 +300,16 @@ $(document).ready(function() {
         $('#currencyModal').modal('show');
         $btn.prop('disabled', false);
     });
+
+  $('#clientsTable tbody').on('click', '.transfert-interclient', function(e) {
+    e.preventDefault();
+    const $btn = $(this);
+    if ($btn.prop('disabled')) return;
+    $btn.prop('disabled', true);
+    const data = table.row($btn.closest('tr')).data();
+    openInterclientModal(data.id, data.nomComplet);
+    $btn.prop('disabled', false);
+  });
 
     
   function chargeCurrencySolde(idClient, currency, input){ 
@@ -333,9 +346,19 @@ $(document).ready(function() {
   });
   
   loadStats();
+
+  bindInterclientModalEvents({
+    onSuccess: function (response) {
+      table.ajax.reload();
+      loadStats();
+      setTimeout(function () {
+        window.open('/api/transaction/' + response.id + '/receipt', '_blank');
+      }, 2000);
+    }
+  });
+
  
-    
-    // Fonction pour mettre à jour l'interface en fonction de l'agence sélectionnée
+        // Fonction pour mettre à jour l'interface en fonction de l'agence sélectionnée
     function updateUIByAgency() {
         const selectedAgencyId = parseInt($destination.val());
         

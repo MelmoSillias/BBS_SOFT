@@ -1,0 +1,242 @@
+<style>
+	.interclient-panels {
+		min-height: 320px;
+	}
+	.interclient-panel {
+		padding: 1.25rem;
+		display: flex;
+		flex-direction: column;
+	}
+	.interclient-panel-sender {
+		background: linear-gradient(135deg, #fff8e1 0%, #fff 100%);
+	}
+	.interclient-panel-receiver {
+		background: linear-gradient(135deg, #e8f5e9 0%, #fff 100%);
+	}
+	.interclient-panel-header {
+		font-size: 0.85rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		margin-bottom: 1rem;
+		padding-bottom: 0.5rem;
+		border-bottom: 2px solid rgba(0, 0, 0, 0.08);
+	}
+	.interclient-panel-sender .interclient-panel-header {
+		color: #e65100;
+		border-bottom-color: #ffb74d;
+	}
+	.interclient-panel-receiver .interclient-panel-header {
+		color: #2e7d32;
+		border-bottom-color: #81c784;
+	}
+	.interclient-connector {
+		background: #f8f9fa;
+		border-left: 1px dashed #dee2e6;
+		border-right: 1px dashed #dee2e6;
+		padding: 1rem 0.75rem;
+		gap: 0.75rem;
+	}
+	.interclient-connector-icon {
+		color: #6c757d;
+		font-size: 1.75rem;
+	}
+	.interclient-amount-preview {
+		background: rgba(255, 255, 255, 0.7);
+		border-radius: 8px;
+		padding: 0.75rem;
+		border: 1px solid rgba(0, 0, 0, 0.06);
+	}
+	.interclient-amount-preview .preview-value {
+		font-size: 1.35rem;
+		font-weight: 700;
+		line-height: 1.2;
+	}
+	.interclient-shared-fields {
+		background: #f8f9fa;
+		border-top: 1px solid #dee2e6;
+		padding: 1rem 1.25rem;
+	}
+	.interclient-client-name {
+		font-size: 1.05rem;
+		font-weight: 600;
+		margin-bottom: 0.25rem;
+	}
+	.interclient-balance-label {
+		font-size: 0.8rem;
+		color: #6c757d;
+	}
+	.interclient-clearable-field {
+		position: relative;
+	}
+	.interclient-clearable-field .form-control {
+		padding-right: 2rem;
+	}
+	.interclient-clearable-field .interclient-field-clear {
+		position: absolute;
+		right: 0.35rem;
+		top: 50%;
+		transform: translateY(-50%);
+		border: none;
+		background: transparent;
+		color: #adb5bd;
+		width: 1.5rem;
+		height: 1.5rem;
+		padding: 0;
+		line-height: 1;
+		border-radius: 50%;
+		display: none;
+	}
+	.interclient-clearable-field .interclient-field-clear:hover {
+		color: #dc3545;
+		background: rgba(220, 53, 69, 0.08);
+	}
+	.interclient-clearable-field.has-value .interclient-field-clear {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.interclient-motif-default .form-control {
+		font-style: italic;
+		color: #6c757d;
+	}
+	#transfertInterclientReceiver + .select2-container .select2-selection--single {
+		height: calc(1.5em + 0.75rem + 2px);
+		padding: 0.375rem 0.75rem;
+		border: 1px solid #ced4da;
+		border-radius: 0.375rem;
+	}
+	#transfertInterclientReceiver + .select2-container .select2-selection__rendered {
+		line-height: calc(1.5em);
+		padding-left: 0;
+	}
+	#transfertInterclientReceiver + .select2-container .select2-selection__arrow {
+		height: calc(1.5em + 0.75rem);
+	}
+</style>
+
+<div class="modal fade" id="modalTransfertInterclient" tabindex="-1" aria-labelledby="modalTransfertInterclientLabel" aria-hidden="true">
+	<div class="modal-dialog modal-lg modal-dialog-centered">
+		<div class="modal-content">
+			<form id="form-transfert-interclient">
+				<div class="modal-header">
+					<h5 class="modal-title" id="modalTransfertInterclientLabel">
+						<i class="bi bi-arrow-left-right me-2"></i>Transfert inter-client
+					</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+				</div>
+
+				<input type="hidden" name="senderClientId" id="transfertInterclientSenderId">
+				<input type="hidden" id="transfertInterclientEditId" value="">
+
+				<div class="modal-body p-0">
+					<div class="row g-0 interclient-panels">
+
+						{# Partie gauche — Envoyeur (Retrait) #}
+						<div class="col-md-5 interclient-panel interclient-panel-sender">
+							<div class="interclient-panel-header">
+								<i class="bi bi-box-arrow-up-right me-1"></i>Envoyeur — Retrait
+							</div>
+							<div class="interclient-client-name" id="interclientSenderName">—</div>
+							<div class="interclient-balance-label mb-3">
+								Solde actuel :
+								<span id="soldeInterclientSender" class="text-dark fw-semibold">—</span>
+							</div>
+							<div class="mb-3">
+								<label for="interclientSenderMotif" class="form-label small fw-bold mb-1">Motif / description</label>
+								<div class="interclient-clearable-field interclient-motif-default" id="interclientSenderMotifWrap">
+									<input type="text" class="form-control form-control-sm" id="interclientSenderMotif" name="senderNote" placeholder="Transfert vers…" autocomplete="off">
+									<button type="button" class="interclient-field-clear" data-target="#interclientSenderMotif" aria-label="Effacer le motif" title="Effacer">
+										<i class="bi bi-x-lg"></i>
+									</button>
+								</div>
+							</div>
+							<div class="interclient-amount-preview mt-auto">
+								<div class="interclient-balance-label">Montant retiré</div>
+								<div class="preview-value text-danger" id="interclientSenderAmountPreview">− 0</div>
+								<div class="interclient-balance-label mt-2">
+									Solde après :
+									<span id="soldeInterclientSenderAfter" class="fw-semibold">—</span>
+								</div>
+							</div>
+						</div>
+
+						{# Centre — liaison + saisie commune #}
+						<div class="col-md-2 interclient-connector d-flex flex-column align-items-center justify-content-center">
+							<i class="bi bi-arrow-left-right interclient-connector-icon"></i>
+							<div class="w-100">
+								<label for="deviseInterclient" class="form-label small fw-bold mb-1">Devise</label>
+								<select id="deviseInterclient" name="currency" class="form-select form-select-sm" required>
+									<option value="CFA" selected>CFA</option>
+									<option value="AED">AED</option>
+									<option value="EUR">EUR</option>
+									<option value="USD">USD</option>
+									<option value="GBP">GBP</option>
+									<option value="CNY">CNY</option>
+									<option value="MAD">MAD</option>
+									<option value="DZD">DZD</option>
+								</select>
+							</div>
+							<div class="w-100">
+								<label for="transfertInterclientAmount" class="form-label small fw-bold mb-1">Montant</label>
+								<input type="number" class="form-control form-control-sm text-center fw-bold" id="transfertInterclientAmount" name="amount" min="0.01" step="0.01" required placeholder="0">
+							</div>
+						</div>
+
+						{# Partie droite — Récepteur (Depot) #}
+						<div class="col-md-5 interclient-panel interclient-panel-receiver">
+							<div class="interclient-panel-header">
+								<i class="bi bi-box-arrow-in-down-right me-1"></i>Récepteur — Dépôt
+							</div>
+							<div class="mb-3">
+								<label for="transfertInterclientReceiver" class="form-label small fw-bold mb-1">Client destinataire
+									<span class="text-danger">*</span>
+								</label>
+								<select id="transfertInterclientReceiver" name="receiverId" class="form-select" required>
+									<option value="">— Sélectionner —</option>
+								</select>
+							</div>
+							<div class="interclient-balance-label mb-3">
+								Solde actuel :
+								<span id="soldeInterclientReceiver" class="text-dark fw-semibold">—</span>
+							</div>
+							<div class="mb-3">
+								<label for="interclientReceiverMotif" class="form-label small fw-bold mb-1">Motif / description</label>
+								<div class="interclient-clearable-field interclient-motif-default" id="interclientReceiverMotifWrap">
+									<input type="text" class="form-control form-control-sm" id="interclientReceiverMotif" name="receiverNote" placeholder="Transfert de…" autocomplete="off">
+									<button type="button" class="interclient-field-clear" data-target="#interclientReceiverMotif" aria-label="Effacer le motif" title="Effacer">
+										<i class="bi bi-x-lg"></i>
+									</button>
+								</div>
+							</div>
+							<div class="interclient-amount-preview mt-auto">
+								<div class="interclient-balance-label">Montant reçu</div>
+								<div class="preview-value text-success" id="interclientReceiverAmountPreview">+ 0</div>
+								<div class="interclient-balance-label mt-2">
+									Solde après :
+									<span id="soldeInterclientReceiverAfter" class="fw-semibold">—</span>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="interclient-shared-fields">
+						<div class="row g-3">
+							<div class="col-md-4">
+								<label for="transfertInterclientDate" class="form-label small fw-bold">Date</label>
+								<input type="date" class="form-control form-control-sm" id="transfertInterclientDate" name="date" required>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+					<button type="submit" class="btn btn-dark" id="interclientSubmitBtn">
+						<i class="bi bi-arrow-left-right me-1"></i><span id="interclientSubmitBtnLabel">Effectuer le transfert</span>
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
